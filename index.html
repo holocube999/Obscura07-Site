@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#09080D">
+<meta name="description" content="OBSCURA/07 — qualcosa prende forma nel silenzio. In code we trust.">
+<meta property="og:type" content="website"><meta property="og:title" content="OBSCURA/07 — In code we trust">
+<meta property="og:description" content="Dal nulla, un segnale. Il resto arriverà quando sarà pronto."><meta property="og:url" content="https://nullgod.tech/"><meta property="og:image" content="https://nullgod.tech/assets/og-preview.png">
+<link rel="canonical" href="https://nullgod.tech/"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iNyIgZmlsbD0iIzBhMGUxNSIvPjxwYXRoIGQ9Ik0xMCA1NSAyNCA5aDE2bDE0IDQ2IiBmaWxsPSJub25lIiBzdHJva2U9IiNhZmM0YzIiIHN0cm9rZS13aWR0aD0iMyIvPjxwYXRoIGQ9Ik0yNCA1NFYyN2gxNnYyNyIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNmQ4YjhjIiBzdHJva2Utd2lkdGg9IjIiLz48cGF0aCBkPSJNOCA1N2g0OCIgc3Ryb2tlPSIjNTA2YzZlIiBzdHJva2Utd2lkdGg9IjEuNSIvPjwvc3ZnPg==">
+<style>/* OBSCURA/07 / ABYSS — understated environmental interface, zero third-party dependencies */
+:root{--night:#05050A;--stone:#121019;--chalk:#e2e4dc;--dust:#9ca2ab;--pale:#b7c7c7;--accent:#8a64c8;--mono:ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;--type:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:50px}body{margin:0;background:var(--night);color:var(--chalk);font-family:var(--type);-webkit-font-smoothing:antialiased;overflow-x:hidden}a{color:inherit}button{font:inherit;cursor:pointer}button,a,summary{touch-action:manipulation}a:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid #b9d5d8;outline-offset:5px}p{line-height:1.78}#world-canvas{position:fixed;inset:0;width:100%;height:100%;z-index:-4;display:block;background:#04040a;pointer-events:none}.world-grain{position:fixed;inset:0;z-index:-3;pointer-events:none;opacity:.19;background:repeating-linear-gradient(0deg,transparent 0px,transparent 3px,rgba(0,0,0,.18) 4px)}.world-glitch{position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:0;mix-blend-mode:screen;overflow:hidden;--gx:0px;--gy:0px;--sliceTop:34%;--sliceBottom:46%;--left:18%;--width:22%;--amp:.18;transition:opacity .12s ease}.world-glitch.active{opacity:1}.world-glitch .gl{position:absolute;inset:0;opacity:0}.world-glitch.t-rgb .gl-rgb{opacity:calc(.08 + var(--amp)*.55);background:linear-gradient(90deg,rgba(255,70,210,.10),transparent 36%,rgba(74,116,255,.11) 67%,transparent);transform:translateX(var(--gx));filter:blur(.35px)}.world-glitch.t-scan .gl-scan{opacity:calc(.05 + var(--amp)*.30);background:repeating-linear-gradient(180deg,transparent 0 2px,rgba(208,180,255,.12) 2px 3px,transparent 3px 7px)}.world-glitch.t-block .gl-block{opacity:calc(.07 + var(--amp)*.28);background:linear-gradient(90deg,transparent 0 var(--left),rgba(220,200,255,.13) var(--left) calc(var(--left) + var(--width)),transparent calc(var(--left) + var(--width)) 100%),repeating-linear-gradient(90deg,transparent 0 5%,rgba(120,88,180,.12) 5% 7%,transparent 7% 15%),repeating-linear-gradient(180deg,transparent 0 7%,rgba(170,145,255,.08) 7% 10%,transparent 10% 17%);transform:translate(calc(var(--gx)*-.35),calc(var(--gy)*.2))}.world-glitch.t-tear .gl-tear{opacity:calc(.07 + var(--amp)*.35);clip-path:polygon(0 var(--sliceTop),100% calc(var(--sliceTop) - 2%),100% var(--sliceBottom),0 calc(var(--sliceBottom) + 2%));background:linear-gradient(90deg,rgba(255,255,255,.05),rgba(175,120,255,.16),rgba(50,8,80,.05));transform:translateX(calc(var(--gx)*-1))}.world-glitch.t-noise .gl-noise{opacity:calc(.04 + var(--amp)*.20);background:radial-gradient(circle at 14% 22%,rgba(255,255,255,.20) 0 1px,transparent 2px),radial-gradient(circle at 72% 38%,rgba(170,120,255,.16) 0 1px,transparent 2px),radial-gradient(circle at 48% 78%,rgba(120,210,255,.12) 0 1px,transparent 2px);background-size:33px 33px,53px 53px,41px 41px;filter:blur(.2px)}.world-glitch.t-diag .gl-diag{opacity:calc(.04 + var(--amp)*.22);background:repeating-linear-gradient(130deg,transparent 0 12px,rgba(188,150,255,.12) 12px 14px,transparent 14px 26px);transform:translateY(var(--gy))}.arrival{position:fixed;inset:0;background:#000;z-index:250;pointer-events:none;animation:arrival 1.75s ease both}@keyframes arrival{0%{opacity:1}22%{opacity:1}100%{opacity:0;visibility:hidden}}.skip-link{position:fixed;left:15px;top:8px;transform:translateY(-140%);background:#e2e4dc;color:#151922;padding:13px;z-index:300}.skip-link:focus{transform:none}
+.site-header{position:absolute;top:0;left:0;right:0;z-index:80;padding:28px clamp(20px,5vw,85px);display:flex;justify-content:space-between;align-items:center;pointer-events:none}.site-header a,.site-header button{pointer-events:auto}.brand{text-decoration:none;display:inline-flex;gap:14px;align-items:center;color:#cbd4d3;font:600 clamp(16px,1.35vw,22px) var(--mono);letter-spacing:-.07em}.brand-symbol{font-size:19px;display:inline-flex;align-items:center;justify-content:center;transform:rotate(-13deg);color:#a0bac0}.menu-toggle{background:none;border:0;color:#e6ece8;letter-spacing:.15em;font:10px var(--mono);display:flex;align-items:center;gap:13px;padding:10px}.menu-toggle>span:first-child{font-size:17px}.site-header nav{display:none;position:absolute;right:clamp(20px,5vw,85px);top:84px;min-width:260px;padding:26px 34px;background:rgba(15,20,26,.98);box-shadow:0 18px 80px #0009;border-left:1px solid #54636a;flex-direction:column;gap:20px}.site-header nav.open{display:flex}.site-header nav a{display:flex;align-items:center;gap:30px;color:#e0e7e2;text-decoration:none;font:13px var(--mono)}.site-header nav a span{font-size:10px;color:#789397}.site-header nav a:hover{color:#9fbdc2}
+.hero{height:100svh;min-height:560px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;isolation:isolate}.alien-signature{position:relative;top:-9vh;margin-top:9vh;text-align:center;z-index:3;padding:18px 20px;animation:signature 2.4s cubic-bezier(.15,.65,.2,1) both}.alien-signature h1{font:400 clamp(45px,8.1vw,136px)/1.06 var(--mono);letter-spacing:-.095em;margin:0;color:#d5dbd6;text-shadow:0 10px 40px #000f,0 -1px 1px #a685ff40;transform:perspective(900px) rotateX(9deg);font-variation-settings:normal}.alien-signature p{font:10px var(--mono);letter-spacing:.57em;color:#bfc6c4;text-shadow:0 2px 8px #000;line-height:1.9;margin:16px 0 0}.inscription-mark{display:block;margin-bottom:17px;color:#b4c6c6;font:22px var(--mono);opacity:.8}.world-label{position:absolute;left:clamp(24px,5vw,88px);bottom:70px;color:#9aa6a7;letter-spacing:.18em;font:10px/2.15 var(--mono);text-shadow:0 2px 14px #000}.threshold{position:absolute;bottom:60px;right:clamp(20px,5vw,85px);display:flex;flex-direction:column;gap:18px;align-items:flex-start;color:#d7dfdb;font-size:clamp(13px,1.1vw,16px);line-height:1.4;text-shadow:0 2px 12px #000}.threshold a{font:10px var(--mono);letter-spacing:.22em;text-decoration:none;padding:8px 0;border-bottom:1px solid #9eb6b1}.threshold a span{padding-left:18px}.vertical-trace{height:41px;width:1px;background:#93a5a6}.world-progress{position:absolute;left:clamp(24px,5vw,88px);top:120px;letter-spacing:.3em;color:#aab9b4;font:10px var(--mono)}@keyframes signature{0%{opacity:0;filter:blur(14px);transform:translateY(30px)}100%{opacity:1;filter:blur(0);transform:none}}
+.environment-section{position:relative;min-height:100svh;padding:110px clamp(23px,7vw,140px) 125px;display:flex;align-items:center;overflow:hidden;isolation:isolate}.environment-section:before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background:linear-gradient(90deg,rgba(5,8,12,.79),rgba(6,9,13,.18) 65%,transparent)}.chapter-coordinate{position:absolute;top:67px;left:clamp(23px,7vw,140px);right:clamp(23px,7vw,140px);font:10px var(--mono);letter-spacing:.2em;color:#b5c2be;display:flex;gap:35px;align-items:center;text-shadow:0 2px 15px #000}.chapter-coordinate>span{color:#829698;opacity:.85}.environment-inscription{position:relative;max-width:550px;z-index:1;padding-left:29px;border-left:1px solid rgba(175,196,196,.36);text-shadow:0 3px 13px #000}.chapter-eyebrow{font:11px var(--mono);color:#b8cecb;letter-spacing:.14em;text-transform:uppercase;margin-bottom:28px}.environment-inscription h2,.section-statement h2{font-weight:450;font-size:clamp(40px,5.4vw,85px);line-height:1.07;letter-spacing:-.06em;margin:0 0 35px;color:#e5e5de}.environment-inscription h2 em{color:#bacccc;font-style:normal}.environment-inscription>p:not(.chapter-eyebrow):not(.sync-label),.section-statement>p:last-child{font-size:clamp(14px,1.1vw,17px);max-width:510px;color:#d1d7d3;line-height:1.85;margin:0 0 20px}.environment-link{display:inline-flex;gap:27px;margin-top:25px;text-decoration:none;text-transform:uppercase;letter-spacing:.15em;font:11px var(--mono);border-bottom:1px solid #95b6b8;padding:10px 0}.stone-coordinate{position:absolute;right:7%;bottom:9%;font:10px var(--mono);letter-spacing:.24em;color:#95a1a0}.vision{justify-content:flex-start}.method-section,.store-section{justify-content:flex-end}.method-section:before,.store-section:before{background:linear-gradient(270deg,rgba(5,8,12,.86),rgba(6,9,13,.18) 65%,transparent)}.method-inscription,.store-inscription{max-width:560px}.method-steps{list-style:none;padding:12px 0 0;margin:20px 0}.method-steps li{display:flex;gap:20px;border-top:1px solid #a8bcbc37;padding:15px 0;font:12px var(--mono);color:#d1d9d4}.method-steps li span{color:#8eaaac}
+.projects-section{display:block;padding-top:170px;background:linear-gradient(180deg,transparent,rgba(5,9,13,.24) 20%,rgba(3,6,10,.82) 55%,rgba(4,7,11,.65) 100%)}.projects-section:before{display:none}.section-statement{margin-bottom:90px;max-width:540px}.section-statement h2{margin-bottom:25px}.section-statement p{color:#d0dbd9}.repository{margin:0 auto;max-width:1240px}.filters{display:flex;gap:22px;flex-wrap:wrap;margin:0 0 40px;border-bottom:1px solid #adc0c03f}.filter{padding:14px 2px;background:none;border:0;border-bottom:1px solid transparent;color:#9aa9a8;font:11px var(--mono);letter-spacing:.13em;margin-bottom:-1px}.filter.active{color:#edf2ee;border-color:#d1dfdc}.filter small{font:10px var(--mono);margin-left:8px}.project-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px}.project-card{position:relative;min-height:305px;padding:27px 26px 30px 28px;display:flex;flex-direction:column;isolation:isolate;background:linear-gradient(103deg,#131b21e8 0%,#202a2ecf 18%,#0b1118eb 76%,#080b10eb 100%);border-left:1px solid #8ba0a064;border-bottom:1px solid #647c7836;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 13px,100% 100%,0 100%);margin-bottom:25px;transition:background .2s,transform .2s}.project-card:after{content:"";z-index:-1;position:absolute;inset:0;background:linear-gradient(125deg,rgba(160,189,182,.06),transparent 45%)}.project-card:hover{transform:translateY(-3px);background:linear-gradient(105deg,#29343aef,#151d25f2 75%)}.project-number{font:11px var(--mono);color:#9fb7b8;letter-spacing:.15em;min-height:37px}.project-meta{font:10px var(--mono);color:#a7bbb7;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px;letter-spacing:.06em}.project-card h3{font-weight:500;font-size:clamp(21px,2vw,31px);letter-spacing:-.05em;margin:0 0 5px}.project-sub{font:10px var(--mono);color:#90a09f;min-height:28px}.project-body{display:flex;flex-direction:column;flex:1}.project-body>p{font-size:13px;color:#bac5c1;line-height:1.65;flex:1;margin:16px 0 20px}.project-card button{background:none;border:0;border-top:1px solid #6f87823a;color:#edf0e9;font:11px var(--mono);padding:17px 0 0;width:100%;text-align:left;display:flex;justify-content:space-between;letter-spacing:.08em}.archive-note{font:11px var(--mono);color:#a7b3ae;letter-spacing:.04em;margin-top:35px}.control-section{min-height:110svh}.control-inscription{max-width:850px;width:min(810px,100%)}.control-inscription>p{max-width:520px}.control-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:22px;row-gap:22px;margin-top:44px}.control-card{padding:0 0 13px;border-bottom:1px solid #a5b9b94a}.control-card header{display:flex;justify-content:space-between;gap:10px;font:13px var(--mono)}.control-card header small{color:#a6b7b1;font-size:10px}.control-card p{font:10px var(--mono);color:#a7b4b1;letter-spacing:.09em}.progress-track{height:3px;background:#596a6c6c}.progress-fill{height:100%;background:#b8d1d0}.progress-track.unknown{background:repeating-linear-gradient(90deg,#63797a55 0 2px,transparent 2px 9px)}.sync-label{font:10px var(--mono);letter-spacing:.12em;color:#91aeb0}.store-etchings{display:grid;gap:20px;margin-top:40px}.store-etchings>span{display:flex;justify-content:space-between;gap:20px;border-top:1px solid #afc1bd66;padding:17px 0;font:13px var(--mono)}.store-etchings small{font-size:10px;color:#a8b7b5}.faqs{margin-top:37px;border-top:1px solid #7c999460}.faqs details{border-bottom:1px solid #7c999460;padding:16px 0}.faqs summary{list-style:none;display:flex;justify-content:space-between;gap:20px;cursor:pointer;font:13px var(--mono)}.faqs summary::-webkit-details-marker{display:none}.faqs summary span{color:#a4c4c7;font-size:17px}.faqs details p{font:13px/1.7 var(--type);color:#bdc9c5}.site-footer{display:flex;flex-wrap:wrap;justify-content:space-between;gap:22px;align-items:center;padding:38px clamp(23px,7vw,140px) 48px;background:#06090d;color:#b9c4be;font:10px var(--mono);letter-spacing:.12em}.site-footer a{text-decoration:none;font-size:16px}.site-footer span:first-child{color:#e5e9e4}
+dialog{max-width:min(690px,calc(100vw - 26px));width:100%;max-height:85vh;padding:0;background:#101821;color:#e2ebe7;border:1px solid #506565;box-shadow:0 35px 100px #000c}dialog::backdrop{background:rgba(1,3,5,.84);backdrop-filter:blur(6px)}.dialog-body{padding:clamp(25px,4vw,48px);max-height:83vh;overflow:auto}.dialog-close{float:right;margin:-10px -10px 10px 20px;color:#e5eae5;background:none;border:0;font:28px var(--mono)}.dialog-tag{font:10px var(--mono);color:#98b8b9;letter-spacing:.14em}.dialog-body h2{font-size:clamp(30px,5vw,55px);font-weight:450;letter-spacing:-.07em;margin:23px 0}.dialog-body h3{font-size:14px;font-weight:500;letter-spacing:.1em;margin-top:28px;text-transform:uppercase}.dialog-body p,.dialog-body li{font-size:14px;color:#bfcbc5;line-height:1.75}.dialog-body ul{padding-left:22px}.dialog-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;border-block:1px solid #6177786a;padding:23px 0;margin:25px 0}.dialog-grid b,.dialog-grid span{display:block;font:11px var(--mono)}.dialog-grid b{color:#acc0bf;margin-bottom:8px}.dialog-grid span{color:#e5ebe7}.dialog-evidence{border-left:1px solid #96adac;padding-left:18px}
+@media(max-width:980px){.project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.environment-section{min-height:95svh}.vision-inscription,.method-inscription{max-width:510px}.alien-signature h1{font-size:clamp(55px,8vw,100px)}}
+@media(max-width:640px){.hero{height:100svh;min-height:530px}.site-header{padding:23px 20px}.site-header nav{right:20px;top:72px}.world-label{display:none}.world-progress{left:25px;top:112px}.threshold{right:23px;bottom:66px}.alien-signature{margin-top:0}.alien-signature h1{font-size:clamp(45px,11.6vw,75px)}.alien-signature p{font-size:9px;letter-spacing:.34em}.environment-section{min-height:750px;min-height:90svh;padding:110px 25px 92px}.environment-section:before{background:linear-gradient(90deg,rgba(5,8,12,.84),rgba(5,8,12,.44))}.environment-inscription{padding-left:18px}.environment-inscription h2,.section-statement h2{font-size:clamp(43px,11vw,66px)}.chapter-coordinate{left:25px;right:25px;top:45px;font-size:9px;gap:12px}.chapter-coordinate>span{font-size:9px}.projects-section{padding-top:145px}.section-statement{margin-bottom:46px}.project-grid{grid-template-columns:1fr;gap:0}.project-card{min-height:252px;margin-bottom:16px}.filters{gap:14px}.filter{font-size:10px}.control-grid{grid-template-columns:1fr}.site-footer{padding:30px 24px}.stone-coordinate{display:none}.method-section:before,.store-section:before{background:linear-gradient(90deg,rgba(5,8,12,.72),rgba(5,8,12,.35))}.store-etchings>span{font-size:11px}.store-etchings small{font-size:9px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation-duration:.001ms!important;transition-duration:.001ms!important}.arrival{display:none!important}}
+.ng-light-switch{position:fixed;right:22px;bottom:23px;z-index:110;padding:9px 12px;border:1px solid #49316e99;border-radius:5px;background:#09080de9;color:#b5a7e8;text-decoration:none;font:11px/1 ui-monospace,Consolas,monospace;letter-spacing:.14em}.ng-light-switch:hover{background:#211e2a}
+</style><style>/* Environmental renderer paints directly to #world-canvas. */
+</style>
+<title>OBSCURA/07 · In code we trust</title>
+<script id="lowpower-auto">(function(){
+  if(location.search.indexOf('mode=light')!==-1){location.replace('light/index.html'+location.hash);return;}
+  if(location.search.indexOf('render=classic')!==-1)return;
+  var c=document.createElement('canvas'),gl=null;
+  try{gl=c.getContext('webgl2',{powerPreference:'low-power'});}catch(_e){}
+  if(!gl){location.replace('light/index.html'+location.hash);}
+})();</script>
+
+
+<style id="ng-v7-legal-sponsor">
+:root{--night:#09080D;--stone:#121019;--chalk:#D7D3E6;--dust:#B9B5C1;--pale:#B5A7E8;--accent:#8258B8}
+body{color:#D7D3E6;background-color:#09080D}
+.ng-legal-micro{font:11px/1.6 ui-monospace,Consolas,monospace;color:#B9B5C1;max-width:1040px;margin:18px auto;padding:0 18px}
+.ng-legal-micro a,.ng-footer-legal a{color:#B5A7E8;text-underline-offset:3px}
+.ng-footer-legal{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:9px 18px;padding:20px 15px;font:11px/1.6 ui-monospace,Consolas,monospace;color:#B9B5C1;border-top:1px solid rgba(181,167,232,.18)}
+.ng-sponsor{max-width:1080px;margin:18px auto 48px;padding:18px 25px;border-radius:12px;background:linear-gradient(110deg,#121019,#211E2A);border:1px solid rgba(181,167,232,.35);position:relative;box-shadow:0 8px 28px #0005}
+.ng-sponsor[hidden]{display:none!important}.ng-sponsor-tag{font:10px ui-monospace,Consolas,monospace;color:#B5A7E8;letter-spacing:.15em}
+.ng-sponsor h3{font-size:20px;color:#E5E1EB;font-weight:500;margin:7px 0}.ng-sponsor p{font-size:13px;line-height:1.6;color:#B9B5C1;max-width:720px;margin:6px 0}
+.ng-sponsor a{display:inline-flex;margin-top:7px;font-size:12px;color:#B5A7E8;text-underline-offset:4px}
+.ng-sponsor-x{position:absolute;right:12px;top:12px;background:#211E2A;color:#E5E1EB;border:1px solid #49316E;border-radius:6px;padding:6px 10px;cursor:pointer}
+.ng-tool-link{display:inline-flex;align-items:center;gap:8px;margin-top:10px;padding:12px 16px;border:1px solid #8258B8;border-radius:8px;color:#D7D3E6!important;background:#211E2A;text-decoration:none!important;font:12px ui-monospace,Consolas,monospace}
+.ng-tool-link:hover,.ng-tool-link:focus-visible{background:#49316E}
+.ng-legal-divider{color:#8258B8}
+@media(max-width:680px){.ng-sponsor{margin:12px 8px 28px;padding:17px}.ng-legal-micro{padding:0 10px}}
+</style>
+
+<style id="ng-v8-classified">
+.classified-repository .classified-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px}
+.classified-repository .classified-card{cursor:default;min-height:290px;overflow:hidden;filter:saturate(.78);border-left-color:#8258B855;background:linear-gradient(140deg,#14111bcf,#211b2bf0 65%,#0a0910)}
+.classified-repository .classified-card:hover{transform:none;background:linear-gradient(140deg,#191423,#211b2b 65%,#0a0910)}
+.classified-card .project-meta{color:#B5A7E8}
+.classified-card .project-sub{font-size:10px;letter-spacing:.19em;color:#8c82a9}
+.classified-card h3{color:#D7D3E6}
+.classified-card p{max-width:26ch}
+.classified-glyph{display:block;margin-top:auto;padding-top:35px;font:25px/1.2 ui-monospace,monospace;letter-spacing:.32em;color:#6e538e;opacity:.55}
+.archive-seal{border-top:1px solid #8258B84d;border-bottom:1px solid #8258B84d;color:#B5A7E8;padding:16px 4px 17px;margin:0 0 23px;font:10px/1.4 ui-monospace,Consolas,monospace;letter-spacing:.17em}
+.archive-seal-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:#8258B8;margin-right:8px;box-shadow:0 0 8px #8258B8}
+.archive-seal-trace{float:right;letter-spacing:.3em;opacity:.6}
+.classified-telemetry{border:1px solid #49316E74;padding:28px;max-width:650px;background:linear-gradient(120deg,#121019b8,#211e2a48);display:grid;gap:12px}
+.classified-telemetry small{font:10px/1.7 ui-monospace,Consolas,monospace;letter-spacing:.12em;color:#aaa0bc}
+.classified-wave{color:#9270bd;font:23px ui-monospace,monospace;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:clip}
+@media(max-width:760px){.classified-repository .classified-grid{grid-template-columns:1fr}.classified-repository .classified-card{min-height:220px}}
+</style>
+</head>
+<body>
+<canvas id="world-canvas" aria-hidden="true"></canvas>
+<div class="world-grain" aria-hidden="true"></div>
+<div id="world-glitch" class="world-glitch" aria-hidden="true"><span class="gl gl-rgb"></span><span class="gl gl-scan"></span><span class="gl gl-block"></span><span class="gl gl-tear"></span><span class="gl gl-noise"></span><span class="gl gl-diag"></span></div>
+<div class="arrival" id="arrival" aria-hidden="true"></div>
+<a href="#contenuto" class="skip-link">Vai ai contenuti</a>
+<a href="light/index.html" class="ng-light-switch" aria-label="Apri la versione leggera">LIGHT</a>
+<header class="site-header" id="top">
+  <a href="#top" class="brand" aria-label="OBSCURA/07 — torna all'inizio"><span class="brand-symbol" aria-hidden="true">◢</span><span>OBSCURA/07</span></a>
+  <button id="menu-toggle" class="menu-toggle" aria-expanded="false" aria-controls="navigation" aria-label="Apri indice"><span aria-hidden="true">☰</span><span class="menu-caption">INDICE</span></button>
+  <nav id="navigation" aria-label="Indice di navigazione"><a href="#studio"><span>01</span> Visione</a><a href="#progetti"><span>02</span> Archivio</a><a href="#metodo"><span>03</span> Metodo</a><a href="#control"><span>04</span> Segnale</a><a href="#store"><span>05</span> Distribuzione</a><a href="#supporto"><span>06</span> Supporto</a></nav>
+</header>
+<main id="contenuto">
+ <section class="hero" id="home" aria-labelledby="hero-heading">
+  <div class="alien-signature"><span class="inscription-mark" aria-hidden="true">◢</span><h1 id="hero-heading">OBSCURA/07</h1><p>IN CODE WE TRUST</p></div>
+  <p class="world-label">SOFTWARE · GIOCHI · STRUMENTI</p>
+  <div class="threshold"><span class="vertical-trace"></span><span>Silenzio.<br>Possibilità.</span><a href="#studio" aria-label="Esplora il mondo OBSCURA/07">ESPLORA <span aria-hidden="true">↓</span></a></div>
+  <div class="world-progress" aria-hidden="true">00 / 06</div>
+ </section>
+ <section class="environment-section vision" id="studio" aria-labelledby="vision-title">
+  <div class="chapter-coordinate">01 — ORIGINE <span>FORMA IN EMERSIONE</span></div>
+  <div class="environment-inscription vision-inscription"><p class="chapter-eyebrow">OBSCURA/07 / visione</p><h2 id="vision-title">Dal <em>nulla.</em></h2><p>Sistemi, giochi, strumenti. Indipendenti. Essenziali.</p><a class="environment-link" href="#progetti">Attraversa la soglia <span aria-hidden="true">↘</span></a><p class="ng-legal-micro">WEBPLAYER / GITHUB HTML RUNNER<br><a class="ng-tool-link" href="webplayer/index.html">▶ Visualizza HTML da GitHub</a><br>Per i repository privati il token resta solo in memoria.</p></div>
+  <div class="stone-coordinate" aria-hidden="true">01 / NO FALSE GODS</div>
+ </section>
+ <section class="environment-section projects-section" id="progetti" aria-labelledby="projects-title">
+  <div class="chapter-coordinate">02 — ARCHIVIO <span>ACCESSO IN SOSPESO</span></div>
+  <div class="section-statement"><p class="chapter-eyebrow">Archivio / non ancora rivelato</p><h2 id="projects-title">Nell'ombra.</h2><p>Solo ciò che è pronto.</p></div>
+  <div class="repository classified-repository" aria-label="Archivio riservato. Nessun dettaglio sui progetti non annunciati">
+   <div class="archive-seal" aria-hidden="true"><span class="archive-seal-dot"></span> OBSCURA/07 / ARCHIVIO NON PUBBLICO <span class="archive-seal-trace">· · · █ · ·</span></div>
+   <div class="project-grid classified-grid">
+    <article class="project-card classified-card"><div class="project-body"><div class="project-meta"><span>TRACCIA</span><span>∅</span></div><h3>Segnale.</h3><div class="project-sub">NESSUNA ANTEPRIMA</div><p>Non ancora.</p><span class="classified-glyph" aria-hidden="true">◈ — — —</span></div></article>
+    <article class="project-card classified-card"><div class="project-body"><div class="project-meta"><span>SOGLIA</span><span>░</span></div><h3>Forma.</h3><div class="project-sub">NESSUNA ETICHETTA</div><p>Prima il codice.</p><span class="classified-glyph" aria-hidden="true">⌁ ⌁ ⌁</span></div></article>
+    <article class="project-card classified-card"><div class="project-body"><div class="project-meta"><span>FREQUENZA</span><span>◇</span></div><h3>Momento.</h3><div class="project-sub">NESSUNA SCADENZA</div><p>Senza countdown.</p><span class="classified-glyph" aria-hidden="true">· · ◇ · ·</span></div></article>
+   </div>
+   <p class="archive-note">Nessuna roadmap. Nessun indizio.</p>
+   <aside id="ng-sponsor" class="ng-sponsor" aria-label="Sponsor" hidden>
+  <button type="button" id="ng-sponsor-dismiss" class="ng-sponsor-x" aria-label="Nascondi sponsor">×</button>
+  <span class="ng-sponsor-tag">SPONSORIZZATO · PARTNER DIRETTO</span><h3 id="ng-sponsor-title"></h3>
+  <p id="ng-sponsor-description"></p>
+  <a id="ng-sponsor-url" target="_blank" rel="noopener noreferrer nofollow sponsored">Visita il partner ↗</a>
+  <p><small>Nessun tracker, nessun video automatico. Puoi chiudere subito; questa creatività scomparirà anche automaticamente.</small></p>
+</aside>
+  </div>
+ </section>
+ <section class="environment-section method-section" id="metodo" aria-labelledby="method-title">
+  <div class="chapter-coordinate">03 — DISCIPLINA <span>PROVA PRIMA DI PARLARE</span></div>
+  <div class="environment-inscription method-inscription"><p class="chapter-eyebrow">Il nostro standard / OBSCURA/07</p><h2 id="method-title">Metodo.</h2><p>Si costruisce. Si testa. Si tiene solo ciò che regge.</p><ol class="method-steps"><li><span>01</span> Sviluppo e baseline</li><li><span>02</span> Test / rischio maggiore per primo</li><li><span>03</span> Benchmark e ottimizzazione</li><li><span>04</span> Test globale, integrazione o rollback</li></ol></div>
+ </section>
+ <section class="environment-section control-section" id="control" aria-labelledby="control-title">
+  <div class="chapter-coordinate">04 — SEGNALE <span>NESSUN RUMORE INUTILE</span></div>
+  <div class="environment-inscription control-inscription"><p class="chapter-eyebrow">Frequenze / silenzio operativo</p><h2 id="control-title">Nessun<br><em>rumore.</em></h2><p>Niente di pubblico prima del tempo.</p><p class="sync-label" id="sync-label">● CANALE PUBBLICO · IN ATTESA</p><div class="classified-telemetry" aria-label="Canale pubblico in attesa di annunci"><span class="classified-wave" aria-hidden="true">▁ ▂ ▃ ▂ ▁ &nbsp; ░ ░ ░ &nbsp; ▁ ▃ ▂ ▁</span><small>UN SEGNALE ARRIVA SOLO QUANDO È REALE.</small></div></div>
+ </section>
+ <section class="environment-section store-section" id="store" aria-labelledby="store-title">
+  <div class="chapter-coordinate">05 — DISTRIBUZIONE <span>ACCESSO QUANDO SERVE</span></div>
+  <div class="environment-inscription store-inscription"><p class="chapter-eyebrow">Distribuzione / accesso</p><h2 id="store-title">Quando<br><em>serve.</em></h2><p>Software, versioni, changelog. Non prima.</p><div class="store-etchings"><span>SOFTWARE <small>IN PREPARAZIONE</small></span><span>PRO / LICENSING <small>NON ACQUISTABILE</small></span></div></div>
+ </section>
+ <section class="environment-section support-section" id="supporto" aria-labelledby="support-title">
+  <div class="chapter-coordinate">06 — CONTATTO <span>CANALI ESSENZIALI</span></div>
+  <div class="environment-inscription support-inscription"><p class="chapter-eyebrow">Supporto / contatti</p><h2 id="support-title">Contatto.</h2><p>Documenti e canali ufficiali appariranno qui.</p><div class="faqs"><details><summary>Posso già scaricare i programmi? <span>+</span></summary><p>Non ancora. I repository sono privati, i download saranno pubblicati solo dopo verifica.</p></details><details><summary>Lo stato Git è aggiornato automaticamente? <span>+</span></summary><p>Non ancora.</p></details><details><summary>Raccogliete dati di navigazione? <span>+</span></summary><p>Non al momento.</p></details></div><a href="#supporto" title="Consulta note legali nel pacchetto completo" class="environment-link">Note legali <span aria-hidden="true">↗</span></a></div>
+ </section>
+</main>
+<footer class="site-footer"><span>OBSCURA/07</span><span>IN CODE WE TRUST</span><span>© <span id="copyright-year">2026</span> · OBSCURA/07</span><a href="#top">↑</a></footer><div class="ng-footer-legal" aria-label="Documenti legali">
+ <span>Servizio sperimentale · uso consapevole</span><a href="legal/termini.html">Termini d’uso</a><a href="legal/privacy.html">Privacy</a><a href="legal/cookie.html">Cookie e pubblicità</a>
+ <a href="webplayer/index.html">WebPlayer</a>
+ </div><p class="ng-legal-micro">Software sperimentale offerto senza garanzie convenzionali. Le limitazioni di responsabilità operano solo nei limiti di legge; restano fermi i diritti inderogabili. Il sito non carica attualmente cookie di profilazione, annunci terzi o script pubblicitari. <a href="legal/termini.html">Leggi i termini</a> e <a href="legal/cookie.html">la politica pubblicitaria</a>.</p>
+<script>(function(){'use strict';
+var menu=document.getElementById('menu-toggle'),nav=document.getElementById('navigation');
+if(menu&&nav){menu.addEventListener('click',function(){var opened=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(opened));menu.setAttribute('aria-label',opened?'Chiudi indice':'Apri indice')});nav.querySelectorAll('a').forEach(function(a){a.addEventListener('click',function(){nav.classList.remove('open');menu.setAttribute('aria-expanded','false')})});document.addEventListener('keydown',function(e){if(e.key==='Escape'&&nav.classList.contains('open')){nav.classList.remove('open');menu.setAttribute('aria-expanded','false');menu.focus()}})}
+var year=document.getElementById('copyright-year');if(year)year.textContent=String(new Date().getFullYear());
+})();</script>
+<script>(function(){'use strict';
+var layer=document.getElementById('world-glitch');
+if(!layer || (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches))return;
+var types=['t-rgb','t-scan','t-block','t-tear','t-noise','t-diag'];
+function rnd(a,b){return a+Math.random()*(b-a)}
+function schedule(){window.setTimeout(trigger,rnd(3400,12500));}
+function clear(){layer.className='world-glitch';layer.style.opacity='0';}
+function trigger(){
+ clear();
+ var pool=types.slice();
+ var count=Math.random()>.58?2:1;
+ for(var i=0;i<count;i++){var idx=(Math.random()*pool.length)|0;layer.classList.add(pool.splice(idx,1)[0]);}
+ layer.classList.add('active');
+ layer.style.setProperty('--gx',rnd(-26,26).toFixed(1)+'px');
+ layer.style.setProperty('--gy',rnd(-18,18).toFixed(1)+'px');
+ layer.style.setProperty('--sliceTop',rnd(18,72).toFixed(1)+'%');
+ layer.style.setProperty('--sliceBottom',rnd(26,84).toFixed(1)+'%');
+ layer.style.setProperty('--left',rnd(4,72).toFixed(1)+'%');
+ layer.style.setProperty('--width',rnd(8,28).toFixed(1)+'%');
+ layer.style.setProperty('--amp',rnd(.12,.46).toFixed(2));
+ layer.style.opacity=(rnd(.28,.62)).toFixed(2);
+ window.setTimeout(function(){clear();schedule();}, rnd(110,560));
+ }
+ schedule();
+})();</script><script>/* OBSCURA/07 ABYSS / V6: progressive WebGL2 ray/path tracer, no third-party libraries.
+ * Rays intersect analytic terrain, monoliths and celestial geometry; samples include
+ * stochastic area-light visibility, indirect diffuse bounce and rough reflection.
+ * No real-time full-scene unrestricted path tracing claim: two path segments max.
+ * Fallback: existing Canvas2D ABYSS renderer when WebGL2/shaders are unavailable.
+ */
+(function () {
+'use strict';
+var canvas=document.getElementById('world-canvas');
+if(!canvas || window.__OBSCURA07_FORCE_CLASSIC__ || window.location.search.indexOf('render=classic')!==-1)return;
+var reduced=!!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var gl=null;
+try { gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:false,stencil:false,preserveDrawingBuffer:false,powerPreference:'low-power'}); } catch(err){}
+if(!gl)return;
+function fallback(reason){
+  if(window.location.search.indexOf('render=classic')===-1){window.location.replace('light/index.html'+window.location.hash);return;}
+  try{if(gl){var ext=gl.getExtension('WEBGL_lose_context');if(ext)ext.loseContext();}}catch(_e){}
+  var other=document.createElement('canvas');other.id=canvas.id;other.className=canvas.className;other.setAttribute('aria-hidden','true');canvas.parentNode.replaceChild(other,canvas);canvas=other;
+  window.__OBSCURA07_TRACE_STATS__={mode:'canvas2d-fallback',reason:String(reason).slice(0,160),ready:false};
+  if(typeof window.__OBSCURA07_START_CLASSIC__==='function')window.__OBSCURA07_START_CLASSIC__();
+}
+var vertex='#version 300 es\nprecision highp float;\nvoid main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);gl_Position=vec4(p*2.-1.,0.,1.);}\n';
+var trace=`#version 300 es
+precision highp float;
+uniform vec2 uResolution;
+uniform vec2 uMouse;
+uniform float uFrame;
+uniform float uSamples;
+uniform float uTier;
+uniform sampler2D uHistory;
+out vec4 fragColor;
+const float PI=3.14159265359;
+float hash12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
+float noise2(vec2 x){vec2 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(hash12(i),hash12(i+vec2(1,0)),f.x),mix(hash12(i+vec2(0,1)),hash12(i+1.),f.x),f.y);}
+float fbm(vec2 p){float a=0.,w=.5;for(int i=0;i<3;i++){a+=w*noise2(p);p=p*2.03+5.1;w*=.5;}return a;}
+vec3 sky(vec3 d){vec3 base=mix(vec3(.024,.028,.041),vec3(.0008,.0016,.0058),smoothstep(-.08,.62,d.y));float light=pow(max(dot(d,normalize(vec3(-.56,.47,.24))),0.),34.);base+=vec3(.055,.060,.075)*light;float atmosphere=exp(-max(d.y,0.)*18.)*.024;base+=vec3(.06,.05,.11)*atmosphere;return base;}
+struct Hit{float t;vec3 n;float mat;vec3 p;};
+Hit emptyHit(){return Hit(1e5,vec3(0,1,0),0.,vec3(0));}
+void boxHit(inout Hit h,vec3 ro,vec3 rd,vec3 bmin,vec3 bmax,float mat){
+ vec3 t0=(bmin-ro)/rd,t1=(bmax-ro)/rd;
+ vec3 lo=min(t0,t1),hi=max(t0,t1);
+ float enter=max(max(lo.x,lo.y),lo.z),leave=min(min(hi.x,hi.y),hi.z);
+ if(leave>=max(enter,.002)&&enter>0.&&enter<h.t){
+  vec3 n=-sign(rd)*step(vec3(enter-.0003),lo);h.t=enter;h.n=normalize(n);h.p=ro+rd*enter;h.mat=mat;
+ }
+}
+void sphereHit(inout Hit h,vec3 ro,vec3 rd,vec3 center,float radius,float mat){
+ vec3 oc=ro-center;float b=dot(oc,rd),c=dot(oc,oc)-radius*radius;float disc=b*b-c;if(disc<0.)return;
+ float t=-b-sqrt(disc);if(t>.002&&t<h.t){h.t=t;h.p=ro+rd*t;h.n=normalize(h.p-center);h.mat=mat;}
+}
+Hit scene(vec3 ro,vec3 rd,float maxD){
+ Hit h=emptyHit();
+ if(rd.y<-.0001){float t=(-.78-ro.y)/rd.y;if(t>.002&&t<h.t){h.t=t;h.p=ro+rd*t;h.n=vec3(0,1,0);h.mat=1.;}}
+ // Portal cut in real negative space: two stone piers and one bridging lintel.
+ boxHit(h,ro,rd,vec3(-4.25,-.78,22.0),vec3(-2.05,8.8,24.5),2.);
+ boxHit(h,ro,rd,vec3(2.08,-.78,21.7),vec3(4.23,9.15,24.6),2.);
+ boxHit(h,ro,rd,vec3(-4.33,7.55,21.6),vec3(4.35,9.30,24.9),2.);
+ // Distant ruins: deliberately sparse, no floating cube spectacle.
+ boxHit(h,ro,rd,vec3(-8.0,-.78,31.0),vec3(-6.55,4.7,33.0),3.);
+ boxHit(h,ro,rd,vec3(7.0,-.78,32.0),vec3(8.8,6.1,34.0),3.);
+ boxHit(h,ro,rd,vec3(-12.,-.78,42.0),vec3(-10.5,7.5,44.0),3.);
+ boxHit(h,ro,rd,vec3(11.5,-.78,48.0),vec3(12.7,4.5,50.2),3.);
+ boxHit(h,ro,rd,vec3(-.9,-.78,46.0),vec3(.7,5.6,48.0),3.);
+ // Low broken foundations closer to camera.
+ boxHit(h,ro,rd,vec3(-11.3,-.78,13.0),vec3(-9.4,1.5,16.5),4.);
+ boxHit(h,ro,rd,vec3(9.5,-.78,15.5),vec3(11.2,1.2,18.3),4.);
+ boxHit(h,ro,rd,vec3(-13.7,-.78,19.0),vec3(-11.4,3.6,22.3),4.);
+ boxHit(h,ro,rd,vec3(11.7,-.78,23.0),vec3(14.1,3.2,26.0),4.);
+ if(h.t>maxD)return emptyHit();return h;
+}
+// Unified ray intersection: geometric flame exists inside the SAME path-tracing pass.
+// There is no fullscreen fire fragment program, framebuffer blend, or UI overlay.
+uniform float uTime;
+struct FlameHit {float t;vec3 emission;};
+float facetDepth(vec3 ro,vec3 rd,vec3 a,vec3 b,vec3 c){
+ vec3 e1=b-a,e2=c-a,p=cross(rd,e2);
+ float d=dot(e1,p);if(abs(d)<0.000001)return 1e5;
+ vec3 v=ro-a;float u=dot(v,p)/d;
+ if(u<0.||u>1.)return 1e5;
+ vec3 q=cross(v,e1);float w=dot(rd,q)/d;
+ if(w<0.||u+w>1.)return 1e5;
+ float t=dot(e2,q)/d;
+ return t>0.002?t:1e5;
+}
+void testFacet(inout FlameHit f,vec3 ro,vec3 rd,
+ vec3 a,vec3 b,vec3 c,vec3 pigment){
+ float t=facetDepth(ro,rd,a,b,c);
+ if(t<f.t){
+  // Discrete facet contrast is intentional, not volumetric fog.
+  float normalLight=0.78+0.22*abs(dot(normalize(cross(b-a,c-a)),-rd));
+  f.t=t;f.emission=pigment*normalLight;
+ }
+}
+FlameHit flameRay(vec3 ro,vec3 rd,float stoneDepth){
+ FlameHit f=FlameHit(stoneDepth,vec3(0.));
+ // Reject rays not crossing the small actual 3D volume beneath the portal.
+ if(abs(rd.z)<0.00001)return f;
+ float ta=(21.0-ro.z)/rd.z,tb=(24.8-ro.z)/rd.z;
+ float t0=max(0.0,min(ta,tb)),t1=max(ta,tb);
+ if(t1<=t0||t0>stoneDepth)return f;
+ vec3 p0=ro+rd*t0,p1=ro+rd*t1;
+ if(min(p0.x,p1.x)>2.1||max(p0.x,p1.x)<-2.1 ||
+    min(p0.y,p1.y)>3.5||max(p0.y,p1.y)<-.81)return f;
+ // Seven animated tetrahedral flames, three-dimensional and world anchored.
+ for(int i=0;i<7;i++){
+  float fi=float(i);
+  float phase=uTime*(0.86+fi*.13)+fi*2.11;
+  float sway=(sin(phase)+sin(phase*.58+fi))*.09;
+  float height=1.75+float(i%3)*.39+sin(phase*1.24)*.32;
+  float x=(fi-3.)*.37;
+  float z=22.38+sin(fi*2.6)*.42;
+  vec3 A=vec3(x-.27,-.777,z-.19);
+  vec3 B=vec3(x+.28,-.777,z-.16);
+  vec3 C=vec3(x+.06,-.777,z+.29);
+  vec3 tip=vec3(x+sway,-.777+height,z+sin(phase*.73)*.15);
+  vec3 mid=vec3(x+sway*.42,-.777+height*.59,z+.10);
+  float fracture=step(.982,hash12(vec2(fi+3.1,floor(uTime*1.9))));
+  tip.x+=fracture*.15;tip.z-=fracture*.08;
+  float jitter=(1.-fracture*.25)*(0.9+.10*sin(phase*.7));
+  vec3 edge=vec3(.29,.055,.62)*jitter;
+  vec3 face=vec3(.68,.23,1.22)*jitter;
+  vec3 core=vec3(.79,.36,1.12)*jitter;
+  testFacet(f,ro,rd,A,B,mid,edge);
+  testFacet(f,ro,rd,B,C,mid,face);
+  testFacet(f,ro,rd,C,A,mid,edge*.81);
+  testFacet(f,ro,rd,A,mid,tip,face);
+  testFacet(f,ro,rd,B,tip,mid,core);
+  testFacet(f,ro,rd,C,tip,mid,face*.82);
+  if(i<5){
+   vec3 fork=vec3(x+sway*.27+(i%2==0?-.30:.30),-.777+height*(.63+.05*sin(phase)),z+.08);
+   testFacet(f,ro,rd,A,mid,fork,face*.66);
+   testFacet(f,ro,rd,C,fork,tip,edge*.95);
+  }
+ }
+ return f;
+}
+vec3 roughNormal(vec3 p,vec3 n,float mat){
+ if(mat==1.){
+   float a=fbm(p.xz*.52),b=fbm(p.xz*.52+vec2(.07,0.)),c=fbm(p.xz*.52+vec2(0,.07));
+   return normalize(n+vec3((a-b)*1.5,0.,(a-c)*1.5));
+ }
+ float q=noise2(p.xz*1.3+p.yy*.2);return normalize(n+vec3(q-.5,0.,0.)*.06);
+}
+vec3 material(vec3 p,float mat){
+ float var=fbm(p.xz*.6+p.y*.2);
+ if(mat==1.){float mineral=smoothstep(.49,.77,var);return mix(vec3(.040,.050,.062),vec3(.125,.135,.150),mineral);}
+ if(mat==2.)return mix(vec3(.090,.105,.125),vec3(.150,.162,.178),var);
+ if(mat==3.)return mix(vec3(.052,.068,.084),vec3(.120,.132,.145),var);
+ return mix(vec3(.042,.056,.072),vec3(.105,.118,.130),var);
+}
+vec3 tangentBasis(vec3 n,vec2 seed){
+ float a=6.2831853*hash12(seed),z=sqrt(hash12(seed+7.21)),r=sqrt(max(0.,1.-z*z));
+ vec3 t=normalize(cross(n,abs(n.y)<.9?vec3(0,1,0):vec3(1,0,0)));vec3 b=cross(n,t);
+ return normalize(t*cos(a)*r+b*sin(a)*r+n*z);
+}
+vec3 shade(vec3 ro,vec3 rd,vec2 uv,vec2 seed){
+ Hit h=scene(ro,rd,140.);
+ FlameHit fire=flameRay(ro,rd,h.t);
+ if(fire.t<h.t){
+  // Identical camera, ray, depth, tonemapping and atmospheric attenuation.
+  float air=exp(-fire.t*.0045);
+  return fire.emission*air*.235; // low-key emissive facets, world-space only
+ }
+ if(h.t>9999.){
+   vec3 c=sky(rd);
+   // Physically motivated atmospheric lunar disc, no emissive purple eye.
+   float moon=dot(rd,normalize(vec3(.45,.19,.92)));moon=smoothstep(.99976,.99988,moon);
+   return c+moon*vec3(.065,.068,.082);
+ }
+ vec3 n=roughNormal(h.p,h.n,h.mat),base=material(h.p,h.mat);
+ vec3 sun=normalize(vec3(-.60,.78,.36));
+ // Finite area source: soft shadows converge with progressive samples.
+ vec3 lt=normalize(sun+vec3(hash12(seed+3.1)-.5,hash12(seed+7.7)-.5,hash12(seed+11.4)-.5)*.11);
+ float nl=max(0.,dot(n,lt));
+ float visible=1.;if(nl>0.){Hit sh=scene(h.p+n*.025,lt,130.);if(sh.t<9999.)visible=0.;}
+ float hemisphere=.11+.18*max(n.y,0.);
+ vec3 bounced=tangentBasis(n,seed+vec2(32.,18.));Hit indirect=scene(h.p+n*.03,bounced,24.);
+ vec3 indirectLight=(indirect.t<9999.)?material(indirect.p,indirect.mat)*.23:sky(bounced)*.62;
+ vec3 c=base*(hemisphere+vec3(.46,.48,.54)*nl*visible*.85+indirectLight*.24);
+ // Extremely local light transfer, never a radial on-screen haze/halo.
+ vec3 fromFire=h.p-vec3(0.,-.20,22.45);
+ float nearFire=0.46/(1.0+dot(fromFire,fromFire)*2.6);
+ c+=vec3(.15,.028,.24)*nearFire;
+ // Low, cinematic wet-stone Fresnel on the ground. A single stochastic specular ray.
+ float fresnel=pow(1.-max(0.,dot(n,-rd)),5.);
+ float metallic=h.mat==1.?(.11+fresnel*.3):(.03+fresnel*.15);
+ vec3 refl=reflect(rd,n);
+ vec3 jitter=vec3(hash12(seed+16.0)-.5,hash12(seed+17.0)-.5,hash12(seed+18.0)-.5);
+ refl=normalize(refl+jitter*(h.mat==1.?.075:.19));
+ Hit mirror=scene(h.p+n*.035,refl,120.);
+ vec3 reflectColor=(mirror.t<9999.)?material(mirror.p,mirror.mat)*.4:sky(refl);
+ c=mix(c,reflectColor,metallic*.82);
+ // Distance haze behind objects, cold atmosphere and soft horizon.
+ float fog=1.-exp(-h.t*.020);c=mix(c,sky(rd)*.88,fog*.64);
+ float grain=(hash12(seed+91.25)-.5)*.004;
+ return max(c+grain,vec3(0.));
+}
+vec3 tonemap(vec3 x){x=max(x,vec3(0));return (x*(2.51*x+.03))/(x*(2.43*x+.59)+.14);}
+void main(){
+ vec2 seed=gl_FragCoord.xy+vec2(uFrame*.711,uFrame*1.179);
+ vec2 jitter=vec2(hash12(seed),hash12(seed+19.13))-.5;
+ vec2 uv=(gl_FragCoord.xy+jitter-uResolution*.5)/uResolution.y;
+ vec3 ro=vec3(0.,2.65,-13.);
+ // Stable slow parallax, only changes when pointer settles.
+ float yaw=uMouse.x*.055,pitch=uMouse.y*.025;
+ vec3 fw=normalize(vec3(sin(yaw),-.045+pitch,cos(yaw)));
+ vec3 right=normalize(cross(fw,vec3(0,1,0))),up=cross(right,fw);
+ vec3 rd=normalize(fw*1.47+right*uv.x+up*uv.y);
+ vec3 color=tonemap(shade(ro,rd,uv,seed)*.98);
+ color=pow(color,vec3(1./2.2));
+ vec2 screen=(gl_FragCoord.xy/uResolution-.5)*2.;float vignette=1.-.47*pow(length(screen*.86),1.95);color*=vignette;
+ vec3 prev=texture(uHistory,gl_FragCoord.xy/uResolution).rgb;
+ color=mix(prev,color,1./(min(uSamples,24.)+1.));
+ fragColor=vec4(clamp(color,0.,1.),1.);
+}`;
+var present=`#version 300 es
+precision highp float;
+uniform sampler2D uImage;
+uniform vec2 uResolution;
+uniform float uTime;
+uniform vec4 uGlitch;
+out vec4 fragColor;
+float hash12(vec2 p){vec3 p3=fract(vec3(p.xyx)*.1031);p3+=dot(p3,p3.yzx+33.33);return fract((p3.x+p3.y)*p3.z);}
+float noise2(vec2 x){vec2 i=floor(x),f=fract(x);f=f*f*(3.-2.*f);return mix(mix(hash12(i),hash12(i+vec2(1,0)),f.x),mix(hash12(i+vec2(0,1)),hash12(i+1.),f.x),f.y);}
+vec2 glitchWarp(vec2 uv,float mode,float amp,float seed){
+ if(amp<=0.) return uv;
+ if(mode<.5){ float band=smoothstep(.09,.0,abs(uv.y-(.18+fract(seed*.37)*.64))); uv.x += (noise2(vec2(uv.y*65.,seed*4.))-0.5)*amp*.16*band; }
+ else if(mode<1.5){ uv.x += sin(uv.y*90.+seed*8.)*amp*.012; }
+ else if(mode<2.5){ uv += vec2((noise2(vec2(uv.y*22.,seed*3.1))-.5)*amp*.04,(noise2(vec2(uv.x*12.,seed*1.7))-.5)*amp*.012); }
+ else if(mode<3.5){ float block=floor(uv.y*18.+seed*3.); uv.x += (hash12(vec2(block,seed))-.5)*amp*.12*smoothstep(.1,.0,abs(fract(uv.y*18.+seed)-.5)); }
+ else if(mode<4.5){ uv.x += (noise2(vec2(floor(uv.y*50.),seed*6.))-0.5)*amp*.065; uv.y += (noise2(vec2(floor(uv.x*40.),seed*5.))-0.5)*amp*.010; }
+ else { uv += vec2(sin((uv.y+seed)*130.)*.008*amp,0.); }
+ return clamp(uv,0.,1.);
+}
+void main(){
+ vec2 uv=gl_FragCoord.xy/uResolution;
+ float mode=floor(uGlitch.x+.5),amp=uGlitch.y,seed=uGlitch.z;
+ vec2 sampleUV=glitchWarp(uv,mode,amp,seed);
+ vec2 split=vec2(amp*.006*(hash12(vec2(seed,1.))-0.5),0.0);
+ vec3 color=vec3(texture(uImage,sampleUV+split).r,texture(uImage,sampleUV).g,texture(uImage,sampleUV-split).b);
+ if(mode>3.5 && amp>.0){ float bars=smoothstep(.78,.98,noise2(vec2(uv.y*150.,seed*11.))); color += bars*amp*.12; }
+ if(mode>1.5 && mode<3.5){ float mask=step(.84,noise2(floor(uv*uResolution/24.)+seed*9.)); color=mix(color,color.bgr*vec3(.85,1.05,1.15),mask*amp*.35); }
+ float scan=(sin(uv.y*uResolution.y*1.05)*.5+.5)*amp*.035; color-=scan;
+ fragColor=vec4(clamp(color,0.,1.),1.);
+}
+`;
+function shader(type,src){var s=gl.createShader(type);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS)){throw Error('GLSL: '+gl.getShaderInfoLog(s));}return s;}
+function program(fs){var p=gl.createProgram();gl.attachShader(p,shader(gl.VERTEX_SHADER,vertex));gl.attachShader(p,shader(gl.FRAGMENT_SHADER,fs));gl.linkProgram(p);if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error('Link: '+gl.getProgramInfoLog(p));return p;}
+var pTrace,pPresent,textures=[],frames=[],vw=0,vh=0,counter=0,index=0,last=0,request=0,visible=true,shift=0,fireTime=0,
+  pointer={x:0,y:0,tx:0,ty:0},staticMode=reduced,slow=0,renderTime=0,scale=1,qualityFactor=1,closed=false,
+  glitch={mode:0,amp:0,seed:0,end:0,next:performance.now()+2400+Math.random()*4200};
+var mobile=window.innerWidth<=700;
+var stats={mode:'progressive-path-trace',ready:false,frames:0,samples:0,averageFrameMs:0,quality:'',resolution:[],reducedMotion:reduced,visible:true,traceBounces:2,frameLimit:24,flame:'integrated-primary-ray-emissive-facets'};window.__OBSCURA07_TRACE_STATS__=stats;
+try{pTrace=program(trace);pPresent=program(present);gl.disable(gl.DEPTH_TEST);gl.disable(gl.BLEND);}catch(err){fallback(err.message||err);return;}
+function uniform(p,name){return gl.getUniformLocation(p,name);}
+function texture(){var t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA8,vw,vh,0,gl.RGBA,gl.UNSIGNED_BYTE,null);return t;}
+function build(){
+ var small=window.innerWidth<=700;
+ mobile=small;
+ var cssW=Math.max(1,window.innerWidth),cssH=Math.max(1,window.innerHeight);
+ // Internal pixel budget makes true tracing usable on weak integrated GPUs.
+ var budget=small?46000:128000;
+ var ratio=Math.sqrt(budget/(cssW*cssH));
+ scale=Math.min(small?.54:.67,ratio)*qualityFactor;
+ vw=Math.max(64,Math.round(cssW*scale));vh=Math.max(64,Math.round(cssH*scale));
+ canvas.width=vw;canvas.height=vh;canvas.style.width=cssW+'px';canvas.style.height=cssH+'px';
+ for(var i=0;i<2;i++){if(frames[i])gl.deleteFramebuffer(frames[i]);if(textures[i])gl.deleteTexture(textures[i]);}
+ frames=[];textures=[];
+ for(var j=0;j<2;j++){
+   textures[j]=texture();frames[j]=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,frames[j]);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,textures[j],0);
+   if(gl.checkFramebufferStatus(gl.FRAMEBUFFER)!==gl.FRAMEBUFFER_COMPLETE)throw Error('Framebuffer unsupported');
+ }
+ gl.bindFramebuffer(gl.FRAMEBUFFER,null);counter=0;index=0;stats.resolution=[vw,vh];stats.quality=small?'mobile-path-trace':'desktop-path-trace';stats.samples=0;
+}
+function updateGlitch(now){
+ if(now>=glitch.next && now>=glitch.end){glitch.mode=(Math.random()*6)|0;glitch.amp=.12+Math.random()*.34;glitch.seed=Math.random()*997.;glitch.end=now+110+Math.random()*560;glitch.next=glitch.end+3400+Math.random()*11500;}
+ if(now>=glitch.end){glitch.amp=0.;}
+ return glitch;
+}
+function renderComposite(time,front){
+ gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.viewport(0,0,vw,vh);
+ gl.disable(gl.BLEND);gl.useProgram(pPresent);
+ gl.uniform2f(uniform(pPresent,'uResolution'),vw,vh);
+ var g=updateGlitch(time);
+ gl.uniform1f(uniform(pPresent,'uTime'),time*.001);
+ gl.uniform4f(uniform(pPresent,'uGlitch'),g.mode,g.amp,g.seed,0.);
+ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,textures[front]);
+ gl.uniform1i(uniform(pPresent,'uImage'),0);
+ gl.drawArrays(gl.TRIANGLES,0,3);
+}
+function draw(t){
+ request=0;if(closed||!visible||document.hidden)return;
+ var time=performance.now();
+ var mx=pointer.x,my=pointer.y;
+ if(!staticMode){pointer.x+=(pointer.tx-pointer.x)*.24;pointer.y+=(pointer.ty-pointer.y)*.24;}
+ if(Math.abs(mx-pointer.x)>.0005||Math.abs(my-pointer.y)>.0005){counter=0;}
+ if(counter>=24)return;
+ gl.viewport(0,0,vw,vh);gl.bindFramebuffer(gl.FRAMEBUFFER,frames[index]);gl.useProgram(pTrace);
+ gl.uniform2f(uniform(pTrace,'uResolution'),vw,vh);gl.uniform2f(uniform(pTrace,'uMouse'),pointer.x,pointer.y);
+ gl.uniform1f(uniform(pTrace,'uFrame'),counter+shift*31.);gl.uniform1f(uniform(pTrace,'uSamples'),counter);
+ gl.uniform1f(uniform(pTrace,'uTime'),staticMode?0.:fireTime);
+ gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,textures[1-index]);gl.uniform1i(uniform(pTrace,'uHistory'),0);
+ gl.drawArrays(gl.TRIANGLES,0,3);
+ renderComposite(time,index);
+ if(gl.getError()!==gl.NO_ERROR){closed=true;stop();fallback('WebGL draw error');return;}
+ index=1-index;counter++;stats.ready=true;stats.frames++;stats.samples=counter;
+ var duration=performance.now()-time;
+ stats.averageFrameMs=stats.averageFrameMs*.8+duration*.2;
+ // Retain the real path tracer on slower devices by lowering resolution.
+ // Do not switch to a composited imitation of the sacred fire.
+ if(!window.__OBSCURA07_FORCE_TRACE__&&!staticMode && counter===3 &&
+    stats.averageFrameMs>(mobile?135:110) && qualityFactor>.46){
+   qualityFactor=.44;build();restart();return;
+ }
+ // A bounded progressive ray-tracing burst per flame pose. Reset accumulation
+ // between poses so animated geometry never ghosts over previous frames.
+ if(!staticMode){
+   var limit=mobile?3:5;
+   if(counter<limit){
+     request=window.setTimeout(function(){requestAnimationFrame(draw);},mobile?100:60);
+   }else{
+     request=window.setTimeout(function(){fireTime=performance.now()*.001;counter=0;shift++;requestAnimationFrame(draw);},mobile?390:255);
+   }
+ }
+}
+function stop(){if(request)clearTimeout(request);request=0;}
+function restart(){if(closed||!visible||document.hidden)return;stop();counter=0;shift++;fireTime=performance.now()*.001;requestAnimationFrame(draw);}
+function move(e){if(closed||staticMode)return;var x=(e.clientX/window.innerWidth-.5)*2.,y=(e.clientY/window.innerHeight-.5)*2.;x=Math.max(-1,Math.min(1,x));y=Math.max(-1,Math.min(1,y));if(Math.abs(x-pointer.tx)+Math.abs(y-pointer.ty)>.008){pointer.tx=x;pointer.ty=y;restart();}}
+window.addEventListener('pointermove',move,{passive:true});
+window.addEventListener('resize',function(){if(closed)return;try{build();restart();}catch(e){stop();fallback(e.message||e)}},{passive:true});
+document.addEventListener('visibilitychange',function(){visible=!document.hidden;stats.visible=visible;if(visible)restart();else stop();});
+canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();closed=true;stop();fallback('WebGL context lost');},{passive:false});
+canvas.addEventListener('webglcontextrestored',function(){window.location.reload();});
+try{build();restart();}catch(e){fallback(e.message||e);}
+})();
+</script><script>/* OBSCURA/07 ABYSS / real-time low-poly alien environment. Canvas2D: zero dependencies.
+ * Original geometric artwork created for the OBSCURA/07 site.
+ */
+window.__OBSCURA07_START_CLASSIC__=function(){
+'use strict';
+var canvas=document.getElementById('world-canvas');if(!canvas)return;
+var ctx=canvas.getContext('2d',{alpha:false});if(!ctx)return;
+var reduced=!!(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+var narrow=window.innerWidth<=640;
+var w=1,h=1,dpr=1,frame=0,elapsed=0,last=0,visible=true,running=false,raf=0;
+var pointer={x:0,y:0,tx:0,ty:0},scroll=0,scrollTarget=0,needs=true,avg=0;
+var stats={ready:false,frames:0,averageFrameMs:0,reducedMotion:reduced,quality:'',visible:true};window.__OBSCURA07_WORLD_STATS__=stats;
+var skyTop='#04050b';
+function clamp(x,a,b){return Math.max(a,Math.min(b,x))}
+function noise(a,b,c){var t=Math.sin(a*12.9898+b*78.233+c*19.331)*43758.5453;return t-Math.floor(t)}
+function px(n){return n*dpr}
+function resize(){narrow=innerWidth<=640;w=Math.max(1,innerWidth);h=Math.max(1,innerHeight);dpr=Math.min(devicePixelRatio||1,narrow?1.1:1.45);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.setTransform(dpr,0,0,dpr,0,0);stats.quality=narrow?'mobile-low-poly':'desktop-low-poly';needs=true;paint(0)}
+function project(x,y,z){var den=Math.max(2,z+12);var foc=Math.min(w*.86,h*1.12);var yaw=pointer.x*.11;var pitch=pointer.y*.05;var fx=x*Math.cos(yaw)+z*Math.sin(yaw);var fz=z*Math.cos(yaw)-x*Math.sin(yaw);den=Math.max(2,fz+12);var q=foc/den;return [(w*(narrow?.52:.51))+fx*q, h*(narrow?.515:.515) -(y-2.55)*q +pitch*h*.15+Math.min(scroll*.032,45),q]}
+function polygon(pts,color){if(!pts.length)return;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.closePath();ctx.fillStyle=color;ctx.fill()}
+function line(pts,color,width){if(!pts.length)return;ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);for(var i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke()}
+function p3(list){return list.map(function(p){return project(p[0],p[1],p[2])})}
+function rect(x0,y0,z0,x1,y1,z1,c){polygon(p3([[x0,y0,z0],[x1,y0,z0],[x1,y1,z1],[x0,y1,z1]]),c)}
+function slab(cx,cz,sx,sy,sz,front,side,top){var x0=cx-sx/2,x1=cx+sx/2,z0=cz-sz/2,z1=cz+sz/2;
+ polygon(p3([[x0,0,z0],[x1,0,z0],[x1,sy,z0],[x0,sy,z0]]),front);
+ polygon(p3([[x1,0,z0],[x1,0,z1],[x1,sy,z1],[x1,sy,z0]]),side);
+ polygon(p3([[x0,sy,z0],[x1,sy,z0],[x1,sy,z1],[x0,sy,z1]]),top);
+ line(p3([[x0,0,z0],[x0,sy,z0],[x1,sy,z0]]),'rgba(169,190,188,.07)',.8)
+}
+function sky(){var grd=ctx.createLinearGradient(0,0,0,h);grd.addColorStop(0,'#03040a');grd.addColorStop(.38,'#060911');grd.addColorStop(.65,'#151822');grd.addColorStop(1,'#0a0d14');ctx.fillStyle=grd;ctx.fillRect(0,0,w,h);
+ // One muted alien satellite, not a glowing magic eye.
+ var x=w*(narrow?.71:.73)+pointer.x*14,y=h*.24+pointer.y*10,r=Math.min(w,h)*(narrow?.087:.095);
+ var glow=ctx.createRadialGradient(x,y,r*.15,x,y,r*4);glow.addColorStop(0,'rgba(122,108,188,.12)');glow.addColorStop(.23,'rgba(64,54,108,.045)');glow.addColorStop(1,'rgba(10,12,24,0)');ctx.fillStyle=glow;ctx.fillRect(x-r*4,y-r*4,r*8,r*8);
+ var orb=ctx.createRadialGradient(x-r*.33,y-r*.35,r*.03,x+r*.05,y+r*.1,r*1.3);orb.addColorStop(0,'#8a8eb2');orb.addColorStop(.42,'#555b7d');orb.addColorStop(.75,'#1e2437');orb.addColorStop(1,'#0a0e18');ctx.fillStyle=orb;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+ ctx.strokeStyle='rgba(193,205,203,.11)';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(x,y,r*1.8,r*.27,-.29,0,Math.PI*2);ctx.stroke();
+}
+function mountains(){var colors=['#0c1018','#10141c','#141924','#0f1520'];for(var layer=0;layer<colors.length;layer++){var base=h*(.52+layer*.035),ampl=h*(.17-layer*.023);var pts=[[0,h],[0,base]];var count=18;for(var i=0;i<=count;i++){var x=i*w/count;var a=noise(i,layer,1),b=noise(i+35,layer,2);var yy=base-ampl*(.22+.78*a)+b*h*.018;pts.push([x,yy])}pts.push([w,h]);polygon(pts,colors[layer])}
+ var mist=ctx.createLinearGradient(0,h*.49,0,h*.73);mist.addColorStop(0,'rgba(78,72,112,0)');mist.addColorStop(.43,'rgba(74,68,108,.05)');mist.addColorStop(1,'rgba(6,8,16,0)');ctx.fillStyle=mist;ctx.fillRect(0,h*.49,w,h*.25)
+}
+function alienGround(){var hz=h*.55;
+ var grd=ctx.createLinearGradient(0,hz,0,h);grd.addColorStop(0,'#131521');grd.addColorStop(.5,'#090c15');grd.addColorStop(1,'#03050b');ctx.fillStyle=grd;ctx.fillRect(0,hz,w,h-hz);
+ // Triangulated canyon floor with actual perspective projection and consistent winding.
+ var divisions=narrow?10:21;
+ for(var zi=44;zi>=-2;zi-=3.15){for(var xi=-divisions;xi<divisions;xi++){var x=xi*2.35,z=zi;var a=project(x,-.65,z),b=project(x+2.35,-.65,z),c=project(x,-.65,z-3.15),d=project(x+2.35,-.65,z-3.15);if(Math.max(a[1],b[1],c[1],d[1])<h*.535||Math.min(a[1],b[1],c[1],d[1])>h*1.12)continue;
+ var t=noise(xi,zi,9),t2=noise(xi,zi,12);polygon([a,b,c],t>.77?'#222b30':t>.43?'#192329':'#151e26');polygon([b,d,c],t2>.83?'#1a252b':t2>.5?'#121b24':'#101820')
+ }}
+ // Smoked reflections from satellite on fractured flat stone.
+ var g=ctx.createLinearGradient(w*.52,h*.57,w*.58,h);g.addColorStop(0,'rgba(120,102,190,.08)');g.addColorStop(.55,'rgba(98,80,154,.025)');g.addColorStop(1,'rgba(13,21,27,0)');polygon([[w*.475,h*.56],[w*.525,h*.56],[w*.71,h],[w*.36,h]],g)
+}
+function geometry(){// Boundary cliffs use layered planar silhouettes and restrained occlusion.
+ var L=[[-36,-.5,12],[-10,-.4,12],[-7,5.8,18],[-17,7.8,24],[-20,2.9,39],[-36,1.5,54]];
+ var R=[[36,-.5,12],[10,-.4,12],[8,4.8,18],[17,6.7,24],[20,2.6,39],[36,1.5,54]];
+ polygon(p3(L),'#060a12');polygon(p3(R),'#060911');
+ for(var k=0;k<7;k++){var z=17+k*6,xx=-10.2-k*2.6;slab(xx,z,1.4,1.5+noise(k,3,1)*3.5,2.3,'#182128','#11191f','#253036')}
+ for(var j=0;j<8;j++){var zz=16+j*5.5,rr=9.7+j*2.7;slab(rr,zz,1.3,1.2+noise(j,6,4)*3,1.5,'#171e24','#0d141a','#283339')}
+ // Portal monolith: two massive extruded legs, broken lintel, sculptural geometry.
+ var z=18;slab(-3.2,z,2.2,8.4,2.1,'#161a26','#090d14','#232838');slab(3.2,z+.2,2.0,8.8,2.3,'#141826','#080b12','#202535');
+ // Arch slab floating with a slight asymmetry; opening is an actual negative space.
+ var bridge=[[-4.45,7.6,17.2],[3.55,7.6,17.2],[4.12,9.1,17.2],[-4.5,9.35,17.2]];
+ polygon(p3(bridge),'#171b28');polygon(p3([[3.55,7.6,17.2],[3.55,7.6,19.8],[4.12,9.1,19.8],[4.12,9.1,17.2]]),'#090d15');polygon(p3([[-4.5,9.35,17.2],[4.12,9.1,17.2],[4.12,9.1,19.8],[-4.5,9.35,19.8]]),'#242a37');
+ // Cold specular accent along top edge, almost invisible until in motion.
+ line(p3([[-4.45,9.33,17.18],[4.12,9.1,17.18]]),'rgba(140,116,220,.16)',1.1);
+ // Receding monoliths visible in the opening.
+ slab(-.45,34,1.4,4.2,1.1,'#283439','#182227','#354348');slab(1.3,39,.9,3.3,.9,'#223039','#152026','#334146');
+ // cracked ground path toward monolith
+ for(var i=0;i<7;i++){var p=project(-1.8+i*.5,-.64,5+i*2.9),q=project(-1.2+i*.46,-.64,6.8+i*2.9);line([p,q],'rgba(109,135,135,.14)',.8)}
+ // lone scale-mark without portrait or animated human figure
+ var s=project(1.1,0,10),s2=project(1.1,1.18,10);ctx.strokeStyle='#080e14';ctx.lineWidth=3.3;ctx.beginPath();ctx.moveTo(s[0],s[1]);ctx.lineTo(s2[0],s2[1]);ctx.stroke();ctx.fillStyle='#0b1015';ctx.beginPath();ctx.arc(s2[0],s2[1]-4,3.2,0,Math.PI*2);ctx.fill();
+}
+
+function haze(){var fog=ctx.createLinearGradient(0,h*.45,0,h*.9);fog.addColorStop(0,'rgba(88,82,128,0)');fog.addColorStop(.35,'rgba(80,74,122,.05)');fog.addColorStop(.60,'rgba(86,70,132,.032)');fog.addColorStop(1,'rgba(3,5,10,0)');ctx.fillStyle=fog;ctx.fillRect(0,h*.45,w,h*.46);var edge=ctx.createRadialGradient(w*.5,h*.45,h*.1,w*.5,h*.45,Math.max(w,h)*.8);edge.addColorStop(0,'rgba(2,3,7,0)');edge.addColorStop(1,'rgba(0,0,2,.84)');ctx.fillStyle=edge;ctx.fillRect(0,0,w,h);
+ // Inscribed spatial ambient light without blooms/particles.
+ var reflection=ctx.createLinearGradient(w*.46,h*.53,w*.54,h);reflection.addColorStop(0,'rgba(146,112,210,.040)');reflection.addColorStop(1,'rgba(45,66,72,0)');polygon([[w*.48,h*.57],[w*.52,h*.57],[w*.61,h],[w*.38,h]],reflection)
+}
+function paint(ms){if(!ctx)return;var t=performance.now();ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);sky();mountains();alienGround();geometry();haze();stats.ready=true;stats.frames++;stats.averageFrameMs=stats.averageFrameMs*.85+(performance.now()-t)*.15;stats.visible=visible;needs=false}
+function loop(t){raf=0;if(document.hidden||!visible)return;if(!last)last=t;var cap=narrow?1000/16:1000/24;if(t-last>=cap){last=t;pointer.x+=(pointer.tx-pointer.x)*.045;pointer.y+=(pointer.ty-pointer.y)*.045;scroll+=(scrollTarget-scroll)*.12;paint(t)}raf=requestAnimationFrame(loop)}
+function start(){if(reduced)return;if(!raf&&visible&&!document.hidden){last=0;raf=requestAnimationFrame(loop)}}
+function stop(){if(raf)cancelAnimationFrame(raf);raf=0}
+function onMove(e){if(reduced)return;pointer.tx=clamp((e.clientX/w-.5)*2,-1,1);pointer.ty=clamp((e.clientY/h-.5)*2,-1,1)}
+window.addEventListener('pointermove',onMove,{passive:true});window.addEventListener('resize',resize,{passive:true});window.addEventListener('scroll',function(){scrollTarget=window.scrollY||0},{passive:true});document.addEventListener('visibilitychange',function(){if(document.hidden)stop();else start()});
+resize();start();
+};
+if(!window.__OBSCURA07_TRACE_STATS__ || window.__OBSCURA07_TRACE_STATS__.mode!=='progressive-path-trace')window.__OBSCURA07_START_CLASSIC__();
+</script><script id="ng-v7-sponsor">
+(() => {
+ 'use strict';
+ const SPONSORS = Object.freeze([
+  /* Only signed/verified HTTPS direct-sponsor entries. Do not add ad network scripts here.
+     {title:'Partner autorizzato', description:'Messaggio contrattualmente approvato.', url:'https://partner.example/'} */
+ ]);
+ const panel=document.getElementById('ng-sponsor');
+ if(!panel) return;
+ const approved=SPONSORS.filter(x => {
+  try {const u=new URL(x.url);return u.protocol==='https:' && !u.username && !u.password && x.title.length<90 && x.description.length<280;}
+  catch {return false;}
+ });
+ if(!approved.length)return;
+ const sponsor=approved[Math.floor(Math.random()*approved.length)];
+ document.getElementById('ng-sponsor-title').textContent=sponsor.title;
+ document.getElementById('ng-sponsor-description').textContent=sponsor.description;
+ const link=document.getElementById('ng-sponsor-url');link.href=sponsor.url;panel.hidden=false;
+ let closed=false;
+ const dismiss=()=>{if(closed)return;closed=true;panel.hidden=true;link.removeAttribute('href');};
+ document.getElementById('ng-sponsor-dismiss').addEventListener('click',dismiss,{once:true});
+ // Direct, non-tracking sponsor only. No timed network ad refresh or fake impressions.
+ setTimeout(dismiss,20000);
+})();
+</script><script src="assets/embed-bridge.js" defer></script>
+</body></html>
