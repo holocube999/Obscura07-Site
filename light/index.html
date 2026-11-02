@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#05040a"><meta name="referrer" content="no-referrer">
+<meta name="description" content="OBSCURA/07 — software indipendente. Un segnale nell'ombra.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'">
+<title>OBSCURA/07 · LIGHT</title>
+<style>
+:root{color-scheme:dark;--bg:#05040a;--panel:#121019;--soft:#211e2a;--edge:#49316e;--accent:#8258b8;--text:#d7d3e6;--muted:#a79fbb}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:#b5a7e8}a:focus-visible{outline:2px solid #b5a7e8;outline-offset:4px}
+.header{position:absolute;inset:0 0 auto;z-index:3;display:flex;align-items:center;justify-content:space-between;padding:23px clamp(20px,6vw,90px)}
+.brand{font:600 19px/1 ui-monospace,Consolas,monospace;color:var(--text);text-decoration:none;letter-spacing:-.08em}.brand em{font-style:normal;color:#b5a7e8}.header nav{display:flex;gap:18px;align-items:center}.header nav a{text-decoration:none;font:11px ui-monospace,Consolas,monospace;letter-spacing:.08em}
+.hero{min-height:85svh;position:relative;display:flex;align-items:center;justify-content:center;overflow:hidden;isolation:isolate;background:radial-gradient(ellipse at 50% 68%,#0f0c1a 0%,#070611 33%,#03040a 78%)}
+.moon{position:absolute;right:17%;top:14%;width:clamp(22px,6vw,55px);aspect-ratio:1;border-radius:100%;background:radial-gradient(circle at 35% 30%,#686c7c,#2b2b41 70%,#10121d);opacity:.5}
+.scene{position:absolute;inset:10% 0 0;pointer-events:none}.ground{position:absolute;bottom:0;left:-8%;width:116%;height:32%;background:linear-gradient(0deg,#04040a,#0e0d16 42%,transparent);clip-path:polygon(0 40%,15% 29%,28% 32%,40% 21%,50% 25%,65% 14%,79% 29%,100% 12%,100% 100%,0 100%)}
+.pillar{position:absolute;bottom:26%;width:clamp(44px,8vw,100px);height:31%;background:linear-gradient(110deg,#161723,#242635 30%,#10121d 61%,#090a13);filter:brightness(.78)}.pillar.left{left:calc(50% - clamp(105px,14vw,200px));transform:skewY(-1.2deg)}.pillar.right{right:calc(50% - clamp(105px,14vw,200px));transform:skewY(1.3deg)}
+.bridge{position:absolute;left:calc(50% - clamp(105px,14vw,200px));width:clamp(210px,28vw,400px);height:clamp(40px,6vw,80px);bottom:calc(26% + 31% - 6px);background:linear-gradient(130deg,#282839,#171724 70%,#11121d);clip-path:polygon(0 11%,94% 0%,100% 95%,0 100%);filter:brightness(.8)}
+.flames{position:absolute;left:50%;bottom:25%;width:88px;height:76px;transform:translateX(-50%);opacity:.55}
+.flames i{position:absolute;bottom:0;width:28%;background:linear-gradient(to top,#31174e,#6b36a1 48%,#9871ba 70%,#a994c7);clip-path:polygon(0 100%,8% 65%,16% 50%,25% 64%,43% 15%,56% 57%,83% 38%,100% 100%)}.flames i:nth-child(1){height:51px;left:0}.flames i:nth-child(2){height:68px;left:21%;transform:scaleX(.93)}.flames i:nth-child(3){height:60px;left:45%;transform:scaleX(1.12)}.flames i:nth-child(4){height:39px;left:73%}
+.title{position:relative;z-index:2;text-align:center;margin-top:-13%;padding:20px;text-shadow:0 5px 30px #000d}.title h1{font:400 clamp(46px,10vw,130px)/1.1 ui-monospace,Consolas,monospace;letter-spacing:-.11em;margin:0}.title p{font:11px ui-monospace,Consolas,monospace;letter-spacing:.38em;color:#c6c1d5;margin:18px 0}
+.content{padding:70px clamp(20px,7vw,130px);max-width:1200px;margin:auto}.eyebrow{font:11px ui-monospace,Consolas,monospace;letter-spacing:.2em;color:var(--muted)}h2{font-size:clamp(31px,5vw,64px);font-weight:500;letter-spacing:-.05em;margin:.2em 0 .3em}.tagline{color:#b3adbe;max-width:45ch}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin:45px 0}.card{background:linear-gradient(130deg,#181422,#0b0a11);border:1px solid #49316e66;border-radius:8px;min-height:150px;padding:25px}.card strong{display:block;font-weight:500;margin:0 0 8px}.card small{color:var(--muted)}.cta{display:inline-block;padding:10px 17px;border:1px solid #8258b8;border-radius:6px;text-decoration:none;background:#211e2a;margin:15px 0 4px}
+footer{border-top:1px solid #49316e66;max-width:1200px;margin:40px auto 0;padding:25px clamp(20px,7vw,130px) 40px;display:flex;gap:16px;flex-wrap:wrap;font:11px/1.6 ui-monospace,Consolas,monospace;color:#ada3be}
+footer a{text-decoration:none}small.note{display:block;color:#938ca6;margin-top:25px;max-width:70ch}
+@media(max-width:650px){.cards{grid-template-columns:1fr}.title{margin-top:-30%}.header{padding:20px}.header nav{gap:12px}.hero{min-height:73svh}.flames{transform:translateX(-50%) scale(.8)}.pillar{bottom:21%}.bridge{bottom:calc(21% + 31% - 6px)}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style></head><body>
+<header class="header"><a class="brand" href="../index.html">◢ <em>OBSCURA/07</em></a><nav><a href="#archivio">ARCHIVIO</a><a href="../webplayer/index.html">WEBPLAYER</a><a href="../index.html">3D ↗</a></nav></header>
+<main><section class="hero" aria-label="Portale alieno stilizzato senza WebGL"><div class="scene" aria-hidden="true"><div class="moon"></div><div class="ground"></div><div class="pillar left"></div><div class="pillar right"></div><div class="bridge"></div><div class="flames"><i></i><i></i><i></i><i></i></div></div><div class="title"><h1>OBSCURA/07</h1><p>IN CODE WE TRUST</p></div></section>
+<section class="content"><span class="eyebrow">SOFTWARE / INDEPENDENT</span><h2>Dal nulla.</h2><p class="tagline">Sistemi. Giochi. Strumenti.</p><a class="cta" href="../webplayer/index.html">▶ Avvia WebPlayer</a></section>
+<section class="content" id="archivio"><span class="eyebrow">ARCHIVIO / CLASSIFIED</span><h2>Nell'ombra.</h2><div class="cards"><div class="card"><strong>Segnale</strong><small>Non ancora.</small></div><div class="card"><strong>Forma</strong><small>Prima il codice.</small></div><div class="card"><strong>Tempo</strong><small>Senza countdown.</small></div></div><small class="note">Modalità LIGHT: niente WebGL, video, tracker o codice di terzi. Le condizioni d'uso del WebPlayer sono consultabili dalla sua pagina.</small></section></main>
+<footer><span>OBSCURA/07 · ALIAS TEMPORANEO</span><a href="../legal/termini.html">Termini</a><a href="../legal/privacy.html">Privacy</a><a href="../legal/cookie.html">Cookie</a><span>© 2026</span></footer><script src="../assets/embed-bridge.js" defer></script>
+</body></html>
