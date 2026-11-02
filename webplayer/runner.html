@@ -1,0 +1,13 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval'; style-src 'unsafe-inline'; img-src data: blob:; font-src data:; media-src data: blob:; connect-src 'none'; form-action 'none'; worker-src 'none'; frame-src 'none'; object-src 'none'; base-uri 'none'"><title>Isolated game runner</title></head><body style="margin:0;background:#09080D;color:#D7D3E6"><script>
+'use strict';
+function handleMessage(event){
+  // Verify origin and parent window. This document is sandboxed to opaque origin.
+  if(event.source!==window.parent || event.origin!==new URL(location.href).origin)return;
+  const payload=event.data;
+  if(!payload||payload.type!=='obscura-runner-load-v1'||typeof payload.html!=='string'||payload.html.length>12*1024*1024)return;
+  window.removeEventListener('message',handleMessage);
+  const cleaned=payload.html.replace(/<base\b[^>]*>/gi,'').replace(/<meta\s+http-equiv\s*=\s*['"]?refresh[^>]*>/gi,'');
+  document.open();document.write(cleaned);document.close();
+}
+window.addEventListener('message',handleMessage);
+</script></body></html>
