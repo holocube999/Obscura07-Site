@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer"><meta name="theme-color" content="#09080d">
+<title>OBSCURA/07 · Sellone Viewer</title>
+<style>
+:root{color-scheme:dark;font:15px/1.5 system-ui,Arial,sans-serif;background:#09080d;color:#e1dae9}
+*{box-sizing:border-box}body{max-width:1100px;margin:auto;padding:clamp(16px,3vw,40px)}
+a{color:#bdb0eb}h1{font-size:clamp(26px,5vw,48px);letter-spacing:-.04em;margin:24px 0 4px}
+small,.muted{color:#ada5b5}.top{display:flex;gap:20px;justify-content:space-between;align-items:center}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:24px 0}
+.card{background:#15131d;border:1px solid #393047;border-radius:13px;padding:20px}
+.card a{display:inline-block;padding:9px 14px;margin-top:9px;background:#493164;border-radius:7px;text-decoration:none}
+#empty{border-left:3px solid #8568a7;padding:16px;background:#15131d}
+</style></head><body>
+<header class="top"><a href="../index.html">← OBSCURA/07</a><a href="../webplayer/index.html">WebPlayer</a></header>
+<h1>SELLONE VIEWER</h1><p class="muted">Catalogo pubblico gestito su GitHub. Solo le build autorizzate e realmente pubblicate sono avviabili da questo sito.</p>
+<div id="status" class="muted" role="status">Lettura catalogo GitHub…</div>
+<main id="projects" class="grid"></main><div id="empty" hidden>Non sono state ancora pubblicate build giocabili. I repository privati restano privati e il Viewer locale continua a funzionare in Sellone.</div>
+<script>
+'use strict';
+const status=document.getElementById('status');
+const list=document.getElementById('projects');
+const empty=document.getElementById('empty');
+function addText(node,tag,value){const el=document.createElement(tag);el.textContent=value;node.append(el);return el}
+function publicUrl(url){
+ try{const u=new URL(url,location.origin);return u.protocol==='https:'&&
+    (u.hostname==='nullgod.tech'||u.hostname==='holocube999.github.io')?u.href:null}
+ catch{return null}
+}
+async function refresh(){
+ try{
+  const response=await fetch('../catalog.json',{cache:'no-store'});
+  if(!response.ok)throw Error('HTTP '+response.status);
+  const catalog=await response.json();
+  if(catalog.schema!==1||!Array.isArray(catalog.projects))throw Error('Catalogo non valido');
+  list.replaceChildren();let published=0;
+  for(const item of catalog.projects){
+    if(typeof item!=='object'||item===null)continue;
+    const url=publicUrl(item.url||'');
+    if(!url||item.published!==true)continue;
+    const card=document.createElement('article');card.className='card';
+    addText(card,'h2',String(item.title||'Progetto').slice(0,100));
+    addText(card,'p',String(item.description||'Anteprima pubblicata').slice(0,240));
+    const link=addText(card,'a','▶ Apri Viewer');link.href=url;link.rel='noopener noreferrer';
+    list.append(card);published++;
+  }
+  status.textContent=published+' build pubblicate su GitHub';empty.hidden=published>0;
+ }catch(err){status.textContent='Catalogo non disponibile: '+err.message;empty.hidden=false}
+}
+refresh();
+</script><script src="../assets/embed-bridge.js" defer></script></body></html>
