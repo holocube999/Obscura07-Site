@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'viewer/**'
+      - 'webplayer/**'
       - 'catalog.json'
       - 'index.html'
       - 'tests/viewer.test.mjs'
@@ -18,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify no-npm JavaScript syntax
-        run: node --check viewer/catalog.js
+        run: |
+          for file in viewer/catalog.js viewer/github-runtime.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js; do
+            node --check "$file"
+          done
       - name: Verify playable assets, public deep-links, and proprietary media gate
         run: node --test tests/viewer.test.mjs
