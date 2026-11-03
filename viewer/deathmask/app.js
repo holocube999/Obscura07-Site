@@ -12,7 +12,7 @@ const BLOB={
   disk2:{sha:"d687da07348e43bffc2d06fe8713c02ab374c100",size:901120},
   kick:{sha:"333529a90a9b6cc017eb9a0f8d7276fb063f669d",size:524288}
 };
-const DB="sellone-deathmask-private-media-v1",STORE="auth";
+const DB="sellone-deathmask-local-originals-v2",STORE="media";
 const $=id=>document.getElementById(id);
 const elements={
   form:$("auth-form"),token:$("gh-token"),remember:$("remember"),
@@ -34,7 +34,7 @@ function setReady(ok){
 function vault(){
   return new Promise((resolve,reject)=>{
     const request=indexedDB.open(DB,1);
-    request.onupgradeneeded=()=>{request.result.createObjectStore(STORE)};
+    request.onupgradeneeded=()=>request.result.createObjectStore(STORE);
     request.onsuccess=()=>resolve(request.result);
     request.onerror=()=>reject(request.error);
   });
@@ -42,7 +42,8 @@ function vault(){
 async function dbGet(name){
   const db=await vault();
   try{return await new Promise((ok,bad)=>{
-    const tx=db.transaction(STORE,"readonly"),req=tx.objectStore(STORE).get(name);
+    const tx=db.transaction(STORE,"readonly");
+    const req=tx.objectStore(STORE).get(name);
     req.onsuccess=()=>ok(req.result||null);req.onerror=()=>bad(req.error);
   });}finally{db.close()}
 }
@@ -62,26 +63,26 @@ async function dbClear(){
     tx.oncomplete=ok;tx.onerror=()=>bad(tx.error);
   });}finally{db.close()}
 }
-async function saveToken(token){
-  const key=await crypto.subtle.generateKey(
-    {name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
-  const iv=crypto.getRandomValues(new Uint8Array(12));
-  const cipher=await crypto.subtle.encrypt({
-    name:"AES-GCM",iv,additionalData:encoder.encode("Sellone-owned-media-v1")
-  },key,encoder.encode(token));
-  await dbPut("device-key",key);
-  await dbPut("device-sealed-token",{version:1,iv:Array.from(iv),cipher:Array.from(new Uint8Array(cipher))});
+/* For security, GitHub credentials are NEVER persisted. The user-owned
+ * original media are cached on this specific browser instead. The token
+ * is discarded before the third-party EmulatorJS script is loaded.
+ */
+async function saveMedia(m){
+  await dbPut("owned-disks",{schema:2,disk1:m.disk1,disk2:m.disk2,kick:m.kick});
 }
-async function restoreToken(){
-  const key=await dbGet("device-key"),record=await dbGet("device-sealed-token");
-  if(!key||!record||record.version!==1)return null;
-  try{
-    const clear=await crypto.subtle.decrypt({
-      name:"AES-GCM",iv:new Uint8Array(record.iv),
-      additionalData:encoder.encode("Sellone-owned-media-v1")
-    },key,new Uint8Array(record.cipher));
-    return new TextDecoder().decode(clear);
-  }catch(e){await dbClear();return null}
+async function restoreMedia(){
+  const record=await dbGet("owned-disks");
+  if(!record||record.schema!==2)return null;
+  const restored={};
+  for(const [key,recordBlob] of Object.entries(BLOB)){
+    const bytes=record[key];
+    if(!(bytes instanceof Uint8Array)||bytes.length!==recordBlob.size){
+      await dbClear();return null;
+    }
+    await checkGitObject(bytes,recordBlob.sha);
+    restored[key]=bytes;
+  }
+  return restored;
 }
 async function getGithub(route){
   if(!githubToken)throw Error("Token GitHub non presente.");
@@ -173,13 +174,13 @@ async function connectAndPlay(token,remember){
     show("Recupero Kickstart privata (SHA verificato)…");
     const kick=await fetchMedia("kick");
     media={disk1,disk2,kick};
-    if(remember)await saveToken(githubToken);
-    elements.token.value="";
-    show("Due ADF e Kickstart autentici verificati. Avvio disco 1…");
+    if(remember)await saveMedia(media);
+    githubToken=null;elements.token.value="";
+    show("Due ADF e Kickstart verificati e pronti sul dispositivo. Avvio disco 1…");
   }catch(err){
     media=null;show("Caricamento privato non riuscito: "+String(err.message||err),true);
     return;
-  }finally{busy=false;setReady(!!media)}
+  }finally{githubToken=null;busy=false;setReady(!!media)}
   await bootDisk("disk1");
 }
 elements.form.addEventListener("submit",async event=>{
@@ -195,12 +196,12 @@ elements.stop.addEventListener("click",()=>{
 elements.forget.addEventListener("click",async()=>{
   cleanupFrame();
   media=null;githubToken=null;elements.token.value="";
-  try{await dbClear();show("Credenziali dimenticate su questo dispositivo. Media rimossi dalla sessione.");}
+  try{await dbClear();show("ADF e Kickstart eliminati dalla cache locale. Nessun token era stato salvato.");}
   catch(e){show("Errore nella pulizia delle credenziali: "+String(e.message||e),true)}
   setReady(false);
 });
 window.addEventListener("message",event=>{
-  if(event.source!==elements.frame.contentWindow||event.origin!=="null"||
+  if(event.source!==elements.frame.contentWindow||event.origin!==location.origin||
      !event.data||event.data.type!=="DM_EMU_STATUS")return;
   if(event.data.stage==="error")show(String(event.data.message||"Errore PUAE"),true);
   else show(String(event.data.message||"Amiga: caricamento…"));
@@ -212,11 +213,13 @@ window.addEventListener("pagehide",()=>{
 });
 (async()=>{
   try{
-    const remembered=await restoreToken();
-    if(remembered){
-      show("Accesso privato salvato nel browser. Caricamento automatico dei dischi originali…");
-      await connectAndPlay(remembered,false);
+    const cached=await restoreMedia();
+    if(cached){
+      media=cached;
+      show("ADF originali e Kickstart ripristinati dal dispositivo. Avvio automatico senza scegliere file né reinserire il token…");
+      setReady(true);
+      await bootDisk("disk1");
     }
-  }catch(err){show("Archivio locale non disponibile: "+String(err.message||err),true)}
+  }catch(err){show("Media salvati non leggibili: "+String(err.message||err)+". Collega GitHub per sincronizzare nuovamente.",true)}
 })();
 })();

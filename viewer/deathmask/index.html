@@ -39,15 +39,15 @@ em{font-style:normal;color:#e2c79e}
 </div>
 <a href="../">← Catalogo Sellone</a>
 </header>
-<div class="notice"><strong>DIRITTI E PRIVACY:</strong> gli ADF originali e la Kickstart appartengono all'archivio privato del proprietario. Non sono distribuiti da questo sito. Il tuo token di sola lettura permette al browser di recuperarli direttamente da GitHub; non viene inviato al server del sito o all'emulatore. Il porting 68000 è ancora in sviluppo, non esiste un ADF di porting certificato.</div>
+<div class="notice"><strong>DIRITTI E PRIVACY:</strong> gli ADF originali e la Kickstart appartengono all'archivio privato del proprietario. Non sono distribuiti da questo sito. Il tuo token di sola lettura permette al browser di recuperarli direttamente da GitHub; viene scartato prima di avviare l'emulatore e non viene salvato. Il porting 68000 è ancora in sviluppo, non esiste un ADF di porting certificato.</div>
 <section class="card">
 <h2>Amiga originale · avvio senza inserire dischetti</h2>
-<p class="muted small">Sono già archiviati nel ramo privato di sviluppo i due ADF e la ROM. Inserisci una sola volta un token GitHub fine-grained con accesso in sola lettura ai Contents di DeathMask-Gloom-Amiga; puoi conservarlo cifrato su questo dispositivo. Il sito non contiene alcun file commerciale.</p>
+<p class="muted small">Sono già archiviati nel ramo privato di sviluppo i due ADF e la ROM. Inserisci una sola volta un token GitHub fine-grained con accesso in sola lettura a DeathMask-Gloom-Amiga: i dischi vengono memorizzati esclusivamente nel browser per i successivi avvii automatici. Il token non viene salvato. Il sito non contiene file commerciali.</p>
 <form id="auth-form" class="row" autocomplete="off">
 <input id="gh-token" type="password" placeholder="GitHub token (fine-grained, Contents: read)" autocomplete="off" spellcheck="false" aria-label="Token GitHub privato">
 <button id="connect" type="submit">Collega e avvia Death Mask</button>
-<label class="small"><input id="remember" type="checkbox" checked> Ricorda su questo dispositivo</label>
-<button type="button" id="forget">Dimentica token</button>
+<label class="small"><input id="remember" type="checkbox" checked> Ricorda ADF e ROM sul dispositivo</label>
+<button type="button" id="forget">Cancella dati locali</button>
 </form>
 <div id="status" role="status" aria-live="polite">Pronto. Il laboratorio browser sottostante funziona senza login.</div>
 <div class="row" style="margin:12px 0">
@@ -55,8 +55,8 @@ em{font-style:normal;color:#e2c79e}
 <button id="boot2" disabled>↻ Avvia disco 2</button>
 <button id="stop" disabled>■ Ferma emulatore</button>
 </div>
-<iframe id="emu-frame" src="about:blank" title="Emulatore Amiga isolato e senza accesso al token" sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads" allow="fullscreen; gamepad" referrerpolicy="no-referrer"></iframe>
-<p class="muted small">L'emulatore viene eseguito in una sandbox con origine isolata. Il secondo disco è disponibile senza caricare file manualmente; il cambio disco in questa prima integrazione riavvia l'istanza. Se qualcosa non parte, il pannello mostra un errore anziché una schermata bianca.</p>
+<iframe id="emu-frame" src="about:blank" title="Emulatore Amiga; credenziali cancellate prima dell'avvio" sandbox="allow-scripts allow-same-origin allow-forms allow-pointer-lock allow-downloads" allow="fullscreen; gamepad" referrerpolicy="no-referrer"></iframe>
+<p class="muted small">L'emulatore non riceve alcun token; può accedere alla memoria locale del browser per i salvataggi. Il secondo disco è disponibile senza caricare file manualmente; il cambio disco in questa prima integrazione riavvia l'istanza. Se qualcosa non parte, il pannello mostra un errore anziché una schermata bianca.</p>
 </section>
 <section class="card">
 <h2>Playtest Lab · avviabile pubblicamente</h2>
