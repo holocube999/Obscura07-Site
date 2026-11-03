@@ -91,7 +91,8 @@ function bridgeHtml(html){
  parent.postMessage({type:'SELLONE_SYNC_READY_V1',channel:channel,side:'js'},'*');
 })()`.replace('CHANNEL',JSON.stringify(syncChannel));
  const tag='<script>'+bridge+'</script>';
- return /<\/body\s*>/i.test(html)?html.replace(/<\/body\s*>/i,tag+'</body>'):html+tag;
+ const idx=html.toLowerCase().lastIndexOf('</body>');
+ return idx>=0?html.slice(0,idx)+tag+html.slice(idx):html+tag;
 }
 function showJS(result){
  $('playframe').removeAttribute('src');
