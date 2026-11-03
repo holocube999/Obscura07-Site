@@ -8,6 +8,7 @@ on:
       - 'catalog.json'
       - 'index.html'
       - 'tests/viewer.test.mjs'
+      - 'tests/viewer.smoke.test.mjs'
       - '.github/workflows/verify-viewer.yml'
   workflow_dispatch:
 permissions:
@@ -24,4 +25,4 @@ jobs:
             node --check "$file"
           done
       - name: Verify playable assets, public deep-links, and proprietary media gate
-        run: node --test tests/viewer.test.mjs
+        run: node --test tests/viewer.test.mjs tests/viewer.smoke.test.mjs
