@@ -52,7 +52,7 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
 });
 test('GitHub engine verifies full revision and blob SHA, vault does not enter game iframe',()=>{
  const gh=read('viewer/github-runtime.js');
- for(const fragment of ['commits/main','git/trees/','contents/','crypto.subtle.digest','SHA-1','checkBlob(bytes','PBKDF2','AES-GCM','discoverMedia','loadMedia','setToken','unlock'])
+ for(const fragment of ['commits/','default_branch','git/trees/','contents/','crypto.subtle.digest','SHA-1','checkBlob(bytes','PBKDF2','AES-GCM','discoverMedia','loadMedia','setToken','unlock'])
   assert.ok(gh.includes(fragment),fragment);
  assert.ok(gh.includes("headers.Authorization='Bearer '+token"));
  assert.ok(gh.includes("credentials:'omit'"));
@@ -73,6 +73,36 @@ test('generic PUAE and VICE engines load ADF/D64/T64/PRG only from session cache
  assert.ok(bridge.includes('cache.delete(url)'));
  assert.ok(bridge.includes('serviceWorker.register'));
 });
+test('JS conversions get isolated JS, original, and optional linked split-screen',()=>{
+ const html=read('viewer/index.html'),controller=read('viewer/catalog.js');
+ for(const mode of ['js','original','both','source'])assert.ok(html.includes('data-view="'+mode+'"'),mode);
+ for(const id of ['jsPane','originalPane','originalStage','linkedInput','restartPair','syncFeedback','sourcePane'])
+  assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(html.includes('sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
+ assert.ok(!html.includes('allow-same-origin'));
+ assert.ok(controller.includes("next==='both'"));
+ assert.ok(controller.includes("view==='both'"));
+ assert.ok(controller.includes("syncChannel=newChannel()"));
+ assert.ok(controller.includes('SELLONE_SYNC_INPUT_V1'));
+ assert.ok(controller.includes('source===Retro.frame()?.contentWindow'));
+ assert.ok(controller.includes("relay(event.data,source==='js'?'original':'js')"));
+ assert.ok(controller.includes('GH.discoverFiles('));
+ assert.ok(controller.includes('GH.loadText('));
+ assert.ok(controller.includes('sourcePreview'));
+ assert.ok(controller.includes('syncReady'));
+ assert.ok(controller.includes('Retro.start({media:disk,bios:kick,title:selected.title,host,onStatus:showStatus,channel:syncChannel})'));
+ assert.ok(controller.includes('showJS(result)'));
+ assert.ok(!controller.includes("$('playarea').replaceChildren($('playframe'))"));
+ const retro=read('viewer/retro/emu.js'),runner=read('viewer/retro-runtime.js');
+ assert.ok(retro.includes('SELLONE_SYNC_READY_V1'));
+ assert.ok(retro.includes('SELLONE_SYNC_INPUT_V1'));
+ assert.ok(retro.includes('KeyboardEvent('));
+ assert.ok(retro.includes("event.origin!==location.origin"));
+ assert.ok(runner.includes('channel:syncChannel')===false); // channel is passed in by caller
+ assert.ok(runner.includes("channel=null"));
+ assert.ok(runner.includes("frame:()=>session?.frame||null"));
+});
+
 test('legacy WebPlayer redirects to the unified catalog, no second UI',()=>{
  const legacy=read('webplayer/index.html'),home=read('index.html');
  assert.ok(legacy.includes("location.replace(url.href)"));
