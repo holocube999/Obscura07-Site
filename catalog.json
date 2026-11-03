@@ -1,14 +1,368 @@
 {
-  "schema": 1,
+  "schema": 2,
   "site": "OBSCURA/07",
-  "visibility": "public-only",
+  "visibility": "public-builds-only",
+  "note": "Il catalogo espone solo titoli; file privati, token, ROM e ADF non vengono pubblicati.",
   "projects": [
     {
-      "id": "deathmask-amiga-dev",
-      "title": "Death Mask Amiga · Playtest remoto",
-      "description": "Playtest browser pubblico; emulatore originale Amiga opzionale con ADF/Kickstart caricati dal tuo repository privato tramite autenticazione GitHub. Porting 68000 in sviluppo.",
+      "id": "topino",
+      "repo": "topino",
+      "title": "topino",
+      "kind": "Gioco",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "PocketJS-NativeServer",
+      "repo": "PocketJS-NativeServer",
+      "title": "PocketJS-NativeServer",
+      "kind": "Sistema",
+      "description": "Builder e server Android",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "death-mask-enhanced",
+      "repo": "death-mask-enhanced",
+      "title": "death-mask-enhanced",
+      "kind": "Gioco",
+      "description": "Death Mask · Versioni evolute",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "holo-crm",
+      "repo": "holo-crm",
+      "title": "holo-crm",
+      "kind": "Archivio",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "deathmask",
+      "repo": "deathmask",
+      "title": "deathmask",
+      "kind": "Gioco",
+      "description": "Archivio Death Mask",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "reverse-eng",
+      "repo": "reverse-eng",
+      "title": "reverse-eng",
+      "kind": "Archivio",
+      "description": "Archivio tecnico, non un gioco",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "synd",
+      "repo": "synd",
+      "title": "synd",
+      "kind": "Gioco",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "rhunter",
+      "repo": "rhunter",
+      "title": "rhunter",
+      "kind": "Archivio",
+      "description": "RhUNter · Reverse Engineering",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "streamchat",
+      "repo": "streamchat",
+      "title": "streamchat",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "64zr",
+      "repo": "64zr",
+      "title": "64zr",
+      "kind": "Gioco",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "vroom",
+      "repo": "vroom",
+      "title": "vroom",
+      "kind": "Gioco",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "dmpack-registry",
+      "repo": "dmpack-registry",
+      "title": "dmpack-registry",
+      "kind": "Archivio",
+      "description": "Registro pacchetti Death Mask",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "deathmask-cold-archive",
+      "repo": "deathmask-cold-archive",
+      "title": "deathmask-cold-archive",
+      "kind": "Archivio",
+      "description": "Archivio storico Death Mask",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "ghostchat-p2p",
+      "repo": "ghostchat-p2p",
+      "title": "ghostchat-p2p",
+      "kind": "Progetto",
+      "description": "Messaggistica P2P",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSDoctor-MadDoctor",
+      "repo": "JSDoctor-MadDoctor",
+      "title": "JSDoctor-MadDoctor",
+      "kind": "Gioco",
+      "description": "Porting JavaScript · Mad Doctor",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "RoboCop3-JS",
+      "repo": "RoboCop3-JS",
+      "title": "RoboCop3-JS",
+      "kind": "Gioco",
+      "description": "Porting JavaScript · RoboCop 3D",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "ARMigaOs",
+      "repo": "ARMigaOs",
+      "title": "ARMigaOs",
+      "kind": "Sistema",
+      "description": "Ambiente Amiga ARM",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "NG-REForge",
+      "repo": "NG-REForge",
+      "title": "NG-REForge",
+      "kind": "Sistema",
+      "description": "Orchestrazione e conversioni",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSSkool",
+      "repo": "JSSkool",
+      "title": "JSSkool",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSWho2",
+      "repo": "JSWho2",
+      "title": "JSWho2",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSWorld",
+      "repo": "JSWorld",
+      "title": "JSWorld",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSFears",
+      "repo": "JSFears",
+      "title": "JSFears",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSGloom",
+      "repo": "JSGloom",
+      "title": "JSGloom",
+      "kind": "Progetto",
+      "description": "Porting JavaScript · Gloom",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSQuest",
+      "repo": "JSQuest",
+      "title": "JSQuest",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSHunter",
+      "repo": "JSHunter",
+      "title": "JSHunter",
+      "kind": "Gioco",
+      "description": "Porting JavaScript · Hunter",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSDesert",
+      "repo": "JSDesert",
+      "title": "JSDesert",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSWarmUp",
+      "repo": "JSWarmUp",
+      "title": "JSWarmUp",
+      "kind": "Progetto",
+      "description": "Porting JavaScript · Warm Up",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSNexus",
+      "repo": "JSNexus",
+      "title": "JSNexus",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSBrewBiz",
+      "repo": "JSBrewBiz",
+      "title": "JSBrewBiz",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSLeader",
+      "repo": "JSLeader",
+      "title": "JSLeader",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSWonder",
+      "repo": "JSWonder",
+      "title": "JSWonder",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSTerror2",
+      "repo": "JSTerror2",
+      "title": "JSTerror2",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "JSTopCat",
+      "repo": "JSTopCat",
+      "title": "JSTopCat",
+      "kind": "Progetto",
+      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "ARMigaFW",
+      "repo": "ARMigaFW",
+      "title": "ARMigaFW",
+      "kind": "Sistema",
+      "description": "Firmware ARM",
+      "published": false,
+      "url": null,
+      "advanced_url": null
+    },
+    {
+      "id": "DeathMask-Gloom-Amiga",
+      "repo": "DeathMask-Gloom-Amiga",
+      "title": "DeathMask-Gloom-Amiga",
+      "kind": "Gioco",
+      "description": "Motore ibrido Amiga · Playtest browser",
       "published": true,
-      "url": "viewer/deathmask/"
+      "url": "viewer/deathmask/lab.html",
+      "advanced_url": "viewer/deathmask/"
+    },
+    {
+      "id": "Obscura07-Site",
+      "repo": "Obscura07-Site",
+      "title": "Obscura07-Site",
+      "kind": "Sistema",
+      "description": "Sito ufficiale e WebPlayer",
+      "published": false,
+      "url": null,
+      "advanced_url": null
     }
   ]
 }

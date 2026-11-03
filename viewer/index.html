@@ -1,51 +1,85 @@
 <!doctype html>
-<html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="referrer" content="no-referrer"><meta name="theme-color" content="#09080d">
-<title>OBSCURA/07 · Sellone Viewer</title>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0a0b12">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="Sellone Viewer — catalogo di progetti e anteprime web autorizzate di OBSCURA/07.">
+<title>Sellone Viewer · OBSCURA/07</title>
 <style>
-:root{color-scheme:dark;font:15px/1.5 system-ui,Arial,sans-serif;background:#09080d;color:#e1dae9}
-*{box-sizing:border-box}body{max-width:1100px;margin:auto;padding:clamp(16px,3vw,40px)}
-a{color:#bdb0eb}h1{font-size:clamp(26px,5vw,48px);letter-spacing:-.04em;margin:24px 0 4px}
-small,.muted{color:#ada5b5}.top{display:flex;gap:20px;justify-content:space-between;align-items:center}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:24px 0}
-.card{background:#15131d;border:1px solid #393047;border-radius:13px;padding:20px}
-.card a{display:inline-block;padding:9px 14px;margin-top:9px;background:#493164;border-radius:7px;text-decoration:none}
-#empty{border-left:3px solid #8568a7;padding:16px;background:#15131d}
-</style></head><body>
-<header class="top"><a href="../index.html">← OBSCURA/07</a><a href="../webplayer/index.html">WebPlayer</a></header>
-<h1>SELLONE VIEWER</h1><p class="muted">Catalogo pubblico gestito su GitHub. Solo le build autorizzate e realmente pubblicate sono avviabili da questo sito.</p>
-<div id="status" class="muted" role="status">Lettura catalogo GitHub…</div>
-<main id="projects" class="grid"></main><div id="empty" hidden>Non sono state ancora pubblicate build giocabili. I repository privati restano privati e il Viewer locale continua a funzionare in Sellone.</div>
-<script>
-'use strict';
-const status=document.getElementById('status');
-const list=document.getElementById('projects');
-const empty=document.getElementById('empty');
-function addText(node,tag,value){const el=document.createElement(tag);el.textContent=value;node.append(el);return el}
-function publicUrl(url){
- try{const u=new URL(url,new URL('../',location.href));return u.protocol==='https:'&&
-    (u.hostname==='nullgod.tech'||u.hostname==='holocube999.github.io')?u.href:null}
- catch{return null}
-}
-async function refresh(){
- try{
-  const response=await fetch('../catalog.json',{cache:'no-store'});
-  if(!response.ok)throw Error('HTTP '+response.status);
-  const catalog=await response.json();
-  if(catalog.schema!==1||!Array.isArray(catalog.projects))throw Error('Catalogo non valido');
-  list.replaceChildren();let published=0;
-  for(const item of catalog.projects){
-    if(typeof item!=='object'||item===null)continue;
-    const url=publicUrl(item.url||'');
-    if(!url||item.published!==true)continue;
-    const card=document.createElement('article');card.className='card';
-    addText(card,'h2',String(item.title||'Progetto').slice(0,100));
-    addText(card,'p',String(item.description||'Anteprima pubblicata').slice(0,240));
-    const link=addText(card,'a','▶ Apri Viewer');link.href=url;link.rel='noopener noreferrer';
-    list.append(card);published++;
-  }
-  status.textContent=published+' build pubblicate su GitHub';empty.hidden=published>0;
- }catch(err){status.textContent='Catalogo non disponibile: '+err.message;empty.hidden=false}
-}
-refresh();
-</script><script src="../assets/embed-bridge.js" defer></script></body></html>
+:root{color-scheme:dark;background:#080a0f;color:#e6e7ee;font:15px/1.55 system-ui,Segoe UI,Arial,sans-serif;--pane:#121521;--edge:#303646;--muted:#acb2c3;--accent:#b1a0ee}
+*{box-sizing:border-box}body{margin:0}a{color:#c5bafa}
+.top{border-bottom:1px solid var(--edge);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px clamp(17px,3vw,45px);background:#0e111a}
+.brand{font-weight:800;text-decoration:none;letter-spacing:.07em;font-size:14px}.topnav{display:flex;gap:20px;flex-wrap:wrap}.topnav a{font-size:13px;color:#c7cad7;text-decoration:none}
+main{width:min(1360px,100%);margin:auto;padding:clamp(18px,4vw,50px)}
+.eyebrow{font-size:11px;letter-spacing:.22em;color:#ac92ec;text-transform:uppercase;font-weight:750}
+h1{font-size:clamp(2.3rem,6.5vw,5.5rem);line-height:1;letter-spacing:-.055em;margin:12px 0 20px;font-weight:800}
+h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4px 0 8px}
+.lede{color:#b9c0ce;max-width:740px;font-size:1.05rem}
+.panel{background:var(--pane);border:1px solid var(--edge);border-radius:16px}
+.toolbar{margin:31px 0 17px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+#search{background:#171b29;color:#fff;border:1px solid #48506b;border-radius:9px;padding:13px 15px;font:inherit;flex:1;min-width:190px}
+.stat{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px;margin:20px 0 55px}
+.project{padding:19px;min-height:185px;display:flex;flex-direction:column}
+.project p{color:var(--muted);margin:0 0 16px;font-size:13px;flex:1}
+.project .head{display:flex;align-items:center;gap:6px;justify-content:space-between}
+.tag{font-size:10px;letter-spacing:.09em;text-transform:uppercase;border:1px solid #56506e;border-radius:20px;padding:3px 8px;color:#c5b7e9;white-space:nowrap}
+.tag.playable{color:#a1e4c7;border-color:#447b62}
+.actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.action{padding:9px 13px;border:1px solid #594f77;border-radius:8px;background:#342e4b;color:#f1eaff;text-decoration:none;font-size:13px;font-weight:700}
+.action.secondary{background:#202333;color:#b6bbd2}
+.hidden{display:none!important}
+#detail{padding-top:10px}
+#back{display:inline-block;margin-bottom:30px;color:#d5c8ff}
+.detail-layout{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
+#detailStatus{padding:13px 17px;color:#c2ccd8;background:#1c2030;border-left:3px solid #9582cd;margin:18px 0}
+#playarea{margin:20px 0;padding:12px;border:1px solid #444761;border-radius:14px;background:#0b0d14}
+#playframe{display:block;width:100%;height:min(76svh,850px);min-height:420px;border:0;border-radius:9px;background:#08090e}
+#unavailable{padding:50px clamp(18px,4vw,60px);max-width:880px;margin:25px 0}
+#unavailable h2{margin-bottom:10px}
+#unavailable p{color:var(--muted)}
+#message{font-size:12px;color:var(--muted);margin-bottom:12px}
+footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-size:12px;color:var(--muted)}
+@media(max-width:600px){.topnav{gap:12px}.project{min-height:165px}#playarea{padding:4px}#playframe{min-height:440px;height:70svh}}
+</style>
+</head>
+<body>
+<header class="top">
+<a class="brand" href="../index.html">◢ OBSCURA/07 <span style="font-weight:400;color:#aeb2c5"> / SELLONE</span></a>
+<nav class="topnav" aria-label="Navigazione"><a href="./">Tutti i progetti</a><a href="../webplayer/index.html">WebPlayer</a><a href="../index.html">Sito</a></nav>
+</header>
+<main>
+<section id="listing">
+<div class="eyebrow">Repository / Project Explorer / Online</div>
+<h1>SELLONE<br>VIEWER<span style="color:#a293d6">.</span></h1>
+<p class="lede">Un unico indirizzo per i progetti, raggiungibile anche dal telefono. Le anteprime pubblicate si avviano qui; il resto rimane privato finché non è disponibile una build distribuibile.</p>
+<div class="toolbar">
+<input id="search" type="search" autocomplete="off" placeholder="Cerca un progetto…" aria-label="Cerca un progetto">
+<span class="stat" id="stats" aria-live="polite">Caricamento catalogo…</span>
+</div>
+<div id="message" role="status"></div>
+<div class="grid" id="grid" aria-label="Catalogo progetti"></div>
+</section>
+<section id="detail" class="hidden">
+<a id="back" href="./">← Torna a tutti i progetti</a>
+<div class="eyebrow" id="detailKind">Progetto</div>
+<div class="detail-layout">
+<div><h1 id="detailName">Progetto</h1><p class="lede" id="detailDescription"></p></div>
+<div class="actions" id="detailActions"></div>
+</div>
+<div id="detailStatus" role="status"></div>
+<div id="playarea" class="hidden"><iframe id="playframe" title="Gioco nel Sellone Viewer" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe></div>
+<div id="unavailable" class="panel hidden">
+<div class="eyebrow">Build riservata / non pubblicata</div>
+<h2>Il progetto esiste. Il gioco web non è ancora pubblicato.</h2>
+<p>Questa è una scheda del portfolio, non un'emulazione fittizia. Repository, credenziali, ADF e Kickstart rimangono privati. La pagina mantiene un indirizzo stabile, che potrà aprire una build quando sarà autorizzata per il sito.</p>
+<a class="action secondary" href="./">Esplora le anteprime disponibili</a>
+</div>
+</section>
+</main>
+<footer>SELLONE VIEWER · OBSCURA/07 — Pubblicazione indipendente dal PC locale. Nessun token o media commerciale viene distribuito in questa pagina.</footer>
+<script src="./catalog.js" defer></script>
+<script src="../assets/embed-bridge.js" defer></script>
+</body></html>
