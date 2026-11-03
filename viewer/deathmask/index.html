@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0a0b10">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.github.com; img-src 'self' data: blob:; frame-src 'self'; base-uri 'self'; form-action 'none'">
+<title>Death Mask — Sellone Viewer remoto</title>
+<style>
+:root{color-scheme:dark;background:#080a10;color:#e3e7ef;font:14px/1.55 ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}body{margin:auto;padding:clamp(12px,3vw,30px);max-width:1420px}
+a{color:#b4c4eb}h1{font-size:clamp(22px,4vw,34px);margin:0 0 4px}
+h2{font-size:17px;margin:0 0 9px}p{margin:6px 0 12px}
+.muted{color:#a2acc2}.small{font-size:12px}
+.notice{border-left:3px solid #8f81c8;background:#181727;padding:12px;margin:12px 0}
+.card{border:1px solid #30384c;background:#121722;padding:15px;margin:12px 0;border-radius:5px}
+.row{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+button,input{font:inherit;border-radius:4px;padding:11px;color:#f1f3f8;background:#202b40;border:1px solid #52658d;min-height:44px}
+button{cursor:pointer}button:disabled{opacity:.5;cursor:not-allowed}
+input[type=password]{width:min(100%,480px);flex:1}input[type=checkbox]{min-height:auto}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid #decaff;outline-offset:2px}
+#status{padding:10px;background:#161f2b;border-left:3px solid #687892;overflow-wrap:anywhere;min-height:43px}
+#status[data-error=true]{color:#ffc1bf;border-color:#ed8888}
+#emu-frame{display:none;border:1px solid #59627c;width:100%;height:min(66vw,680px);min-height:380px;background:#04040a}
+#emu-frame.active{display:block}
+#lab-frame{border:1px solid #59627c;width:100%;height:790px;background:#05070b}
+#auth-form{margin-top:10px}
+label{display:inline-flex;align-items:center;gap:7px}
+em{font-style:normal;color:#e2c79e}
+@media(max-width:800px){#lab-frame{height:1100px}#emu-frame{height:60vh;min-height:370px}}
+</style>
+<script src="./app.js" defer></script>
+</head>
+<body>
+<header class="row" style="justify-content:space-between">
+<div>
+<h1>DEATH MASK · SELLONE VIEWER</h1>
+<div class="muted">Anteprima remota · Amiga originale privato + laboratorio browser pubblico</div>
+</div>
+<a href="../">← Catalogo Sellone</a>
+</header>
+<div class="notice"><strong>DIRITTI E PRIVACY:</strong> gli ADF originali e la Kickstart appartengono all'archivio privato del proprietario. Non sono distribuiti da questo sito. Il tuo token di sola lettura permette al browser di recuperarli direttamente da GitHub; non viene inviato al server del sito o all'emulatore. Il porting 68000 è ancora in sviluppo, non esiste un ADF di porting certificato.</div>
+<section class="card">
+<h2>Amiga originale · avvio senza inserire dischetti</h2>
+<p class="muted small">Sono già archiviati nel ramo privato di sviluppo i due ADF e la ROM. Inserisci una sola volta un token GitHub fine-grained con accesso in sola lettura ai Contents di DeathMask-Gloom-Amiga; puoi conservarlo cifrato su questo dispositivo. Il sito non contiene alcun file commerciale.</p>
+<form id="auth-form" class="row" autocomplete="off">
+<input id="gh-token" type="password" placeholder="GitHub token (fine-grained, Contents: read)" autocomplete="off" spellcheck="false" aria-label="Token GitHub privato">
+<button id="connect" type="submit">Collega e avvia Death Mask</button>
+<label class="small"><input id="remember" type="checkbox" checked> Ricorda su questo dispositivo</label>
+<button type="button" id="forget">Dimentica token</button>
+</form>
+<div id="status" role="status" aria-live="polite">Pronto. Il laboratorio browser sottostante funziona senza login.</div>
+<div class="row" style="margin:12px 0">
+<button id="boot1" disabled>▶ Avvia disco 1</button>
+<button id="boot2" disabled>↻ Avvia disco 2</button>
+<button id="stop" disabled>■ Ferma emulatore</button>
+</div>
+<iframe id="emu-frame" src="about:blank" title="Emulatore Amiga isolato e senza accesso al token" sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads" allow="fullscreen; gamepad" referrerpolicy="no-referrer"></iframe>
+<p class="muted small">L'emulatore viene eseguito in una sandbox con origine isolata. Il secondo disco è disponibile senza caricare file manualmente; il cambio disco in questa prima integrazione riavvia l'istanza. Se qualcosa non parte, il pannello mostra un errore anziché una schermata bianca.</p>
+</section>
+<section class="card">
+<h2>Playtest Lab · avviabile pubblicamente</h2>
+<p class="muted small">Livello diagnostico sintetico: FPS navigabile, porte, collisioni, uscita e controlli touch. Non è una rappresentazione fedele del gioco originale né un ADF nativo.</p>
+<p><a href="./lab.html" target="_blank" rel="noopener">Apri il laboratorio a schermo intero</a></p>
+<iframe id="lab-frame" src="./lab.html" title="Playtest FPS browser" loading="lazy"></iframe>
+</section>
+<p class="muted small">Pagina pubblica senza ROM/ADF/credenziali. <a href="https://github.com/holocube999/DeathMask-Gloom-Amiga">Sorgenti del porting (repository privato)</a>.</p>
+</body>
+</html>
