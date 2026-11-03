@@ -316,17 +316,31 @@ $('loadGitMedia').onclick=()=>githubMedia();
 $('mediaCandidates').onchange=async()=>{try{await selectedMedia($('mediaCandidates').value)}catch(e){handleError(e)}};
 $('mediaInput').onchange=()=>{remoteMedia=null;remoteKick=null;showStatus('Supporto locale selezionato; premi Avvia supporto.')};
 $('bootRetro').onclick=()=>boot();
-$('stopRetro').onclick=async()=>{await Retro.stop();$('playarea').replaceChildren($('playframe'));emptyFrame();showStatus('Emulatore fermato; supporti temporanei eliminati.')};
+$('stopRetro').onclick=async()=>{await Retro.stop();$('originalStage').replaceChildren();syncReady.original=false;updateSync();showStatus('Emulatore fermato; supporti temporanei eliminati.')};
 $('useGitToken').onclick=async()=>{
  try{
   await GH.setToken($('gitToken').value,$('gitPassword').value,$('saveToken').checked);
   $('gitToken').value='';$('gitPassword').value='';$('authBox').classList.add('hidden');
-  if(mode==='retro')await githubMedia();else await githubHTML();
+  if(view==='source')await githubSource();else if(view==='original')await githubMedia();else await githubHTML();
  }catch(e){handleError(e)}
 };
 $('unlockGitToken').onclick=async()=>{
- try{await GH.unlock($('gitPassword').value);$('gitPassword').value='';$('authBox').classList.add('hidden');if(mode==='retro')await githubMedia();else await githubHTML()}
+ try{await GH.unlock($('gitPassword').value);$('gitPassword').value='';$('authBox').classList.add('hidden');if(view==='source')await githubSource();else if(view==='original')await githubMedia();else await githubHTML()}
  catch(e){handleError(e)}
+};
+for(const b of $('viewModes').querySelectorAll('[data-view]'))b.onclick=()=>selectView(b.dataset.view);
+$('openSource').onclick=()=>githubSource(false);
+$('reloadSource').onclick=()=>githubSource(true);
+$('sourceFiles').onchange=()=>githubSource(false);
+$('linkedInput').onchange=()=>updateSync();
+$('restartPair').onclick=async()=>{
+ if(view!=='both')return;
+ if(!loaded){await githubHTML()}
+ else showJS(loaded);
+ const disk=$('mediaInput').files[0]||remoteMedia;
+ if(!disk){showStatus('JS riavviato. Seleziona il supporto originale e premi Avvia supporto.',true);return}
+ await boot();
+ showStatus('Riavvio delle due istanze richiesto · stessa sessione input, senza sincronizzazione deterministica dei frame.');
 };
 $('forgetGitToken').onclick=()=>{GH.forget();$('authBox').classList.add('hidden');showStatus('Token cifrato eliminato.')};
 loadCatalog();
