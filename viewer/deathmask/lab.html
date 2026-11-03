@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>DeathMask Native · Sellone Playtest Lab</title>
+<style>
+:root{color-scheme:dark;font:13px/1.4 ui-monospace,Consolas,monospace}
+*{box-sizing:border-box}
+body{background:#080b11;color:#e6e8ef;margin:0;padding:14px}
+header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:10px}
+h1{font-size:17px;margin:0}p{margin:4px 0 8px;color:#bac0d1}
+mark{color:#ffde9a;background:#302a19;padding:2px 5px}
+button,select,input{background:#1d2634;color:#f8f9fe;border:1px solid #485973;padding:9px;min-height:40px;border-radius:3px;font:inherit}
+button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #bc9df0}
+input[type=file]{max-width:320px}
+.row{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:10px 0}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 230px;gap:12px}
+canvas{image-rendering:pixelated;background:#020203;display:block;border:1px solid #536079}
+#view{width:100%;height:auto;aspect-ratio:16/10;max-height:70vh}
+#map{width:100%;aspect-ratio:1/1;touch-action:manipulation}
+.hud{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:7px 0;color:#e4d0a6}
+.instructions{margin-top:8px;color:#adb5c6}
+#log{min-height:25px;padding:8px;border-left:2px solid #a98cdf;color:#ddc8fb;background:#161522}
+.pad{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;max-width:560px;margin:12px auto}
+.pad button{touch-action:none;min-height:52px;font-size:18px;user-select:none;-webkit-user-select:none}
+.pad button:active,.pad button.active{background:#624874}
+small{color:#9ba9ba}
+@media(max-width:720px){.layout{grid-template-columns:1fr}#map{width:min(52vw,220px);margin:auto}#view{max-height:none}body{padding:8px}}
+</style>
+<script src="preview-core.js"></script>
+<script src="lab.js" defer></script>
+</head>
+<body>
+<header>
+<div><h1>DEATHMASK · SELLONE PLAYTEST LAB</h1>
+<p><mark>ANTEPRIMA TECNICA BROWSER — NON EMULAZIONE AMIGA</mark></p></div>
+<button id="demo">Avvia fixture giocabile</button>
+</header>
+<p>Renderer diagnostico originale, costruito per verificare movimento, porte, collisioni e geometria a sottocelle. Non è ancora il motore Dread, Grind o Gloom. Nessuno sprite/effetto di Death Mask viene inventato.</p>
+<div class="row">
+<label for="source">Carica localmente <code>fidelity-data.json</code> (BOD originale ricostruito):</label>
+<input id="source" type="file" accept=".json,application/json">
+<label for="choose-map">Mappa:</label>
+<select id="choose-map" disabled><option>Fixture sintetica</option></select>
+<button id="restart">Ricomincia</button>
+</div>
+<div class="layout">
+<div><canvas id="view" width="320" height="200" aria-label="Vista FPS navigabile"></canvas>
+<div class="hud"><span id="coordinates">x: — y: —</span><span id="counter">Porte: 0 · Uscita: no</span><span id="fps">FPS: —</span></div>
+<div id="log" aria-live="polite">Demo sintetica pronta. WASD per muoversi, frecce per ruotare, E per usare.</div>
+</div>
+<aside><canvas id="map" width="230" height="230" aria-label="Minimappa; clicca un pavimento per impostare manualmente il punto di partenza"></canvas>
+<div class="instructions">WASD: avanti/indietro/laterale · frecce: rotazione e avanzamento · E/F/Spazio: usa porte · R: ricomincia. Clic sulla minimappa: scegli spawn provvisorio per mappe originali senza start identificabile.</div>
+</aside>
+</div>
+<div class="pad" aria-label="Controlli touch">
+<button data-control="turnLeft" aria-label="Ruota a sinistra">⟲</button>
+<button data-control="strafeLeft" aria-label="Spostati a sinistra">←</button>
+<button data-control="forward" aria-label="Avanti">↑</button>
+<button data-control="strafeRight" aria-label="Spostati a destra">→</button>
+<button data-control="turnRight" aria-label="Ruota a destra">⟳</button>
+<button data-control="backward" aria-label="Indietro">↓</button>
+<button id="use" style="grid-column:span 3" aria-label="Usa porta">USA / APRI PORTA</button>
+<button id="fullscreen" aria-label="A schermo intero">⛶</button>
+</div>
+<small>Una mappa BOD caricata viene letta solo dal browser e non trasmessa al server. ID sconosciuti restano segnalati; la demo non è una ricostruzione completa di Death Mask. Il motore Amiga nativo resta nel pannello PUAE del Sellone Viewer.</small>
+</body>
+</html>

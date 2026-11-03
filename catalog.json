@@ -2,5 +2,13 @@
   "schema": 1,
   "site": "OBSCURA/07",
   "visibility": "public-only",
-  "projects": []
+  "projects": [
+    {
+      "id": "deathmask-amiga-dev",
+      "title": "Death Mask Amiga · Playtest remoto",
+      "description": "Playtest browser pubblico; emulatore originale Amiga opzionale con ADF/Kickstart caricati dal tuo repository privato tramite autenticazione GitHub. Porting 68000 in sviluppo.",
+      "published": true,
+      "url": "viewer/deathmask/"
+    }
+  ]
 }

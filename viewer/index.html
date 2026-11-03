@@ -23,7 +23,7 @@ const list=document.getElementById('projects');
 const empty=document.getElementById('empty');
 function addText(node,tag,value){const el=document.createElement(tag);el.textContent=value;node.append(el);return el}
 function publicUrl(url){
- try{const u=new URL(url,location.origin);return u.protocol==='https:'&&
+ try{const u=new URL(url,new URL('../',location.href));return u.protocol==='https:'&&
     (u.hostname==='nullgod.tech'||u.hostname==='holocube999.github.io')?u.href:null}
  catch{return null}
 }
