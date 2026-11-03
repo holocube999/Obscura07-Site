@@ -50,11 +50,9 @@ function dependencies(source,origin){
  return [...targets];
 }
 function transform(source,path){
- const replace=(match,pre,quote,spec,post='')=>{
-  const target=normalize(spec,path,moduleExt);
-  return pre+quote+'@sellone/'+target+quote+post;
- };
- return source.replace(importStatic,replace).replace(importDynamic,replace);
+ const rewrite=(spec)=>'@sellone/'+normalize(spec,path,moduleExt);
+ return source.replace(importStatic,(match,pre,quote,spec)=>pre+quote+rewrite(spec)+quote)
+  .replace(importDynamic,(match,pre,quote,spec,tail)=>pre+quote+rewrite(spec)+quote+tail);
 }
 function looseCSP(html){
  // An opaque-origin sandbox is mandatory; parent-origin credentials cannot
