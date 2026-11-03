@@ -29,7 +29,7 @@ async function stop(){
  s.frame.src='about:blank';s.frame.remove();
  try{const cache=await caches.open(CACHE);await Promise.all(s.urls.map(url=>cache.delete(url)))}catch{}
 }
-async function start({media,bios,title,host,onStatus}){
+async function start({media,bios,title,host,onStatus,channel=null}){
  if(!media||!supported(media))throw Error('Supporto non valido: ADF, D64, T64 o PRG fino a 3 MiB');
  if(needsKick(media)&&bios&&!validKick(bios))throw Error('Kickstart selezionata non valida');
  if(!host)throw Error('Schermo WebPlayer non disponibile');
@@ -53,7 +53,7 @@ async function start({media,bios,title,host,onStatus}){
   session={frame,urls,onStatus};
   frame.addEventListener('load',()=>{
    if(!session||session.frame!==frame)return;
-   frame.contentWindow.postMessage({type:'SELLONE_RETRO_BOOT_V1',mediaUrl:diskUrl,biosUrl,core,title},location.origin);
+   frame.contentWindow.postMessage({type:'SELLONE_RETRO_BOOT_V1',mediaUrl:diskUrl,biosUrl,core,title,channel},location.origin);
    onStatus?.('Core '+(core==='amiga'?'PUAE / Amiga':'VICE / Commodore 64')+' inizializzato; verifica il boot sullo schermo.');
   },{once:true});
  }catch(e){
@@ -66,6 +66,6 @@ window.addEventListener('message',event=>{
  session.onStatus?.(String(event.data.message||'Errore nel core retro'),true);
 });
 if('caches' in window)caches.delete(CACHE).catch(()=>{});
-window.SelloneRetro=Object.freeze({start,stop,supported,needsKick,validKick});
+window.SelloneRetro=Object.freeze({start,stop,supported,needsKick,validKick,frame:()=>session?.frame||null});
 window.addEventListener('pagehide',()=>{stop().catch(()=>{})});
 })();
