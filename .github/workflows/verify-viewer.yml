@@ -1,0 +1,23 @@
+name: Verify public Sellone Viewer
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'viewer/**'
+      - 'catalog.json'
+      - 'index.html'
+      - 'tests/viewer.test.mjs'
+      - '.github/workflows/verify-viewer.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify no-npm JavaScript syntax
+        run: node --check viewer/catalog.js
+      - name: Verify playable assets, public deep-links, and proprietary media gate
+        run: node --test tests/viewer.test.mjs
