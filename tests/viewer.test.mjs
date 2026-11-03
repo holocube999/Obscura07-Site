@@ -81,7 +81,7 @@ test('JS conversions get isolated JS, original, and optional linked split-screen
  assert.ok(html.includes('sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
  assert.ok(!html.includes('allow-same-origin'));
  assert.ok(controller.includes("next==='both'"));
- assert.ok(controller.includes("view==='both'"));
+ assert.ok(controller.includes("view!=='both'"));
  assert.ok(controller.includes("syncChannel=newChannel()"));
  assert.ok(controller.includes('SELLONE_SYNC_INPUT_V1'));
  assert.ok(controller.includes('source===Retro.frame()?.contentWindow'));
