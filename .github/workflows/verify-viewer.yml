@@ -9,6 +9,7 @@ on:
       - 'index.html'
       - 'tests/viewer.test.mjs'
       - 'tests/viewer.smoke.test.mjs'
+      - 'tests/viewer.bundler.test.mjs'
       - '.github/workflows/verify-viewer.yml'
   workflow_dispatch:
 permissions:
@@ -21,8 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify no-npm JavaScript syntax
         run: |
-          for file in viewer/catalog.js viewer/github-runtime.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js; do
+          for file in viewer/catalog.js viewer/github-runtime.js viewer/web-bundler.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js; do
             node --check "$file"
           done
       - name: Verify playable assets, public deep-links, and proprietary media gate
-        run: node --test tests/viewer.test.mjs tests/viewer.smoke.test.mjs
+        run: node --test tests/viewer.test.mjs tests/viewer.smoke.test.mjs tests/viewer.bundler.test.mjs
