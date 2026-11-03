@@ -110,12 +110,13 @@ function relay(data,target){
  frame.contentWindow.postMessage(data,target==='js'?'*':location.origin);
 }
 function inputFrom(event){
- if(view!=='both'||!$('linkedInput').checked||!event.data||event.data.channel!==syncChannel)return;
+ if(!event.data||event.data.channel!==syncChannel)return;
  const source=event.source=== $('playframe').contentWindow?'js':event.source===Retro.frame()?.contentWindow?'original':null;
  if(!source)return;
  if(event.data.type==='SELLONE_SYNC_READY_V1'){
   syncReady[source]=true;updateSync();return;
  }
+ if(view!=='both'||!$('linkedInput').checked)return;
  if(event.data.type!=='SELLONE_SYNC_INPUT_V1'||!['keydown','keyup'].includes(event.data.action)||
     !/^(?:Arrow(?:Up|Down|Left|Right)|Key[A-Z]|Digit[0-9]|Space|Enter|Escape|Shift(?:Left|Right)|Control(?:Left|Right))$/.test(event.data.code||''))return;
  relay(event.data,source==='js'?'original':'js');
