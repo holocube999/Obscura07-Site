@@ -42,7 +42,8 @@ function compare(a,b){
 }
 async function discover(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const commit=await api(base+'/commits/main');
+ const meta=await api(base);
+ const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const result=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(result.truncated)throw Error('Albero GitHub troppo grande: selezione automatica sospesa');
@@ -97,7 +98,8 @@ const mediaPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|p
 const biosPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:rom|bin|kick|a500|a1200)$/i;
 async function discoverMedia(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const [commit,meta]=await Promise.all([api(base+'/commits/main'),api(base)]);
+ const meta=await api(base);
+ const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(tree.truncated)throw Error('Albero GitHub troppo grande');
@@ -149,6 +151,42 @@ async function loadBios(input){
  return {ref,path,bios:new Blob([bytes],{type:'application/octet-stream'}),bytes:bytes.length};
 }
 
+
+const textPattern=/^(?:[A-Za-z0-9_.-]+\/){0,6}[A-Za-z0-9_.-]+\.(?:md|txt|json|js|mjs|cjs|ts|css|html?|py|c|cpp|h|hpp|asm|s|yml|yaml|toml|ini|sh|ps1|bat|cmd|xml|csv|java|kt|rs|go|lua|scad)$/i;
+async function discoverFiles(input){
+ const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
+ const meta=await api(base);
+ const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
+ const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
+ if(tree.truncated)throw Error('Repository troppo grande per il visualizzatore sorgenti');
+ const files=(tree.tree||[]).filter(x=>x.type==='blob'&&textPattern.test(x.path)&&x.size>=0&&x.size<=1024*1024&&!/(?:^|\/)(?:node_modules|vendor|\.git|\.private|private-media)\//i.test(x.path))
+  .map(x=>x.path).sort((a,b)=>{
+   const rank=p=>/^readme\.md$/i.test(p)?0:/^(?:docs\/)?(?:status|overview|readme)\.md$/i.test(p)?1:/^src\//i.test(p)?2:3;
+   return rank(a)-rank(b)||a.localeCompare(b);
+  }).slice(0,800);
+ if(!files.length)throw Error('Nessun file di testo visualizzabile nel repository');
+ return {repo,ref:commit.sha,files,path:files[0]};
+}
+async function loadText(input){
+ const repo=normalizeRepo(input.repo),ref=input.ref,path=input.path;
+ if(!shaPattern.test(ref||'')||!textPattern.test(path||''))throw Error('Percorso sorgente o SHA GitHub non valido');
+ const base='https://api.github.com/repos/'+repo;
+ const entry=await api(base+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref);
+ if(entry.type!=='file'||!shaPattern.test(entry.sha||'')||!Number.isSafeInteger(entry.size)||entry.size>1024*1024)throw Error('Sorgente oltre 1 MiB o non leggibile');
+ let bytes;
+ if(entry.encoding==='base64'&&entry.content)bytes=bytesFromBase64(entry.content);
+ else {
+  const blob=await api(base+'/git/blobs/'+entry.sha);
+  if(blob.encoding!=='base64'||!blob.content)throw Error('Blob sorgente non leggibile');
+  bytes=bytesFromBase64(blob.content);
+ }
+ if(bytes.length!==entry.size)throw Error('Dimensione sorgente non corrispondente');
+ await checkBlob(bytes,entry.sha);
+ const output=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+ return {repo,ref,path,content:output,bytes:bytes.length};
+}
+
 function b64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.slice(i,i+8192));return btoa(s)}
 async function keyFor(password,salt){
  const imported=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
@@ -172,5 +210,5 @@ async function unlock(password){
  token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
 }
 function forget(){token='';localStorage.removeItem(STORAGE)}
-window.SelloneGitHub=Object.freeze({normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+window.SelloneGitHub=Object.freeze({normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();
