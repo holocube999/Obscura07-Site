@@ -46,6 +46,21 @@ h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4
 #gameHeader{margin-bottom:12px}
 #sourcePreview{margin:0;padding:18px;background:#0b0d14;color:#d8e0ed;white-space:pre;overflow:auto;font:12px/1.6 ui-monospace,Consolas,monospace;max-height:75svh;tab-size:2;border-radius:9px}
 #sourceFiles{min-width:min(500px,95vw);max-width:100%}
+#viewModes{display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+#viewModes button{background:#222536;color:#e6e0ff;border:1px solid #4f526d;border-radius:8px;padding:9px 14px;cursor:pointer;font:inherit}
+#viewModes button[aria-pressed=true]{background:#51416f;border-color:#c6a5ff}
+#compareTools{border-top:1px solid #35394e;margin-top:10px;padding-top:9px}
+#compareTools label{display:inline-flex;align-items:center;gap:5px}
+#compareNote{font-size:12px;color:#bbc2d1;margin:4px 0}
+#playarea{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+#playarea.compare{grid-template-columns:repeat(2,minmax(0,1fr))}
+.player-pane{min-width:0;overflow:hidden}
+.player-pane .pane-name{display:block;color:#b7a8db;font-size:11px;letter-spacing:.12em;font-weight:750;margin:2px 0 9px}
+#originalStage{min-height:250px}
+#originalStage .retro-frame{width:100%;height:min(76svh,850px);min-height:420px}
+#sourcePane{grid-column:1/-1}
+@media(max-width:850px){#playarea.compare{grid-template-columns:minmax(0,1fr)}#playarea.compare iframe{height:42svh;min-height:270px}}
+
 .retro-frame{display:block;width:100%;height:min(77svh,850px);min-height:440px;border:0;border-radius:9px;background:#08090e}
 .hidden{display:none!important}
 #detail{padding-top:10px}
@@ -88,6 +103,12 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 </div>
 <section class="panel player-controls" id="playerControls" aria-label="Controlli Sellone WebPlayer">
 <div id="gameHeader" class="eyebrow">SELLONE WEBPLAYER · GITHUB</div>
+<div id="viewModes" role="group" aria-label="Modalità di visualizzazione">
+<button type="button" data-view="js" aria-pressed="true">Solo JavaScript</button>
+<button type="button" data-view="original" aria-pressed="false">Solo originale</button>
+<button type="button" data-view="both" aria-pressed="false">JS + Originale</button>
+<button type="button" data-view="source" aria-pressed="false">Sorgenti</button>
+</div>
 <div class="tools" id="webControls">
 <button class="action" type="button" id="loadLatest">▶ Ultima build GitHub</button>
 <label for="htmlCandidates">HTML</label><select id="htmlCandidates" aria-label="Build HTML"><option value="">Automatico</option></select>
@@ -109,6 +130,11 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <button class="action" type="button" id="openSource">Apri file</button>
 <button class="action secondary" type="button" id="reloadSource">↻ Ultima revisione</button>
 </div>
+<div id="compareTools" class="tools hidden">
+<label><input id="linkedInput" type="checkbox" checked> Collega comandi</label>
+<button id="restartPair" class="action secondary" type="button">↻ Riavvia entrambi</button>
+<span id="syncFeedback" class="stat" aria-live="polite">Confronto sincronizzato sugli input, non sui cicli macchina.</span>
+</div>
 <div id="playerStatus" role="status" aria-live="polite"></div>
 <div id="authBox" class="hidden">
 <strong>GitHub privato · accesso solo lettura</strong>
@@ -122,7 +148,11 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 </div></div>
 </section>
 <div id="detailStatus" role="status"></div>
-<div id="playarea" class="hidden"><iframe id="playframe" title="Gioco nel Sellone Viewer" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe></div>
+<div id="playarea" class="hidden">
+<section class="player-pane" id="jsPane" aria-label="Versione JavaScript"><span class="pane-name">VERSIONE JAVASCRIPT</span><iframe id="playframe" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe></section>
+<section class="player-pane hidden" id="originalPane" aria-label="Versione originale"><span class="pane-name">VERSIONE ORIGINALE · EMULATORE</span><div id="originalStage"></div></section>
+<section id="sourcePane" class="hidden" aria-label="Sorgenti GitHub"></section>
+</div>
 <div id="unavailable" class="panel hidden">
 <div class="eyebrow">ANTEPRIMA</div>
 <h2>Build non disponibile</h2>
