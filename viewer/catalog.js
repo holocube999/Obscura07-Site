@@ -3,6 +3,7 @@
 const $=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search);
 const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999\//i,'');
+const initialRef=q.get('ref'),initialPath=q.get('path');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro;
@@ -75,10 +76,12 @@ async function githubHTML(opts={}){
  enableUI(true);showFrame();showStatus('Lettura da GitHub e verifica SHA…');
  try{
   await Retro.stop();$('playarea').replaceChildren($('playframe')); // Restore the single sandboxed web frame.
-  const ref=opts.pin?loaded?.ref:undefined;
-  const path=opts.pin?$('htmlCandidates').value||loaded?.path:undefined;
+  const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
+  const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined);
   const result=await GH.load({repo:currentRepo(),ref,path});
-  loaded=result;fillPaths($('htmlCandidates'),result.files||loaded.files||[],result.path);
+  const oldFiles=loaded?.files;
+  loaded={...result,files:result.files||oldFiles||[]};
+  fillPaths($('htmlCandidates'),loaded.files,result.path);
   $('playframe').removeAttribute('src');
   $('playframe').srcdoc=result.html;
   $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
@@ -107,6 +110,7 @@ async function selectedMedia(path){
  if(!selected||!mediaRevision||!path)return;
  const result=await GH.loadMedia({repo:currentRepo(),ref:mediaRevision.ref,path});
  remoteMedia=new File([result.media],result.path.split('/').pop(),{type:'application/octet-stream'});
+ $('mediaInput').value='';
  showStatus('GitHub verificato · '+result.path+' · '+result.ref.slice(0,12)+' · avvio disponibile.');
 }
 async function boot(){
@@ -154,7 +158,10 @@ function showDetail(repo){
  presentMode(item.viewer_type==='amiga_media'?'retro':'web');
  emptyFrame();showFrame();
  if(item.published&&localBuild(item))return;
- if(mode==='web'&&item.viewer_type!=='archive'&&item.viewer_type!=='native')githubHTML();
+ if(mode==='web'&&item.viewer_type!=='archive'&&item.viewer_type!=='native'){
+  if(initialRef&&initialPath&&item.repo.toLowerCase()===initial.toLowerCase())githubHTML({explicit:{ref:initialRef,path:initialPath}});
+  else githubHTML();
+ }
  else showStatus('Seleziona una build o un supporto da GitHub.');
 }
 async function loadCatalog(){
