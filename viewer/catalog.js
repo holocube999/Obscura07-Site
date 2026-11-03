@@ -9,7 +9,8 @@ const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
-let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,mode='web',busy=false;
+let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,view='js',busy=false;
+let syncChannel='',syncReady={js:false,original:false};
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
 function link(node,label,url,secondary){
  const a=text(node,'a',label);a.className='action'+(secondary?' secondary':'');a.href=url;return a;
@@ -48,13 +49,87 @@ function listing(value=''){
 }
 function emptyFrame(){const frame=$('playframe');frame.removeAttribute('src');frame.srcdoc='<!doctype html><title>Sellone WebPlayer</title><body style="background:#090b14;color:#b9c3d2;font:15px system-ui;padding:24px">Seleziona una build o un supporto da avviare.</body>';}
 function showFrame(){ $('unavailable').classList.add('hidden');$('playarea').classList.remove('hidden');}
+function newChannel(){
+ const bytes=crypto.getRandomValues(new Uint8Array(16));
+ return 's-'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');
+}
 function presentMode(next){
- mode=next;const retro=next==='retro';
- $('webControls').classList.toggle('hidden',retro);
- $('retroControls').classList.toggle('hidden',!retro);
- $('switchMode').textContent=retro?'Apri HTML/JS':'Apri ADF/D64/T64';
- $('detailStatus').textContent=retro?'Emulazione retro con core dedicato':'Build web da GitHub · revisione verificata';
- showStatus(retro?'Carica un supporto locale oppure selezionalo dal repository GitHub.':'Caricamento della versione GitHub…');
+ if(!['js','original','both','source'].includes(next))return;
+ view=next;
+ const hasJS=next==='js'||next==='both',hasRetro=next==='original'||next==='both';
+ for(const b of $('viewModes').querySelectorAll('[data-view]'))b.setAttribute('aria-pressed',String(b.dataset.view===next));
+ $('webControls').classList.toggle('hidden',!hasJS);
+ $('retroControls').classList.toggle('hidden',!hasRetro);
+ $('sourceControls').classList.toggle('hidden',next!=='source');
+ $('compareTools').classList.toggle('hidden',next!=='both');
+ $('jsPane').classList.toggle('hidden',!hasJS);
+ $('originalPane').classList.toggle('hidden',!hasRetro);
+ $('sourcePane').classList.toggle('hidden',next!=='source');
+ $('playarea').classList.toggle('compare',next==='both');
+ $('detailStatus').textContent=next==='both'?'Confronto · JS a sinistra / originale a destra':
+  next==='js'?'Versione JavaScript':next==='original'?'Originale · PUAE / VICE':'Sorgenti GitHub';
+}
+function bridgeHtml(html){
+ // The sandboxed JS game has an opaque origin; this short bridge contains
+ // only a per-session channel, never GitHub credentials or private media.
+ const bridge=String.raw`(function(){
+ 'use strict';
+ var channel=CHANNEL, delivering=false;
+ var valid=/^(?:Arrow(?:Up|Down|Left|Right)|Key[A-Z]|Digit[0-9]|Space|Enter|Escape|Shift(?:Left|Right)|Control(?:Left|Right))$/;
+ for(var action of ['keydown','keyup'])window.addEventListener(action,function(e){
+  if(delivering||!e.isTrusted||!valid.test(e.code))return;
+  parent.postMessage({type:'SELLONE_SYNC_INPUT_V1',channel:channel,action:e.type,key:e.key,code:e.code,repeat:e.repeat},'*');
+ },true);
+ window.addEventListener('message',function(e){
+  var d=e.data;
+  if(e.source!==parent||!d||d.type!=='SELLONE_SYNC_INPUT_V1'||d.channel!==channel||
+   !valid.test(String(d.code||''))||!['keydown','keyup'].includes(d.action))return;
+  delivering=true;
+  try{document.dispatchEvent(new KeyboardEvent(d.action,{key:d.key,code:d.code,repeat:!!d.repeat,bubbles:true,cancelable:true}))}
+  finally{delivering=false}
+ });
+ parent.postMessage({type:'SELLONE_SYNC_READY_V1',channel:channel,side:'js'},'*');
+})()`.replace('CHANNEL',JSON.stringify(syncChannel));
+ const tag='<script>'+bridge+'</script>';
+ return /<\/body\s*>/i.test(html)?html.replace(/<\/body\s*>/i,tag+'</body>'):html+tag;
+}
+function showJS(result){
+ $('playframe').removeAttribute('src');
+ $('playframe').srcdoc=bridgeHtml(result.html);
+ syncReady.js=false;updateSync();
+}
+function updateSync(){
+ const mode=$('linkedInput').checked?'collegati':'disattivati';
+ $('syncFeedback').textContent='Input '+mode+' · bridge JS '+(syncReady.js?'pronto':'in attesa')+
+  ' · core '+(syncReady.original?'pronto':'in attesa')+' · sincronizzazione dei frame non garantita';
+}
+function relay(data,target){
+ const frame=target==='js'?$('playframe'):Retro.frame();
+ if(!frame?.contentWindow)return;
+ frame.contentWindow.postMessage(data,target==='js'?'*':location.origin);
+}
+function inputFrom(event){
+ if(view!=='both'||!$('linkedInput').checked||!event.data||event.data.channel!==syncChannel)return;
+ const source=event.source=== $('playframe').contentWindow?'js':event.source===Retro.frame()?.contentWindow?'original':null;
+ if(!source)return;
+ if(event.data.type==='SELLONE_SYNC_READY_V1'){
+  syncReady[source]=true;updateSync();return;
+ }
+ if(event.data.type!=='SELLONE_SYNC_INPUT_V1'||!['keydown','keyup'].includes(event.data.action)||
+    !/^(?:Arrow(?:Up|Down|Left|Right)|Key[A-Z]|Digit[0-9]|Space|Enter|Escape|Shift(?:Left|Right)|Control(?:Left|Right))$/.test(event.data.code||''))return;
+ relay(event.data,source==='js'?'original':'js');
+}
+window.addEventListener('message',inputFrom);
+window.addEventListener('keydown',parentKey,true);
+window.addEventListener('keyup',parentKey,true);
+function parentKey(event){
+ if(!event.isTrusted||view!=='both'||!$('linkedInput').checked)return;
+ const target=event.target;
+ if(target?.closest?.('input,select,textarea,button,a'))return;
+ if(!/^(?:Arrow(?:Up|Down|Left|Right)|Key[A-Z]|Digit[0-9]|Space|Enter|Escape|Shift(?:Left|Right)|Control(?:Left|Right))$/.test(event.code))return;
+ if(event.code.startsWith('Arrow')||event.code==='Space')event.preventDefault();
+ const data={type:'SELLONE_SYNC_INPUT_V1',channel:syncChannel,action:event.type,key:event.key,code:event.code,repeat:event.repeat};
+ relay(data,'js');relay(data,'original');
 }
 function handleError(error){
  const msg=String(error.message||error);
@@ -69,7 +144,7 @@ function fillPaths(select,files,current){
  select.value=current||'';
 }
 function enableUI(active){busy=active;
- for(const id of ['loadLatest','reloadSelected','bootRetro','loadGitMedia'])$(id).disabled=active;
+ for(const id of ['loadLatest','reloadSelected','bootRetro','loadGitMedia','openSource','reloadSource','restartPair'])$(id).disabled=active;
 }
 async function githubHTML(opts={}){
  if(!selected)return;
