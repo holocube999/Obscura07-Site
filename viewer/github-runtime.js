@@ -94,9 +94,10 @@ async function load(input){
 }
 
 const mediaPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|prg)$/i;
+const biosPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:rom|bin|kick|a500|a1200)$/i;
 async function discoverMedia(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const commit=await api(base+'/commits/main');
+ const [commit,meta]=await Promise.all([api(base+'/commits/main'),api(base)]);
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(tree.truncated)throw Error('Albero GitHub troppo grande');
@@ -104,7 +105,8 @@ async function discoverMedia(input){
   x.size>0&&x.size<=3*1024*1024&&!/^(history|tests|docs|vendor|fixtures|node_modules)\//i.test(x.path))
   .map(x=>x.path).sort();
  if(!files.length)throw Error('Nessun ADF/D64/T64/PRG disponibile nel repository autorizzato');
- return {repo,ref:commit.sha,files,path:files[0]};
+ const biosFiles=meta.private===true&&!!token?(tree.tree||[]).filter(x=>x.type==='blob'&&biosPattern.test(x.path)&&x.size>=8192&&x.size<=2*1024*1024).map(x=>x.path).sort():[];
+ return {repo,ref:commit.sha,files,path:files[0],biosFiles};
 }
 async function loadMedia(input){
  const repo=normalizeRepo(input.repo);
@@ -123,6 +125,28 @@ async function loadMedia(input){
  if(bytes.length!==entry.size)throw Error('Dimensione del supporto non corrispondente');
  await checkBlob(bytes,entry.sha);
  return {repo,ref,path,files,media:new Blob([bytes],{type:'application/octet-stream'}),bytes:bytes.length,blob:entry.sha};
+}
+
+
+async function loadBios(input){
+ const repo=normalizeRepo(input.repo),ref=input.ref,path=input.path;
+ if(!token)throw Error('Kickstart remota consentita solo con accesso privato autorizzato');
+ if(!shaPattern.test(ref||'')||!biosPattern.test(path||''))throw Error('Percorso Kickstart o SHA non valido');
+ const base='https://api.github.com/repos/'+repo;
+ const meta=await api(base);
+ if(meta.private!==true)throw Error('Le ROM non devono essere pubblicate in repository pubblici');
+ const item=await api(base+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref);
+ if(item.type!=='file'||!shaPattern.test(item.sha||'')||!Number.isSafeInteger(item.size)||item.size<8192||item.size>2*1024*1024)throw Error('Kickstart privata non valida');
+ let bytes;
+ if(item.encoding==='base64'&&item.content)bytes=bytesFromBase64(item.content);
+ else {
+  const blob=await api(base+'/git/blobs/'+item.sha);
+  if(blob.encoding!=='base64'||!blob.content)throw Error('ROM privata non leggibile');
+  bytes=bytesFromBase64(blob.content);
+ }
+ if(bytes.length!==item.size)throw Error('Dimensione Kickstart non corrispondente');
+ await checkBlob(bytes,item.sha);
+ return {ref,path,bios:new Blob([bytes],{type:'application/octet-stream'}),bytes:bytes.length};
 }
 
 function b64(bytes){let s='';for(let i=0;i<bytes.length;i+=8192)s+=String.fromCharCode(...bytes.slice(i,i+8192));return btoa(s)}
@@ -148,5 +172,5 @@ async function unlock(password){
  token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
 }
 function forget(){token='';localStorage.removeItem(STORAGE)}
-window.SelloneGitHub=Object.freeze({normalizeRepo,discover,load,discoverMedia,loadMedia,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+window.SelloneGitHub=Object.freeze({normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();
