@@ -1,102 +1,201 @@
+/* Sellone WebPlayer: original project catalog + GitHub HTML + invisible retro cores. */
 (()=>{'use strict';
 const $=id=>document.getElementById(id);
-const qs=new URLSearchParams(location.search);
-const requested=(qs.get('repo')||qs.get('project')||'').trim();
+const q=new URLSearchParams(location.search);
+const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999\//i,'');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
-const catalogBase=new URL('../',location.href);
-const approvedPrefix=new URL('viewer/',catalogBase);
-const status=$('message');
-const grid=$('grid');
+const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
+const GH=window.SelloneGitHub,Retro=window.SelloneRetro;
 const all=[];
-const VIEWER_TYPES={web_js:{label:'WEB',playable:true},amiga_media:{label:'AMIGA',playable:true},native:{label:'NATIVO',playable:false},site:{label:'SITO',playable:true},archive:{label:'ARCHIVIO',playable:false}};
-function write(node,tag,value){const el=document.createElement(tag);el.textContent=value;node.append(el);return el}
-function link(node,value,href,secondary){
- const a=write(node,'a',value);a.href=href;a.className='action'+(secondary?' secondary':'');return a;
+const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
+let selected=null,loaded=null,remoteMedia=null,mediaRevision=null,mode='web',busy=false;
+function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
+function link(node,label,url,secondary){
+ const a=text(node,'a',label);a.className='action'+(secondary?' secondary':'');a.href=url;return a;
+}
+function showStatus(msg,error=false){
+ $('playerStatus').textContent=msg;
+ $('playerStatus').style.color=error?'#ffc5d3':'#b7c9d6';
+}
+function approvedBuild(path){
+ if(typeof path!=='string'||!/^viewer\/[A-Za-z0-9_.\/-]+\.html?$/i.test(path)||path.split('/').includes('..'))return '';
+ const url=new URL(path,root);
+ return url.origin===location.origin&&url.pathname.startsWith(approvedPrefix.pathname)&&!url.search&&!url.hash?url.href:'';
 }
 function viewLink(repo){return './?repo='+encodeURIComponent(repo)}
-function approvedBuild(url){
- if(typeof url!=='string'||!url.startsWith('viewer/'))return '';
- try{
-  const u=new URL(url,catalogBase);
-  if(u.origin!==location.origin||!u.pathname.startsWith(approvedPrefix.pathname)||u.search||u.hash||u.username||u.password)return '';
-  if(!/\.html?$/i.test(u.pathname))return '';
-  return u.href;
- }catch{return ''}
+function byRepo(repo){return all.find(x=>x.repo.toLowerCase()===repo.toLowerCase())}
+function card(item){
+ const el=document.createElement('article');el.className='panel project';
+ const head=text(el,'div','');head.className='head';
+ text(head,'span',types[item.viewer_type]||'PROGETTO').className='eyebrow';
+ text(head,'span',item.published?'Pubblicato':'GitHub').className='tag'+(item.published?' playable':'');
+ text(el,'h3',item.title);
+ text(el,'p',item.description);
+ const acts=text(el,'div','');acts.className='actions';
+ link(acts,'▶ Apri nel WebPlayer',viewLink(item.repo),false);
+ return el;
 }
-function byRepo(repo){return all.find(x=>x.repo.toLowerCase()===repo.toLowerCase())||null}
-function buildCard(item){
- const card=document.createElement('article');card.className='panel project';
- const head=write(card,'div');head.className='head';
- write(head,'span',(VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive).label).className='eyebrow';
- const badge=write(head,'span',item.published?'Online':'Sviluppo');
- badge.className='tag'+(item.published?' playable':'');
- write(card,'h3',item.title);
- write(card,'p',item.description);
- const actions=write(card,'div');actions.className='actions';
- link(actions,item.published?'▶ Apri e prova':'Apri scheda',viewLink(item.repo),!item.published);
- return card;
-}
-function drawListing(filter){
- grid.replaceChildren();
- const query=(filter||'').toLocaleLowerCase('it');
+function listing(value=''){
+ const filter=value.toLocaleLowerCase('it');const grid=$('grid');grid.replaceChildren();
  let count=0;
  for(const item of all){
-  if(query&&!String(item.title+' '+item.repo+' '+item.kind).toLocaleLowerCase('it').includes(query))continue;
-  grid.append(buildCard(item));count++;
+  if(filter&&!String(item.title+' '+item.repo+' '+item.kind).toLocaleLowerCase('it').includes(filter))continue;
+  grid.append(card(item));count++;
  }
- $('stats').textContent=count+' / '+all.length+' progetti · '+all.filter(i=>i.published).length+' build web pubblicate';
- status.textContent=count?'':'Nessun progetto corrispondente.';
+ $('stats').textContent=count+' / '+all.length+' progetti · '+all.filter(x=>x.published).length+' anteprime pubbliche';
+ $('message').textContent=count?'':'Nessun progetto corrispondente';
+}
+function emptyFrame(){const frame=$('playframe');frame.removeAttribute('src');frame.srcdoc='<!doctype html><title>Sellone WebPlayer</title><body style="background:#090b14;color:#b9c3d2;font:15px system-ui;padding:24px">Seleziona una build o un supporto da avviare.</body>';}
+function showFrame(){ $('unavailable').classList.add('hidden');$('playarea').classList.remove('hidden');}
+function presentMode(next){
+ mode=next;const retro=next==='retro';
+ $('webControls').classList.toggle('hidden',retro);
+ $('retroControls').classList.toggle('hidden',!retro);
+ $('switchMode').textContent=retro?'Apri HTML/JS':'Apri ADF/D64/T64';
+ $('detailStatus').textContent=retro?'Emulazione retro con core dedicato':'Build web da GitHub · revisione verificata';
+ showStatus(retro?'Carica un supporto locale oppure selezionalo dal repository GitHub.':'Caricamento della versione GitHub…');
+}
+function handleError(error){
+ const msg=String(error.message||error);
+ showStatus(msg,true);
+ if([401,403,404].includes(error.status))$('authBox').classList.remove('hidden');
+}
+function currentRepo(){if(!selected)throw Error('Nessun progetto selezionato');return GH.normalizeRepo(selected.repo)}
+function fillPaths(select,files,current){
+ select.replaceChildren();
+ const blank=document.createElement('option');blank.value='';blank.textContent='Seleziona build';select.append(blank);
+ for(const path of files||[]){const opt=document.createElement('option');opt.value=path;opt.textContent=path;select.append(opt)}
+ select.value=current||'';
+}
+function enableUI(active){busy=active;
+ for(const id of ['loadLatest','reloadSelected','bootRetro','loadGitMedia'])$(id).disabled=active;
+}
+async function githubHTML(opts={}){
+ if(!selected)return;
+ enableUI(true);showFrame();showStatus('Lettura da GitHub e verifica SHA…');
+ try{
+  await Retro.stop();$('playarea').replaceChildren($('playframe')); // Restore the single sandboxed web frame.
+  const ref=opts.pin?loaded?.ref:undefined;
+  const path=opts.pin?$('htmlCandidates').value||loaded?.path:undefined;
+  const result=await GH.load({repo:currentRepo(),ref,path});
+  loaded=result;fillPaths($('htmlCandidates'),result.files||loaded.files||[],result.path);
+  $('playframe').removeAttribute('src');
+  $('playframe').srcdoc=result.html;
+  $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
+  showStatus('Caricata build verificata: '+result.path+' ('+(result.bytes/1024).toFixed(1)+' KiB).');
+  const actions=$('detailActions');actions.replaceChildren();
+  const a=link(actions,'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
+  a.target='_blank';a.rel='noopener noreferrer';
+  const url=new URL(location.href);url.searchParams.set('repo',selected.repo);
+  url.searchParams.delete('ref');url.searchParams.delete('path');
+  history.replaceState(null,'',url.pathname+url.search);
+ }catch(error){emptyFrame();handleError(error)}
+ finally{enableUI(false)}
+}
+async function githubMedia(){
+ if(!selected)return;
+ enableUI(true);showStatus('Ricerca supporti nel repository GitHub…');
+ try{
+  mediaRevision=await GH.discoverMedia(currentRepo());
+  fillPaths($('mediaCandidates'),mediaRevision.files,mediaRevision.path);
+  $('mediaCandidates').classList.remove('hidden');
+  await selectedMedia(mediaRevision.path);
+ }catch(error){handleError(error)}
+ finally{enableUI(false)}
+}
+async function selectedMedia(path){
+ if(!selected||!mediaRevision||!path)return;
+ const result=await GH.loadMedia({repo:currentRepo(),ref:mediaRevision.ref,path});
+ remoteMedia=new File([result.media],result.path.split('/').pop(),{type:'application/octet-stream'});
+ showStatus('GitHub verificato · '+result.path+' · '+result.ref.slice(0,12)+' · avvio disponibile.');
+}
+async function boot(){
+ const disk=$('mediaInput').files[0]||remoteMedia;
+ const kick=$('kickInput').files[0]||null;
+ if(!disk||!Retro.supported(disk)){showStatus('Seleziona un ADF, D64, T64 o PRG valido (massimo 3 MiB).',true);return}
+ if(Retro.needsKick(disk)&&!Retro.validKick(kick)){
+  showStatus('Per l’avvio Amiga seleziona una Kickstart valida e di tua disponibilità.',true);return;
+ }
+ enableUI(true);
+ try{
+  showFrame();const stage=$('playarea');stage.replaceChildren();
+  const host=document.createElement('div');host.id='retroStage';stage.append(host);
+  await Retro.start({media:disk,bios:kick,title:selected.title,host,onStatus:showStatus});
+  $('detailStatus').textContent='Core retro · '+disk.name+' · '+(Retro.needsKick(disk)?'PUAE':'VICE');
+ }catch(error){handleError(error)}
+ finally{enableUI(false)}
+}
+function localBuild(item){
+ const url=item.published?approvedBuild(item.url):'';
+ if(!url)return false;
+ showFrame();const stage=$('playarea');stage.replaceChildren($('playframe'));
+ $('playframe').srcdoc='';$('playframe').src=url;
+ $('detailStatus').textContent='Anteprima web pubblicata';
+ const acts=$('detailActions');acts.replaceChildren();
+ const a=link(acts,'↗ Apri a schermo intero',url);a.target='_blank';a.rel='noopener noreferrer';
+ showStatus('Build web pubblica caricata.');return true;
 }
 function showDetail(repo){
  $('listing').classList.add('hidden');$('detail').classList.remove('hidden');
- const item=byRepo(repo)||{repo,title:repo,kind:'Progetto',description:'In sviluppo.',published:false,url:null};
- // Notification/deep-link to a published playable HTML must launch directly.
- // An embedded iframe can be refused by browser CSP / nested sandbox policy.
- const type=VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive;
- const direct=(type.playable&&item.published===true)?approvedBuild(item.url):'';
- if(direct){window.location.replace(direct);return;}
+ selected=byRepo(repo)||{repo,title:repo,description:'Repository GitHub',viewer_type:'web_js',published:false};
+ const item=selected;
  $('detailName').textContent=item.title;
- $('detailKind').textContent=(VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive).label;
+ $('detailKind').textContent=types[item.viewer_type]||'PROGETTO';
  $('detailDescription').textContent=item.description||'';
- document.title=item.title+' · Sellone Viewer';
- const actions=$('detailActions');actions.replaceChildren();
- const playable=item.published===true?approvedBuild(item.url):'';
- if(playable){
-  $('detailStatus').textContent='Anteprima web';
-  $('unavailable').classList.add('hidden');$('playarea').classList.remove('hidden');
-  const frame=$('playframe');
-  frame.src=playable;
-  const btn=link(actions,'↗ Apri a schermo intero',playable,false);
-  btn.target='_blank';btn.rel='noopener noreferrer';
-  link(actions,'↻ Ricarica',viewLink(repo),true);
- }else{
-  $('playframe').removeAttribute('src');
-  $('playarea').classList.add('hidden');$('unavailable').classList.remove('hidden');
-  $('detailStatus').textContent='Nessuna build web';
+ document.title=item.title+' · Sellone WebPlayer';
+ const acts=$('detailActions');acts.replaceChildren();
+ const page=link(acts,'↗ Repository','https://github.com/holocube999/'+encodeURIComponent(item.repo),true);
+ page.target='_blank';page.rel='noopener noreferrer';
+ const sw=$('switchMode');if(!sw){
+  const button=document.createElement('button');button.id='switchMode';button.className='action secondary';button.type='button';
+  acts.append(button);
+  button.onclick=async()=>{await Retro.stop();presentMode(mode==='web'?'retro':'web');emptyFrame();if(mode==='web')githubHTML()};
  }
+ presentMode(item.viewer_type==='amiga_media'?'retro':'web');
+ emptyFrame();showFrame();
+ if(item.published&&localBuild(item))return;
+ if(mode==='web'&&item.viewer_type!=='archive'&&item.viewer_type!=='native')githubHTML();
+ else showStatus('Seleziona una build o un supporto da GitHub.');
 }
-async function refresh(){
+async function loadCatalog(){
  try{
   const response=await fetch('../catalog.json',{cache:'no-store',credentials:'omit'});
   if(!response.ok)throw Error('HTTP '+response.status);
-  const c=await response.json();
-  if(!c||c.schema!==2||!Array.isArray(c.projects))throw Error('Formato catalogo non compatibile');
-  const next=[];
-  const unique=new Set();
-  for(const value of c.projects){
-   if(!value||!validRepo.test(value.repo||''))continue;
-   if(unique.has(value.repo.toLowerCase()))continue;
-   unique.add(value.repo.toLowerCase());
-   next.push({repo:value.repo,title:String(value.title||value.repo).slice(0,90),
-    kind:String(value.kind||'Progetto').slice(0,40),description:String(value.description||'').slice(0,250),
-    url:value.url,viewer_type:VIEWER_TYPES[value.viewer_type]?value.viewer_type:'archive',
-    published:value.published===true&&!!approvedBuild(value.url)});
+  const data=await response.json();
+  if(data.schema!==2||!Array.isArray(data.projects))throw Error('Catalogo incompatibile');
+  const seen=new Set();
+  for(const item of data.projects){
+   if(!item||!validRepo.test(item.repo||'')||seen.has(item.repo.toLowerCase()))continue;
+   seen.add(item.repo.toLowerCase());
+   all.push({repo:item.repo,title:String(item.title||item.repo).slice(0,90),
+    description:String(item.description||'').slice(0,250),kind:String(item.kind||''),
+    viewer_type:types[item.viewer_type]?item.viewer_type:'archive',
+    published:item.published===true&&!!approvedBuild(item.url),url:item.url});
   }
-  all.splice(0,all.length,...next);
-  if(requested&&validRepo.test(requested)){showDetail(requested)}
-  else{drawListing($('search').value);if(requested)status.textContent='Identificativo progetto non valido.'}
- }catch(error){status.textContent='Catalogo non raggiungibile: '+String(error.message||error);}
+  if(initial&&validRepo.test(initial))showDetail(initial);
+  else {listing();if(initial)$('message').textContent='Identificativo repository non valido'}
+ }catch(error){$('message').textContent='Errore catalogo: '+String(error.message||error)}
 }
-$('search').addEventListener('input',()=>drawListing($('search').value));
-refresh();
+$('search').oninput=()=>listing($('search').value);
+$('loadLatest').onclick=()=>githubHTML();
+$('reloadSelected').onclick=()=>githubHTML({pin:true});
+$('htmlCandidates').onchange=()=>{if(loaded)githubHTML({pin:true})};
+$('loadGitMedia').onclick=()=>githubMedia();
+$('mediaCandidates').onchange=async()=>{try{await selectedMedia($('mediaCandidates').value)}catch(e){handleError(e)}};
+$('mediaInput').onchange=()=>{remoteMedia=null;showStatus('Supporto locale selezionato; premi Avvia supporto.')};
+$('bootRetro').onclick=()=>boot();
+$('stopRetro').onclick=async()=>{await Retro.stop();$('playarea').replaceChildren($('playframe'));emptyFrame();showStatus('Emulatore fermato; supporti temporanei eliminati.')};
+$('useGitToken').onclick=async()=>{
+ try{
+  await GH.setToken($('gitToken').value,$('gitPassword').value,$('saveToken').checked);
+  $('gitToken').value='';$('gitPassword').value='';$('authBox').classList.add('hidden');
+  if(mode==='retro')await githubMedia();else await githubHTML();
+ }catch(e){handleError(e)}
+};
+$('unlockGitToken').onclick=async()=>{
+ try{await GH.unlock($('gitPassword').value);$('gitPassword').value='';$('authBox').classList.add('hidden');if(mode==='retro')await githubMedia();else await githubHTML()}
+ catch(e){handleError(e)}
+};
+$('forgetGitToken').onclick=()=>{GH.forget();$('authBox').classList.add('hidden');showStatus('Token cifrato eliminato.')};
+loadCatalog();
 })();
