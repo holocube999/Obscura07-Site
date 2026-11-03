@@ -1,87 +1,23 @@
-<!doctype html>
-<html lang="it">
-<head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="referrer" content="no-referrer"><title>Sellone WebPlayer · GitHub revisioni verificate</title>
-<style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,sans-serif;background:#0c0e17;color:#ececf5}*{box-sizing:border-box}body{margin:0}
-header{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 18px;background:#19192c;border-bottom:1px solid #34344c}
-header strong{font-size:1.12rem}.wrap{display:flex;flex-direction:column;height:100dvh}.controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}button,.link{background:#43315f;border:1px solid #67538b;border-radius:8px;color:#fff;padding:9px 12px;cursor:pointer;font:inherit;text-decoration:none}button:disabled{opacity:.4;cursor:default}button:hover:not(:disabled){background:#5b4583}
-#status{padding:10px 18px;font-size:.88rem;white-space:pre-wrap;background:#111423;color:#c1c6d8;min-height:43px}#status.error{background:#491a22;color:#ffd7df}#status.ok{background:#153429;color:#c7f5de}
-#metadata{padding:5px 18px;font-size:.8rem;color:#aeb7d0;overflow-wrap:anywhere}
-iframe{width:100%;min-height:0;flex:1;border:0;background:#080808}
-#credentials{background:#1d1c30;border-bottom:1px solid #373451;padding:16px 18px;display:none}#credentials.visible{display:block}
-.authrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin-top:8px}.authrow input{font:inherit;min-width:180px;max-width:100%;padding:9px;background:#10121d;color:#f8f8fd;border:1px solid #79718d;border-radius:6px}#key{width:min(460px,95vw)}
-small{color:#c9c5d7}#reveal{display:none}a{color:#b7a8e6}@media(max-width:650px){header{padding:10px}#status,#metadata{padding:8px 10px}.controls button,.controls a{padding:7px 8px;font-size:.85rem}}
-</style>
-</head><body>
-<div class="wrap">
-<header><strong>🎮 Sellone WebPlayer</strong><div class="controls"><button id="latest" type="button">🔄 Ultima revisione</button><button id="reload" type="button">↻ Ricarica SHA</button><button id="credentialsButton" type="button">🔒 Token</button><a id="commitLink" class="link" target="_blank" rel="noopener noreferrer" hidden>🔎 Commit</a></div></header>
-<section id="credentials"><b>Accesso ai repository GitHub privati</b><p><small>Il token non viene mai inserito nell'URL o inviato ai giochi. Puoi conservarlo cifrato localmente con una password; occorre sbloccarlo all'apertura del browser.</small></p>
-<div class="authrow"><input id="key" type="password" spellcheck="false" autocomplete="off" placeholder="GitHub token (solo Contents: read)"><input id="password" type="password" spellcheck="false" autocomplete="off" placeholder="Password locale (almeno 12 caratteri)"><button type="button" id="useToken">Usa token</button><button type="button" id="unlock">Sblocca token salvato</button><button type="button" id="erase">Cancella token salvato</button></div>
-<div class="authrow"><label><input id="remember" type="checkbox" checked> Salva token soltanto cifrato</label></div></section>
-<div id="status" role="status" aria-live="polite">Controllo revisione in corso…</div><div id="metadata" aria-label="Identità versione"></div>
-<iframe id="gameFrame" title="Anteprima del gioco alla revisione selezionata" referrerpolicy="no-referrer" sandbox="allow-scripts allow-forms allow-pointer-lock allow-downloads" srcdoc="<!doctype html><title>Caricamento</title><body style='background:#111;color:white;font:16px system-ui;padding:30px'>Versione non ancora caricata.</body>"></iframe>
-</div>
+<!doctype html><html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0;url=../viewer/">
+<meta name="referrer" content="no-referrer"><title>Sellone WebPlayer</title>
+</head><body style="background:#0b0d17;color:#e8e7ef;font:16px system-ui;padding:28px">
+<p>Sellone WebPlayer è stato unificato nel catalogo progetti.</p>
+<p><a href="../viewer/" style="color:#c9b7ff">Apri Sellone WebPlayer</a></p>
 <script>
 'use strict';
-// Only trusted GitHub API is allowed to see the private PAT. The game runs in
-// a sandboxed opaque-origin iframe (never allow-same-origin with scripts).
-const $=id=>document.getElementById(id);
-const sha40=/^[0-9a-f]{40}$/i;
-const repoRE=/^holocube999\/[A-Za-z0-9_.-]+$/;
-const pathRE=/^(?:(?:src|app)\/)?[A-Za-z0-9_.-]+\.html$/;
-const versionRE=/^src\/MadDoctor_JS_Native_v(\d+(?:\.\d+)+)\.html$/;
-const vaultKey='sellone-webplayer-token-v1';
-const games={maddoctor:'holocube999/JSDoctor-MadDoctor',robocop3:'holocube999/RoboCop3-JS'};
-let token='',selection=null,loading=false,previousHtml='';
-function setStatus(value,kind=''){ $('status').className=kind; $('status').textContent=value; }
-function showAuth(show){$('credentials').classList.toggle('visible',show)}
-function bytesFromBase64(data){const clean=String(data||'').replace(/\s+/g,'');const chunk=8192;const parts=[];let length=0;for(let i=0;i<clean.length;i+=chunk){let n=Math.min(chunk,clean.length-i); if(i+n<clean.length)n-=n%4;const raw=atob(clean.slice(i,i+n));const a=Uint8Array.from(raw,c=>c.charCodeAt(0));parts.push(a);length+=a.length;i+=0;}const all=new Uint8Array(length);let pos=0;for(const a of parts){all.set(a,pos);pos+=a.length}return all}
-function hex(arr){return Array.from(new Uint8Array(arr),b=>b.toString(16).padStart(2,'0')).join('')}
-function utf8(data){return new TextDecoder('utf-8',{fatal:true}).decode(data)}
-function blobHeader(data){const h=new TextEncoder().encode(`blob ${data.length}\0`);const x=new Uint8Array(h.length+data.length);x.set(h);x.set(data,h.length);return x}
-async function checkGitBlob(data,sha){const actual=hex(await crypto.subtle.digest('SHA-1',blobHeader(data)));if(actual!==sha)throw Error('Integrità fallita: blob GitHub diverso dal contenuto ricevuto')}
-function selectFromURL(){const q=new URLSearchParams(location.search),game=(q.get('game')||'').toLowerCase();if(q.has('repo')||q.has('ref')||q.has('path')){
-const repo=q.get('repo'),ref=q.get('ref'),path=q.get('path');if(!repoRE.test(repo||'')||!sha40.test(ref||'')||!pathRE.test(path||''))throw Error('Il link deve specificare repo, ref SHA completo e path HTML validi. Non userò una build vecchia di fallback.');return {repo,ref:ref.toLowerCase(),path,game};}
-if(game in games)return {repo:games[game],ref:null,path:null,game};throw Error('Nessun gioco selezionato. Apri un link Sellone con repo/ref/path o ?game=maddoctor.');}
-function revParts(path){const m=versionRE.exec(path);return m?m[1].split('.').map(Number):null}
-function latestHtml(repo,files){const paths=files.filter(f=>f.type==='blob').map(f=>f.path);
-if(repo==='holocube999/JSDoctor-MadDoctor')return paths.filter(p=>versionRE.test(p)).sort((a,b)=>{const x=revParts(a),y=revParts(b);for(let i=0;i<Math.max(x.length,y.length);i++){const d=(y[i]||0)-(x[i]||0);if(d)return d;}return 0})[0];
-return ['index.html','app/game.html','app/index.html','game.html'].find(p=>paths.includes(p));}
-async function github(url){const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};if(token)headers.Authorization='Bearer '+token;const r=await fetch(url,{headers,cache:'no-store',credentials:'omit',referrerPolicy:'no-referrer'});if(!r.ok){if(r.status===401||r.status===403||r.status===404)throw Error(`GitHub HTTP ${r.status}: verifica token Contents:read e accesso al repository privato`);throw Error('GitHub HTTP '+r.status)}return await r.json()}
-async function resolveLatest(repo){const [owner,name]=repo.split('/');const api=`https://api.github.com/repos/${owner}/${name}`;
-const commit=await github(api+'/commits/main');if(!sha40.test(commit.sha||''))throw Error('SHA main non valido');const tree=await github(api+'/git/trees/'+commit.sha+'?recursive=1');if(tree.truncated)throw Error('Tree GitHub troncato: versione non verificabile');const path=latestHtml(repo,tree.tree||[]);if(!path)throw Error('Nessun HTML di gioco verificabile nel tree corrente');return {repo,ref:commit.sha,path,game:repo==='holocube999/JSDoctor-MadDoctor'?'maddoctor':''};}
-function canonical(selection){const u=new URL(location.href);u.search='';u.searchParams.set('repo',selection.repo);u.searchParams.set('ref',selection.ref);u.searchParams.set('path',selection.path);return u.pathname+u.search}
-async function loadFile(sel){const [owner,repo]=sel.repo.split('/');const api=`https://api.github.com/repos/${owner}/${repo}`;
-const encoded=sel.path.split('/').map(encodeURIComponent).join('/');const item=await github(api+'/contents/'+encoded+'?ref='+sel.ref);
-if(item.type!=='file'||!sha40.test(item.sha||'')||typeof item.size!=='number'||item.size>12*1024*1024)throw Error('Il file non è un HTML verificabile entro 12 MB');let raw;
-if(item.encoding==='base64'&&item.content)raw=bytesFromBase64(item.content);
-else {const blob=await github(api+'/git/blobs/'+item.sha);if(blob.encoding!=='base64'||!blob.content)throw Error('Blob GitHub non disponibile');raw=bytesFromBase64(blob.content)}
-if(raw.length!==item.size)throw Error('Dimensione del file non corrispondente');await checkGitBlob(raw,item.sha);
-const html=utf8(raw);if(!/^\s*(?:<!doctype\s+html|<html\b)/i.test(html))throw Error('Il file non contiene un documento HTML');return {html,blob:item.sha,size:raw.length};}
-async function load(opts={}){if(loading)return;loading=true;$('reload').disabled=true;$('latest').disabled=true;setStatus('⏳ Lettura versione GitHub…');try{
-let sel=opts.latest?{...selection,ref:null,path:null}:selectFromURL();if(!sel||!repoRE.test(sel.repo||''))throw Error('Repository non valido');if(!sel.ref)sel=await resolveLatest(sel.repo);
-const item=await loadFile(sel);selection=sel;const ver=versionRE.test(sel.path)?'v'+versionRE.exec(sel.path)[1]:sel.path;
-// Always replace the previous DOM, even if HTML content happens to look similar.
-$('gameFrame').srcdoc='<!doctype html><title>Caricamento della revisione</title>';
-$('gameFrame').srcdoc=item.html;
-history.replaceState(null,'',canonical(sel));
-$('metadata').textContent=`Versione: ${ver} · Git commit: ${sel.ref} · HTML blob: ${item.blob} · ${(item.size/1024).toFixed(1)} KiB`;
-$('commitLink').href=`https://github.com/${sel.repo}/commit/${sel.ref}`;$('commitLink').hidden=false;
-setStatus(`✅ CARICATA ${ver} · SHA ${sel.ref.slice(0,12)} · HTML verificato, nessun fallback su una build precedente`,'ok');
-}catch(e){setStatus('❌ Preview non aggiornata: '+String(e.message||e)+'. Nessuna versione obsoleta viene caricata come sostituta.','error');$('gameFrame').srcdoc='<!doctype html><title>Anteprima non disponibile</title><body style="color:white;background:#151523;font:17px system-ui;padding:24px">Anteprima non disponibile. Verifica il collegamento e l’accesso GitHub.</body>';
-showAuth(true);}finally{loading=false;$('reload').disabled=false;$('latest').disabled=false}}
-function b64(a){let s='';for(let i=0;i<a.length;i+=8192)s+=String.fromCharCode(...a.slice(i,i+8192));return btoa(s)}
-async function derivation(password,salt){const raw=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:260000,hash:'SHA-256'},raw,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
-async function storeToken(value,pwd){if(pwd.length<12)throw Error('La password locale deve contenere almeno 12 caratteri');const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));const k=await derivation(pwd,salt);const encrypted=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(value)));localStorage.setItem(vaultKey,JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),payload:b64(encrypted)}))}
-async function recoverToken(pwd){const saved=localStorage.getItem(vaultKey);if(!saved)throw Error('Nessun token cifrato salvato');const obj=JSON.parse(saved);if(obj.v!==1)throw Error('Archivio token incompatibile');const salt=bytesFromBase64(obj.salt),iv=bytesFromBase64(obj.iv),payload=bytesFromBase64(obj.payload);const k=await derivation(pwd,salt);return utf8(new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv},k,payload)))}
-$('credentialsButton').onclick=()=>showAuth(!$('credentials').classList.contains('visible'));
-$('latest').onclick=()=>{if(!selection){load();return}load({latest:true})};$('reload').onclick=()=>load();
-$('useToken').onclick=async()=>{try{const value=$('key').value.trim();if(!value||value.length<16)throw Error('Inserisci un token GitHub di lettura valido');if($('remember').checked)await storeToken(value,$('password').value);token=value;$('key').value='';$('password').value='';showAuth(false);await load();}catch(e){setStatus('⚠️ '+e.message,'error')}};
-$('unlock').onclick=async()=>{try{token=await recoverToken($('password').value);$('password').value='';showAuth(false);await load();}catch(e){setStatus('⚠️ Password errata o archivio token non disponibile: '+e.name,'error')}};
-$('erase').onclick=()=>{token='';localStorage.removeItem(vaultKey);$('password').value='';$('key').value='';$('gameFrame').srcdoc='<!doctype html><title>Token dimenticato</title>';setStatus('Token locale cancellato. Nessun accesso a GitHub privato attivo.');showAuth(true)};
-if(localStorage.getItem(vaultKey)){showAuth(true);setStatus('🔒 Token cifrato presente: sbloccalo per aprire il repository privato.');}else{load()}
-</script>
-<script src="../assets/embed-bridge.js" defer></script>
-</body></html>
+const query=new URLSearchParams(location.search);
+const aliases={maddoctor:'JSDoctor-MadDoctor',robocop3:'RoboCop3-JS'};
+const alias=aliases[(query.get('game')||'').toLowerCase()];
+const repo=(query.get('repo')||query.get('project')||alias||'').replace(/^holocube999\//i,'');
+const url=new URL('../viewer/',location.href);
+if(/^[A-Za-z0-9_.-]{1,100}$/.test(repo)){
+ url.searchParams.set('repo',repo);
+ const ref=query.get('ref'),path=query.get('path');
+ if(/^[a-f0-9]{40}$/i.test(ref||'')&&/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(path||'')){
+  url.searchParams.set('ref',ref);url.searchParams.set('path',path);
+ }
+}
+location.replace(url.href);
+</script></body></html>
