@@ -61,7 +61,7 @@ function setup(){
   validKick:file=>!!file&&file.name.endsWith('.rom')
  };
  const listeners=new Map();
- const window={SelloneGitHub:GH,SelloneRetro:Retro,addEventListener:(name,cb)=>{
+ const window={SelloneGitHub:GH,SelloneRetro:Retro,SelloneBundle:{prepare:async result=>({...result,assetCount:0,moduleCount:0})},addEventListener:(name,cb)=>{
   if(!listeners.has(name))listeners.set(name,[]);listeners.get(name).push(cb);
  }};
  const location={href:'https://example.test/Obscura07-Site/viewer/?repo=JSDoctor-MadDoctor',
