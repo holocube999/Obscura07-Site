@@ -150,20 +150,20 @@ async function githubHTML(opts={}){
  if(!selected)return;
  enableUI(true);showFrame();showStatus('Lettura da GitHub e verifica SHA…');
  try{
-  await Retro.stop();$('playarea').replaceChildren($('playframe')); // Restore the single sandboxed web frame.
+  // In split mode the emulator must remain running while the JS build reloads.
   const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
   const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined);
   const result=await GH.load({repo:currentRepo(),ref,path});
   const oldFiles=loaded?.files;
   loaded={...result,files:result.files||oldFiles||[]};
   fillPaths($('htmlCandidates'),loaded.files,result.path);
-  $('playframe').removeAttribute('src');
-  $('playframe').srcdoc=result.html;
+  showJS(result);
   $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
   showStatus('Caricata build verificata: '+result.path+' ('+(result.bytes/1024).toFixed(1)+' KiB).');
-  const actions=$('detailActions');actions.replaceChildren();
-  const a=link(actions,'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
-  a.target='_blank';a.rel='noopener noreferrer';
+  const existing=$('commitAction');
+  if(existing)existing.remove();
+  const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
+  a.id='commitAction';a.target='_blank';a.rel='noopener noreferrer';
   const url=new URL(location.href);url.searchParams.set('repo',selected.repo);
   url.searchParams.delete('ref');url.searchParams.delete('path');
   history.replaceState(null,'',url.pathname+url.search);
@@ -206,21 +206,20 @@ async function boot(){
  }
  enableUI(true);
  try{
-  showFrame();const stage=$('playarea');stage.replaceChildren();
-  const host=document.createElement('div');host.id='retroStage';stage.append(host);
-  await Retro.start({media:disk,bios:kick,title:selected.title,host,onStatus:showStatus});
+  showFrame();const host=$('originalStage');
+  syncReady.original=false;updateSync();
+  await Retro.start({media:disk,bios:kick,title:selected.title,host,onStatus:showStatus,channel:syncChannel});
   $('detailStatus').textContent='Core retro · '+disk.name+' · '+(Retro.needsKick(disk)?'PUAE':'VICE');
- }catch(error){handleError(error);$('playarea').replaceChildren($('playframe'));emptyFrame()}
+ }catch(error){handleError(error)}
  finally{enableUI(false)}
 }
 function localBuild(item){
  const url=item.published?approvedBuild(item.url):'';
  if(!url)return false;
- showFrame();const stage=$('playarea');stage.replaceChildren($('playframe'));
+ showFrame();
  $('playframe').srcdoc='';$('playframe').src=url;
  $('detailStatus').textContent='Anteprima web pubblicata';
- const acts=$('detailActions');acts.replaceChildren();
- const a=link(acts,'↗ Apri a schermo intero',url);a.target='_blank';a.rel='noopener noreferrer';
+ const a=link($('detailActions'),'↗ Apri anteprima pubblica',url,true);a.target='_blank';a.rel='noopener noreferrer';
  showStatus('Build web pubblica caricata.');return true;
 }
 function showDetail(repo){
