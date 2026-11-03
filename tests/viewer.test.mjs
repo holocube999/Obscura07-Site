@@ -42,6 +42,7 @@ test('Viewer safe mobile routing and no arbitrary origin/embed',()=>{
  assert.ok(!index.includes('allow-same-origin'));
  assert.ok(js.includes("qs.get('repo')"));
  assert.ok(js.includes('showDetail(requested)'));
+ assert.ok(js.includes('window.location.replace(direct)'),'Public playable projects should launch top-level, no iframe blockage');
  assert.ok(js.includes("credentials:'omit'"));
  assert.ok(js.includes('approvedBuild'));
  assert.ok(js.includes('new URL('));

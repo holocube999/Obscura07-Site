@@ -49,6 +49,10 @@ function drawListing(filter){
 function showDetail(repo){
  $('listing').classList.add('hidden');$('detail').classList.remove('hidden');
  const item=byRepo(repo)||{repo,title:repo,kind:'Progetto',description:'Non ancora presente nel catalogo pubblico.',published:false,url:null};
+ // Notification/deep-link to a published playable HTML must launch directly.
+ // An embedded iframe can be refused by browser CSP / nested sandbox policy.
+ const direct=item.published===true?approvedBuild(item.url):'';
+ if(direct){window.location.replace(direct);return;}
  $('detailName').textContent=item.title;
  $('detailKind').textContent=(item.kind||'Progetto')+' / Sellone Viewer';
  $('detailDescription').textContent=item.description||'';
