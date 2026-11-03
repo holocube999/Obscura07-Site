@@ -6,7 +6,7 @@ const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999
 const initialRef=q.get('ref'),initialPath=q.get('path');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
-const GH=window.SelloneGitHub,Retro=window.SelloneRetro;
+const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
 let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,view='js',busy=false;
@@ -155,13 +155,16 @@ async function githubHTML(opts={}){
   // In split mode the emulator must remain running while the JS build reloads.
   const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
   const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined);
-  const result=await GH.load({repo:currentRepo(),ref,path});
+  const verified=await GH.load({repo:currentRepo(),ref,path});
+  if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
+  showStatus('Verifica CSS e moduli JavaScript del repository…');
+  const result=await Bundle.prepare(verified,GH);
   const oldFiles=loaded?.files;
   loaded={...result,files:result.files||oldFiles||[]};
   fillPaths($('htmlCandidates'),loaded.files,result.path);
   showJS(result);
   $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
-  showStatus('Caricata build verificata: '+result.path+' ('+(result.bytes/1024).toFixed(1)+' KiB).');
+  showStatus('HTML verificato: '+result.path+' · '+result.moduleCount+' moduli JS · '+result.assetCount+' dipendenze.');
   const existing=$('commitAction');
   if(existing)existing.remove();
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
