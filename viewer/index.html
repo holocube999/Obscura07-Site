@@ -31,6 +31,21 @@ h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4
 .action{padding:9px 13px;border:1px solid #594f77;border-radius:8px;background:#342e4b;color:#f1eaff;text-decoration:none;font-size:13px;font-weight:700}
 .action.secondary{background:#202333;color:#b6bbd2}
 .hidden{display:none!important}
+.player-controls{margin:17px 0;padding:13px 16px}
+.player-controls .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:9px 0}
+.player-controls input,.player-controls select{background:#171b29;color:#f5f3ff;border:1px solid #555c76;border-radius:7px;padding:9px;min-width:110px;max-width:100%;font:inherit}
+.player-controls input[type=file]{width:min(390px,100%)}
+.player-controls label{font-size:13px;color:#bec3d5}
+.player-controls button{cursor:pointer}
+.player-controls button:disabled{opacity:.5;cursor:default}
+#playerStatus{color:#b7c9d6;font-size:12px;overflow-wrap:anywhere}
+#authBox{background:#191729;border:1px solid #4c476d;border-radius:10px;padding:13px}
+#authBox p{font-size:12px;color:#b9bed2}
+#playerControls{max-width:100%}
+#htmlCandidates,#mediaCandidates{min-width:min(340px,95vw);max-width:100%}
+#gameHeader{margin-bottom:12px}
+.retro-frame{display:block;width:100%;height:min(77svh,850px);min-height:440px;border:0;border-radius:9px;background:#08090e}
+.hidden{display:none!important}
 #detail{padding-top:10px}
 #back{display:inline-block;margin-bottom:30px;color:#d5c8ff}
 .detail-layout{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
@@ -48,7 +63,7 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <body>
 <header class="top">
 <a class="brand" href="../index.html">◢ OBSCURA/07 <span style="font-weight:400;color:#aeb2c5"> / SELLONE</span></a>
-<nav class="topnav" aria-label="Navigazione"><a href="./">Tutti i progetti</a><a href="../webplayer/index.html">WebPlayer</a><a href="../index.html">Sito</a></nav>
+<nav class="topnav" aria-label="Navigazione"><a href="./">Tutti i progetti</a><a href="../index.html">Sito</a></nav>
 </header>
 <main>
 <section id="listing">
@@ -69,6 +84,35 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <div><h1 id="detailName">Progetto</h1><p class="lede" id="detailDescription"></p></div>
 <div class="actions" id="detailActions"></div>
 </div>
+<section class="panel player-controls" id="playerControls" aria-label="Controlli Sellone WebPlayer">
+<div id="gameHeader" class="eyebrow">SELLONE WEBPLAYER · GITHUB</div>
+<div class="tools" id="webControls">
+<button class="action" type="button" id="loadLatest">▶ Ultima build GitHub</button>
+<label for="htmlCandidates">HTML</label><select id="htmlCandidates" aria-label="Build HTML"><option value="">Automatico</option></select>
+<button class="action secondary" type="button" id="reloadSelected">↻ Ricarica</button>
+</div>
+<div class="tools" id="retroControls">
+<label for="mediaInput">ADF / D64 / T64 / PRG</label>
+<input id="mediaInput" type="file" accept=".adf,.d64,.t64,.prg">
+<label for="kickInput">Kickstart (Amiga)</label>
+<input id="kickInput" type="file" accept=".rom,.bin,.kick,.a500,.a1200">
+<button class="action" type="button" id="bootRetro">▶ Avvia supporto</button>
+<button class="action secondary" type="button" id="loadGitMedia">GitHub media</button>
+<select id="mediaCandidates" aria-label="Media GitHub disponibili" class="hidden"></select>
+<button class="action secondary" type="button" id="stopRetro">■ Ferma</button>
+</div>
+<div id="playerStatus" role="status" aria-live="polite"></div>
+<div id="authBox" class="hidden">
+<strong>GitHub privato · accesso solo lettura</strong>
+<p>Il token viene usato soltanto per GitHub API, mai inviato al gioco. Salvataggio locale opzionale, cifrato.</p>
+<div class="tools"><input id="gitToken" type="password" autocomplete="off" placeholder="GitHub token (Contents:read)">
+<input id="gitPassword" type="password" autocomplete="off" placeholder="Password locale (min. 12 caratteri)">
+<label><input type="checkbox" id="saveToken"> Salva cifrato</label>
+<button type="button" class="action" id="useGitToken">Usa token</button>
+<button type="button" class="action secondary" id="unlockGitToken">Sblocca</button>
+<button type="button" class="action secondary" id="forgetGitToken">Elimina token</button>
+</div></div>
+</section>
 <div id="detailStatus" role="status"></div>
 <div id="playarea" class="hidden"><iframe id="playframe" title="Gioco nel Sellone Viewer" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe></div>
 <div id="unavailable" class="panel hidden">
@@ -80,6 +124,8 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 </section>
 </main>
 <footer>SELLONE VIEWER · OBSCURA/07</footer>
+<script src="./github-runtime.js" defer></script>
+<script src="./retro-runtime.js" defer></script>
 <script src="./catalog.js" defer></script>
 <script src="../assets/embed-bridge.js" defer></script>
 </body></html>
