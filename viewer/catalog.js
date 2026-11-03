@@ -8,6 +8,7 @@ const approvedPrefix=new URL('viewer/',catalogBase);
 const status=$('message');
 const grid=$('grid');
 const all=[];
+const VIEWER_TYPES={web_js:{label:'WEB',playable:true},amiga_media:{label:'AMIGA',playable:true},native:{label:'NATIVO',playable:false},site:{label:'SITO',playable:true},archive:{label:'ARCHIVIO',playable:false}};
 function write(node,tag,value){const el=document.createElement(tag);el.textContent=value;node.append(el);return el}
 function link(node,value,href,secondary){
  const a=write(node,'a',value);a.href=href;a.className='action'+(secondary?' secondary':'');return a;
@@ -26,8 +27,8 @@ function byRepo(repo){return all.find(x=>x.repo.toLowerCase()===repo.toLowerCase
 function buildCard(item){
  const card=document.createElement('article');card.className='panel project';
  const head=write(card,'div');head.className='head';
- write(head,'span',item.kind||'Progetto').className='eyebrow';
- const badge=write(head,'span',item.published?'Playtest web':'In sviluppo');
+ write(head,'span',(VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive).label).className='eyebrow';
+ const badge=write(head,'span',item.published?'Online':'Sviluppo');
  badge.className='tag'+(item.published?' playable':'');
  write(card,'h3',item.title);
  write(card,'p',item.description);
@@ -44,23 +45,24 @@ function drawListing(filter){
   grid.append(buildCard(item));count++;
  }
  $('stats').textContent=count+' / '+all.length+' progetti · '+all.filter(i=>i.published).length+' build web pubblicate';
- status.textContent=count?'Catalogo pubblico. Le repository private non vengono copiate qui.':'Nessun progetto corrispondente.';
+ status.textContent=count?'':'Nessun progetto corrispondente.';
 }
 function showDetail(repo){
  $('listing').classList.add('hidden');$('detail').classList.remove('hidden');
- const item=byRepo(repo)||{repo,title:repo,kind:'Progetto',description:'Non ancora presente nel catalogo pubblico.',published:false,url:null};
+ const item=byRepo(repo)||{repo,title:repo,kind:'Progetto',description:'In sviluppo.',published:false,url:null};
  // Notification/deep-link to a published playable HTML must launch directly.
  // An embedded iframe can be refused by browser CSP / nested sandbox policy.
- const direct=item.published===true?approvedBuild(item.url):'';
+ const type=VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive;
+ const direct=(type.playable&&item.published===true)?approvedBuild(item.url):'';
  if(direct){window.location.replace(direct);return;}
  $('detailName').textContent=item.title;
- $('detailKind').textContent=(item.kind||'Progetto')+' / Sellone Viewer';
+ $('detailKind').textContent=(VIEWER_TYPES[item.viewer_type]||VIEWER_TYPES.archive).label;
  $('detailDescription').textContent=item.description||'';
  document.title=item.title+' · Sellone Viewer';
  const actions=$('detailActions');actions.replaceChildren();
  const playable=item.published===true?approvedBuild(item.url):'';
  if(playable){
-  $('detailStatus').textContent='ANTEPRIMA PUBBLICATA · Questa build browser è disponibile senza token e senza collegarti al PC. Non prova la completezza del porting nativo.';
+  $('detailStatus').textContent='Anteprima web';
   $('unavailable').classList.add('hidden');$('playarea').classList.remove('hidden');
   const frame=$('playframe');
   frame.src=playable;
@@ -70,7 +72,7 @@ function showDetail(repo){
  }else{
   $('playframe').removeAttribute('src');
   $('playarea').classList.add('hidden');$('unavailable').classList.remove('hidden');
-  $('detailStatus').textContent='NESSUNA BUILD BROWSER PUBBLICATA · Non viene caricato codice privato né simulato un gioco.';
+  $('detailStatus').textContent='Nessuna build web';
  }
 }
 async function refresh(){
@@ -87,7 +89,8 @@ async function refresh(){
    unique.add(value.repo.toLowerCase());
    next.push({repo:value.repo,title:String(value.title||value.repo).slice(0,90),
     kind:String(value.kind||'Progetto').slice(0,40),description:String(value.description||'').slice(0,250),
-    url:value.url,published:value.published===true&&!!approvedBuild(value.url)});
+    url:value.url,viewer_type:VIEWER_TYPES[value.viewer_type]?value.viewer_type:'archive',
+    published:value.published===true&&!!approvedBuild(value.url)});
   }
   all.splice(0,all.length,...next);
   if(requested&&validRepo.test(requested)){showDetail(requested)}

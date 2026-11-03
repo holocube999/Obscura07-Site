@@ -9,10 +9,11 @@
       "repo": "topino",
       "title": "topino",
       "kind": "Gioco",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "PocketJS-NativeServer",
@@ -22,7 +23,8 @@
       "description": "Builder e server Android",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "native"
     },
     {
       "id": "death-mask-enhanced",
@@ -32,17 +34,19 @@
       "description": "Death Mask · Versioni evolute",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "holo-crm",
       "repo": "holo-crm",
       "title": "holo-crm",
       "kind": "Archivio",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "deathmask",
@@ -52,7 +56,8 @@
       "description": "Archivio Death Mask",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "reverse-eng",
@@ -62,17 +67,19 @@
       "description": "Archivio tecnico, non un gioco",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "archive"
     },
     {
       "id": "synd",
       "repo": "synd",
       "title": "synd",
       "kind": "Gioco",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "rhunter",
@@ -82,37 +89,41 @@
       "description": "RhUNter · Reverse Engineering",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "amiga_media"
     },
     {
       "id": "streamchat",
       "repo": "streamchat",
       "title": "streamchat",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "64zr",
       "repo": "64zr",
       "title": "64zr",
       "kind": "Gioco",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "vroom",
       "repo": "vroom",
       "title": "vroom",
       "kind": "Gioco",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "dmpack-registry",
@@ -122,7 +133,8 @@
       "description": "Registro pacchetti Death Mask",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "archive"
     },
     {
       "id": "deathmask-cold-archive",
@@ -132,7 +144,8 @@
       "description": "Archivio storico Death Mask",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "archive"
     },
     {
       "id": "ghostchat-p2p",
@@ -142,7 +155,8 @@
       "description": "Messaggistica P2P",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSDoctor-MadDoctor",
@@ -152,7 +166,8 @@
       "description": "Porting JavaScript · Mad Doctor",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "RoboCop3-JS",
@@ -162,7 +177,8 @@
       "description": "Porting JavaScript · RoboCop 3D",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "ARMigaOs",
@@ -172,7 +188,8 @@
       "description": "Ambiente Amiga ARM",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "amiga_media"
     },
     {
       "id": "NG-REForge",
@@ -182,47 +199,52 @@
       "description": "Orchestrazione e conversioni",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "native"
     },
     {
       "id": "JSSkool",
       "repo": "JSSkool",
       "title": "JSSkool",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSWho2",
       "repo": "JSWho2",
       "title": "JSWho2",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSWorld",
       "repo": "JSWorld",
       "title": "JSWorld",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSFears",
       "repo": "JSFears",
       "title": "JSFears",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSGloom",
@@ -232,17 +254,19 @@
       "description": "Porting JavaScript · Gloom",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSQuest",
       "repo": "JSQuest",
       "title": "JSQuest",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSHunter",
@@ -252,17 +276,19 @@
       "description": "Porting JavaScript · Hunter",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSDesert",
       "repo": "JSDesert",
       "title": "JSDesert",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSWarmUp",
@@ -272,67 +298,74 @@
       "description": "Porting JavaScript · Warm Up",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSNexus",
       "repo": "JSNexus",
       "title": "JSNexus",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSBrewBiz",
       "repo": "JSBrewBiz",
       "title": "JSBrewBiz",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSLeader",
       "repo": "JSLeader",
       "title": "JSLeader",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSWonder",
       "repo": "JSWonder",
       "title": "JSWonder",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSTerror2",
       "repo": "JSTerror2",
       "title": "JSTerror2",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "JSTopCat",
       "repo": "JSTopCat",
       "title": "JSTopCat",
       "kind": "Progetto",
-      "description": "Progetto in sviluppo; nessuna build browser pubblicata.",
+      "description": "In sviluppo.",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "web_js"
     },
     {
       "id": "ARMigaFW",
@@ -342,7 +375,8 @@
       "description": "Firmware ARM",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "amiga_media"
     },
     {
       "id": "DeathMask-Gloom-Amiga",
@@ -352,7 +386,8 @@
       "description": "Motore ibrido Amiga · Playtest browser",
       "published": true,
       "url": "viewer/deathmask/lab.html",
-      "advanced_url": "viewer/deathmask/"
+      "advanced_url": "viewer/deathmask/",
+      "viewer_type": "amiga_media"
     },
     {
       "id": "Obscura07-Site",
@@ -362,7 +397,8 @@
       "description": "Sito ufficiale e WebPlayer",
       "published": false,
       "url": null,
-      "advanced_url": null
+      "advanced_url": null,
+      "viewer_type": "site"
     }
   ]
 }

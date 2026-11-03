@@ -16,6 +16,7 @@ test('all known projects get stable external deep link aliases',()=>{
   assert.ok(!names.has(item.repo.toLowerCase()),'duplicated repo '+item.repo);
   names.add(item.repo.toLowerCase());
   assert.equal(item.id,item.repo);
+  assert.ok(['web_js','amiga_media','native','site','archive'].includes(item.viewer_type));
  }
  for(const project of ['DeathMask-Gloom-Amiga','reverse-eng','JSGloom','ARMigaOs','JSDoctor-MadDoctor'])
   assert.ok(names.has(project.toLowerCase()),'missing '+project);
@@ -45,6 +46,7 @@ test('Viewer safe mobile routing and no arbitrary origin/embed',()=>{
  assert.ok(js.includes('window.location.replace(direct)'),'Public playable projects should launch top-level, no iframe blockage');
  assert.ok(js.includes("credentials:'omit'"));
  assert.ok(js.includes('approvedBuild'));
+ assert.ok(js.includes('VIEWER_TYPES'));
  assert.ok(js.includes('new URL('));
  assert.ok(js.includes("published:value.published===true"));
 });
