@@ -9,7 +9,7 @@ const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
-let selected=null,loaded=null,remoteMedia=null,mediaRevision=null,mode='web',busy=false;
+let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,mode='web',busy=false;
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
 function link(node,label,url,secondary){
  const a=text(node,'a',label);a.className='action'+(secondary?' secondary':'');a.href=url;return a;
@@ -110,12 +110,21 @@ async function selectedMedia(path){
  if(!selected||!mediaRevision||!path)return;
  const result=await GH.loadMedia({repo:currentRepo(),ref:mediaRevision.ref,path});
  remoteMedia=new File([result.media],result.path.split('/').pop(),{type:'application/octet-stream'});
+ remoteKick=null;
  $('mediaInput').value='';
- showStatus('GitHub verificato · '+result.path+' · '+result.ref.slice(0,12)+' · avvio disponibile.');
+ if(Retro.needsKick(remoteMedia)&&!$('kickInput').files[0]&&mediaRevision.biosFiles?.length){
+  const biosPath=mediaRevision.biosFiles.find(p=>/kick|amiga|a500|a1200/i.test(p))||mediaRevision.biosFiles[0];
+  try{
+   const source=await GH.loadBios({repo:currentRepo(),ref:mediaRevision.ref,path:biosPath});
+   remoteKick=new File([source.bios],'kick.rom',{type:'application/octet-stream'});
+  }catch(e){showStatus('Supporto verificato, ma Kickstart privata non disponibile: '+e.message,true)}
+ }
+ showStatus('GitHub verificato · '+result.path+' · '+result.ref.slice(0,12)+
+  (remoteKick?' · Kickstart privata caricata senza pubblicazione':' · pronto per avvio.'));
 }
 async function boot(){
  const disk=$('mediaInput').files[0]||remoteMedia;
- const kick=$('kickInput').files[0]||null;
+ const kick=$('kickInput').files[0]||remoteKick||null;
  if(!disk||!Retro.supported(disk)){showStatus('Seleziona un ADF, D64, T64 o PRG valido (massimo 3 MiB).',true);return}
  if(Retro.needsKick(disk)&&!Retro.validKick(kick)){
   showStatus('Per l’avvio Amiga seleziona una Kickstart valida e di tua disponibilità.',true);return;
@@ -126,7 +135,7 @@ async function boot(){
   const host=document.createElement('div');host.id='retroStage';stage.append(host);
   await Retro.start({media:disk,bios:kick,title:selected.title,host,onStatus:showStatus});
   $('detailStatus').textContent='Core retro · '+disk.name+' · '+(Retro.needsKick(disk)?'PUAE':'VICE');
- }catch(error){handleError(error)}
+ }catch(error){handleError(error);$('playarea').replaceChildren($('playframe'));emptyFrame()}
  finally{enableUI(false)}
 }
 function localBuild(item){
@@ -189,7 +198,7 @@ $('reloadSelected').onclick=()=>githubHTML({pin:true});
 $('htmlCandidates').onchange=()=>{if(loaded)githubHTML({pin:true})};
 $('loadGitMedia').onclick=()=>githubMedia();
 $('mediaCandidates').onchange=async()=>{try{await selectedMedia($('mediaCandidates').value)}catch(e){handleError(e)}};
-$('mediaInput').onchange=()=>{remoteMedia=null;showStatus('Supporto locale selezionato; premi Avvia supporto.')};
+$('mediaInput').onchange=()=>{remoteMedia=null;remoteKick=null;showStatus('Supporto locale selezionato; premi Avvia supporto.')};
 $('bootRetro').onclick=()=>boot();
 $('stopRetro').onclick=async()=>{await Retro.stop();$('playarea').replaceChildren($('playframe'));emptyFrame();showStatus('Emulatore fermato; supporti temporanei eliminati.')};
 $('useGitToken').onclick=async()=>{
