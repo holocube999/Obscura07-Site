@@ -74,3 +74,26 @@ test('does not allow imports to escape repository path',async()=>{
  const outside={...input,html:'<!doctype html><html><head><script type="module" src="../secret.mjs"></script></head></html>'};
  await assert.rejects(engine().prepare(outside,fakeLoader()),/fuori repository|Import fuori repository/);
 });
+
+
+test('bundles classic JavaScript in document order for file-friendly projects',async()=>{
+ const page={...input,html:'<!doctype html><html><head><script src="./src/core.js"></script><script src="./src/main.js"></script></head><body></body></html>'};
+ const loaded={ 'src/core.js':'window.ClassicReady = true;', 'src/main.js':'if(!window.ClassicReady)throw Error("script order");' };
+ const packaged=await engine().prepare(page,{loadText:async({repo,ref,path})=>{
+  assert.equal(repo,page.repo);assert.equal(ref,page.ref);assert.ok(Object.hasOwn(loaded,path));
+  return {repo,ref,path,content:loaded[path],bytes:loaded[path].length};
+ }});
+ assert.equal(packaged.packaged,true);
+ assert.equal(packaged.moduleCount,0);
+ assert.equal(packaged.assetCount,2);
+ assert.ok(packaged.html.indexOf('window.ClassicReady = true')<packaged.html.indexOf('if(!window.ClassicReady)'));
+ assert.ok(!packaged.html.includes('src="./src/core.js"'));
+ assert.ok(!packaged.html.includes('src="./src/main.js"'));
+ assert.match(packaged.html,/data-sellone-entry="src\/main\.js"/);
+});
+test('rejects missing or nonlocal classic scripts instead of silently loading the network',async()=>{
+ const page={...input,html:'<script src="./src/core.js"></script><script src="https://cdn.example/core.js"></script>'};
+ await assert.rejects(engine().prepare(page,{loadText:async()=>({repo:input.repo,ref:input.ref,path:'src/core.js',content:'console.log("core")',bytes:19})}),/Script remoto/);
+ const local={...input,html:'<script src="./src/missing.js"></script>'};
+ await assert.rejects(engine().prepare(local,{loadText:async()=>{throw Error('GitHub 404')}}),/GitHub 404/);
+});
