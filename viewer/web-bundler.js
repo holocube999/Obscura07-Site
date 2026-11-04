@@ -35,7 +35,7 @@ function extractScriptUrls(html){
  for(const match of html.matchAll(pattern)){
   const type=attribute(match[1],'type');
   const src=attribute(match[1],'src');
-  if(src&&type?.toLowerCase()==='module')result.push(src);
+  if(src&&(!type||['module','text/javascript','application/javascript'].includes(type.toLowerCase())))result.push({src,kind:type?.toLowerCase()==='module'?'module':'classic'});
  }
  return result;
 }
@@ -83,7 +83,7 @@ async function prepare(result,loader=window.SelloneGitHub){
   }
  }
  const scripts=extractScriptUrls(html);
- const hasLocal=links.some(x=>/^\.\.?\//.test(x.url))||scripts.some(x=>/^\.\.?\//.test(x));
+ const hasLocal=links.some(x=>/^\.\.?\//.test(x.url))||scripts.some(x=>/^\.\.?\//.test(x.src));
  if(!hasLocal)return {...result,assetCount:0,moduleCount:0,packaged:false};
  const fetched=new Map();
  let total=0;
@@ -108,12 +108,15 @@ async function prepare(result,loader=window.SelloneGitHub){
   await Promise.all(deps.map(visit));
   modules.set(path,transform(source,path));
  }
- const roots=[];
- for(const src of scripts){
-  if(!/^\.\.?\//.test(src))throw Error('Script remoto non incorporabile: '+src);
-  roots.push(normalize(src,result.path,moduleExt));
+ const roots=[],classicRoots=[];
+ for(const script of scripts){
+  if(!/^\.\.?\//.test(script.src))throw Error('Script remoto non incorporabile: '+script.src);
+  const path=normalize(script.src,result.path,moduleExt);
+  if(script.kind==='module')roots.push(path);else classicRoots.push(path);
  }
  await Promise.all(roots.map(visit));
+ const classics=new Map();
+ await Promise.all(classicRoots.map(async path=>{classics.set(path,await get(path))}));
  let output=html;
  for(const link of links){
   if(!/^\.\.?\//.test(link.url))throw Error('CSS remoto non incorporabile: '+link.url);
@@ -131,9 +134,14 @@ async function prepare(result,loader=window.SelloneGitHub){
  // Preserve original execution order of the root entrypoints.
  output=output.replace(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi,(full,attrs,body)=>{
   const src=attribute(attrs,'src'),type=attribute(attrs,'type');
-  if(!src||type?.toLowerCase()!=='module')return full;
+  if(!src)return full;
+  if(type&& !['module','text/javascript','application/javascript'].includes(type.toLowerCase()))return full;
   const path=normalize(src,result.path,moduleExt);
-  return '<script type="module" data-sellone-entry="'+path+'">import "@sellone/'+path+'";</script>';
+  if(type?.toLowerCase()==='module')return '<script type="module" data-sellone-entry="'+path+'">import "@sellone/'+path+'";</script>';
+  const source=classics.get(path);
+  if(source===undefined)throw Error('Script classico mancante: '+path);
+  // Source is GitHub SHA-verified and executes only within the opaque sandbox.
+  return '<script data-sellone-entry="'+path+'">'+source.replace(/<\/script/gi,'<\\/script')+'</script>';
  });
  output=looseCSP(output);
  const i=output.search(/<script\b/i);
