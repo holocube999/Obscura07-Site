@@ -1,0 +1,41 @@
+{
+  "schema": "sellone-project/1",
+  "id": "RandomNullRadio",
+  "title": "RΛNDØM[NULL] RADIO",
+  "origin": "holocube999/Obscura07-Site",
+  "root": "radio/",
+  "language": "JavaScript",
+  "runtime": "browser-static",
+  "deps": "vendor/lame.min.js",
+  "url": "https://holocube999.github.io/Obscura07-Site/radio/",
+  "viewer_type": "web_js",
+  "capabilities": [
+    "audio",
+    "xenarmonic",
+    "deterministic-seed",
+    "embedded-player",
+    "mp3-export",
+    "vox",
+    "offline"
+  ],
+  "embed": {
+    "css": "radio/widget.css",
+    "script": "radio/widget.js",
+    "tag": "<div data-null-radio></div>"
+  },
+  "api": {
+    "module": "radio/api.js",
+    "functions": [
+      "compose",
+      "exportTrack",
+      "synthesize",
+      "playPCM"
+    ]
+  },
+  "guardrails": [
+    "No Node backend",
+    "No secret signing keys in public JS",
+    "User gesture required for audio",
+    "No cross-project modifications without lease"
+  ]
+}
