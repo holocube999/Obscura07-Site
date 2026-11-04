@@ -25,6 +25,26 @@ export const LANGUAGE_PACKS={
  el:[["η νύχτα","η μνήμη","η μηχανή","το φως"],["μακρινή","κρυφή","ήσυχη","αιώνια"],["θυμάται","ακούει","αναζητά","ονειρεύεται"],["τα αστέρια","τη θάλασσα","τον χρόνο","το όνειρο"]],
  ru:[["ночь","память","тишина","машина"],["далёкая","невидимая","забытая","вечная"],["помнит","ищет","слышит","видит"],["звёзды","океан","время","сон"]]
 };
+const CONCEPT_TERMS={
+ en:"memory|time|horizon|machines|sleep|ocean|stars|ghosts|silence|light|dreams|cities|echoes|entropy|origin",
+ it:"memoria|tempo|orizzonte|macchine|sonno|oceano|stelle|fantasmi|silenzio|luce|sogni|città|echi|entropia|origine",
+ fr:"mémoire|temps|horizon|machines|sommeil|océan|étoiles|fantômes|silence|lumière|rêves|villes|échos|entropie|origine",
+ es:"memoria|tiempo|horizonte|máquinas|sueño|océano|estrellas|fantasmas|silencio|luz|sueños|ciudades|ecos|entropía|origen",
+ de:"Erinnerung|Zeit|Horizont|Maschinen|Schlaf|Ozean|Sterne|Geister|Stille|Licht|Träume|Städte|Echos|Entropie|Ursprung",
+ pt:"memória|tempo|horizonte|máquinas|sono|oceano|estrelas|fantasmas|silêncio|luz|sonhos|cidades|ecos|entropia|origem",
+ nl:"herinnering|tijd|horizon|machines|slaap|oceaan|sterren|geesten|stilte|licht|dromen|steden|echo's|entropie|oorsprong",
+ sv:"minne|tid|horisont|maskiner|sömn|hav|stjärnor|spöken|tystnad|ljus|drömmar|städer|ekon|entropi|ursprung",
+ fi:"muisto|aika|horisontti|koneet|uni|valtameri|tähdet|aaveet|hiljaisuus|valo|unet|kaupungit|kaiut|entropia|alkuperä",
+ pl:"pamięć|czas|horyzont|maszyny|sen|ocean|gwiazdy|duchy|cisza|światło|sny|miasta|echa|entropia|początek",
+ tr:"hafıza|zaman|ufuk|makineler|uyku|okyanus|yıldızlar|hayaletler|sessizlik|ışık|rüyalar|şehirler|yankılar|entropi|köken",
+ ja:"記憶|時間|地平線|機械|睡眠|海|星|幽霊|静寂|光|夢|都市|反響|エントロピー|起源",
+ ko:"기억|시간|지평선|기계|잠|바다|별|유령|침묵|빛|꿈|도시|메아리|엔트로피|기원",
+ zh:"记忆|时间|地平线|机器|睡眠|海洋|星星|幽灵|寂静|光|梦|城市|回声|熵|起源",
+ ar:"ذاكرة|زمن|أفق|آلات|نوم|محيط|نجوم|أشباح|صمت|ضوء|أحلام|مدن|أصداء|إنتروبيا|أصل",
+ hi:"स्मृति|समय|क्षितिज|मशीनें|नींद|महासागर|तारे|भूत|मौन|प्रकाश|सपने|शहर|गूँज|एन्ट्रॉपी|उत्पत्ति",
+ el:"μνήμη|χρόνος|ορίζοντας|μηχανές|ύπνος|ωκεανός|αστέρια|φαντάσματα|σιωπή|φως|όνειρα|πόλεις|ηχώ|εντροπία|προέλευση",
+ ru:"память|время|горизонт|машины|сон|океан|звезды|призраки|тишина|свет|сны|города|эхо|энтропия|происхождение"
+};
 const PREFIX=["Null","Vanta","Vøid","Liminal","Ion","Echo","Nacre","Kryo","Moth","Aether","Obscura","Drift","Astra","Pale","Æon","Noct","Velvet","Signal"];
 const SUFFIX=["Division","Choir","Circuit","Waves","Bureau","Archive","Haze","Protocol","Bloom","Antenna","Murmur","Dialect","Mirage","Halo","Garden","Memory"];
 const TITLES_A=["Antenna","Memory","Night","Violet","Glass","Velvet","Spectral","Polar","Lunar","Ghost","Infinite","Afterimage","Slow","Prismatic","Silent","Dissolved"];
@@ -43,8 +63,22 @@ const select=(r,a)=>a[Math.floor(r()*a.length)];
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const whole=(x,a,b,f)=>Number.isFinite(+x)?clamp(+x,a,b):f;
 function pitch(t,n,base){if(t.ratios)return base*t.ratios[((n%t.ratios.length)+t.ratios.length)%t.ratios.length]*Math.pow(2,Math.floor(n/t.ratios.length));return base*Math.pow(2,n/t.steps);}
-function phrase(r,language){const pack=LANGUAGE_PACKS[language]||LANGUAGE_PACKS.en;return pack.map(part=>select(r,part)).join(" ");}
-function voiceIdentity(r){return {id:Math.floor(r()*1000000),base:85+r()*120,grain:r(),drive:r(),formant:0.65+r()*1.6,rate:.75+r()*.6,whisper:r()*.75,robot:r(),vibrato:r()*.08};}
+function phrase(r,language,concept){
+ const pack=LANGUAGE_PACKS[language]||LANGUAGE_PACKS.en;
+ const a=pack.map(part=>select(r,part));
+ const topic=(CONCEPT_TERMS[language]||CONCEPT_TERMS.en).split("|")[CONCEPTS.indexOf(concept)];
+ return [a[0],a[1],a[2],topic].join(" ");
+}
+function voiceIdentity(r,mood,concept){
+ const v={id:Math.floor(r()*1000000),base:85+r()*120,grain:r(),drive:r(),formant:0.65+r()*1.6,rate:.75+r()*.6,whisper:r()*.75,robot:r(),vibrato:r()*.08};
+ if(["melancholic","serene","weightless"].includes(mood)){v.base*=.83;v.drive*=.54;v.rate*=.84;}
+ if(["electric","euphoric","curious"].includes(mood)){v.base*=1.13;v.rate*=1.18;v.drive=Math.min(1,v.drive+.19);}
+ if(["ominous","alien","hypnotic"].includes(mood)){v.base*=.79;v.formant*=.7;v.whisper=Math.max(v.whisper,.35);}
+ if(concept==="machines")v.robot=Math.max(.9,v.robot);
+ if(concept==="ocean")v.whisper=Math.max(.42,v.whisper);
+ if(concept==="ghosts")v.formant*=.68;
+ return v;
+}
 export function makePlan(options={}){
  // R1 recipe keeps all audible settings inside the seed token.
  const input=String(options.seed??randomSeed()).slice(0,128);
@@ -106,7 +140,7 @@ export function makePlan(options={}){
   const count=Math.max(1,Math.floor(duration/(9+r()*9)));
   for(let i=0;i<count;i++){
    const time=clamp(4+i*(duration-7)/count+(r()-.5)*2,0,duration-3);
-   voices.push({time:+time.toFixed(3),text:phrase(r,language),language,mood,concept,voice:voiceIdentity(r)});
+   voices.push({time:+time.toFixed(3),text:phrase(r,language,concept),language,mood,concept,voice:voiceIdentity(r,mood,concept)});
   }
  }
  const plan={version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,artist,title,tuning:tuning.name,events:events.filter(x=>x.length>.02&&x.time<duration),voices};
