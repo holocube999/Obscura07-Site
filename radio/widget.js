@@ -1,5 +1,6 @@
 /* RΛNDØM[NULL] RADIO • reusable static UI and JS API */
-import {makePlan,renderPCM,pcmToWav,pcmToMP3,randomSeed,filename,STYLES,MOODS,CONCEPTS,LANGUAGE_PACKS} from "./radio.js";
+import {makePlan,pcmToWav,pcmToMP3,randomSeed,filename,STYLES,MOODS,CONCEPTS,LANGUAGE_PACKS} from "./radio.js";
+import {renderAsync} from "./async.js";
 const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse"};
 const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
@@ -72,7 +73,7 @@ export function mount(root,settings={}){
   state.busy=true;root.classList.add("rnr-busy");message("Synthesizing…");
   try{
    await initContext();const plan=ensurePlan();
-   if(!state.audio){await new Promise(r=>setTimeout(r,0));state.audio=renderPCM(plan);}
+   if(!state.audio){await new Promise(r=>setTimeout(r,0));state.audio=await renderAsync(plan);}
    const buf=state.ctx.createBuffer(2,state.audio.channels[0].length,state.audio.sampleRate);
    for(let c=0;c<2;c++)buf.copyToChannel(state.audio.channels[c],c);
    stop();const s=state.ctx.createBufferSource();s.buffer=buf;s.connect(state.gain);state.source=s;
@@ -83,7 +84,7 @@ export function mount(root,settings={}){
  async function download(format){
   if(state.busy)return;state.busy=true;root.classList.add("rnr-busy");message("Encoding "+format.toUpperCase()+"…");
   try{
-   if(!state.audio){const p=ensurePlan();await new Promise(r=>setTimeout(r,0));state.audio=renderPCM(p);}
+   if(!state.audio){const p=ensurePlan();await new Promise(r=>setTimeout(r,0));state.audio=await renderAsync(p);}
    let blob;
    if(format==="mp3"){
     await ensureEncoder();await new Promise(r=>setTimeout(r,0));blob=pcmToMP3(state.audio);
@@ -92,7 +93,7 @@ export function mount(root,settings={}){
   }catch(e){message("Export error: "+e.message);console.error("[RNR]",e);}finally{state.busy=false;root.classList.remove("rnr-busy");}
  }
  play.addEventListener("click",()=>state.playing?stop():start());
- qs(root,".rnr-next").addEventListener("click",()=>{reset();start();});
+ qs(root,".rnr-next").addEventListener("click",()=>{if(state.busy)return;reset();start();});
  qs(root,".rnr-mute").addEventListener("click",e=>{state.muted=!state.muted;if(state.gain)state.gain.gain.value=state.muted?0:1;e.currentTarget.textContent=state.muted?"×":"♪";e.currentTarget.setAttribute("aria-label",state.muted?"Attiva audio":"Mute");});
  qs(root,".rnr-more").addEventListener("click",()=>{panel.hidden=!panel.hidden;});
  qs(root,".rnr-mp3").addEventListener("click",()=>download("mp3"));
