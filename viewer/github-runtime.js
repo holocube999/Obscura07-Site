@@ -182,8 +182,10 @@ async function loadBios(input){
 const textPattern=/^(?:[A-Za-z0-9_.-]+\/){0,6}[A-Za-z0-9_.-]+\.(?:md|txt|json|js|mjs|cjs|ts|css|html?|py|c|cpp|h|hpp|asm|s|yml|yaml|toml|ini|sh|ps1|bat|cmd|xml|csv|java|kt|rs|go|lua|scad)$/i;
 async function discoverFiles(input,requestedRef=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const meta=await api(base);
- const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ const commit=requestedRef?{sha:requestedRef}:await (async()=>{
+  const meta=await api(base);
+  return api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ })();
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(tree.truncated)throw Error('Repository troppo grande per il visualizzatore sorgenti');
@@ -193,7 +195,7 @@ async function discoverFiles(input,requestedRef=''){
    return rank(a)-rank(b)||a.localeCompare(b);
   }).slice(0,800);
  if(!files.length)throw Error('Nessun file di testo visualizzabile nel repository');
- return {repo,ref:resolved.sha,files,path:files[0]};
+ return {repo,ref:commit.sha,files,path:files[0]};
 }
 async function loadText(input){
  const repo=normalizeRepo(input.repo),ref=input.ref,path=input.path;

@@ -67,7 +67,9 @@ function presentMode(next){
  $('sourcePane').classList.toggle('hidden',next!=='source');
  $('playarea').classList.toggle('compare',next==='both');
  $('detailStatus').textContent=next==='both'?'Confronto · JS a sinistra / originale a destra':
-  next==='js'?'Versione JavaScript':next==='original'?'Originale · PUAE / VICE':'Sorgenti GitHub';
+  next==='js'?'Versione JavaScript':next==='original'?
+   ('Originale · '+(selected?.origin_system==='amiga'?'Amiga / ADF':
+   ['c64','c128','vic20','c16'].includes(selected?.origin_system)?selected.origin_system.toUpperCase():'seleziona supporto')):'Sorgenti GitHub';
 }
 function bridgeHtml(html){
  // The sandboxed JS game has an opaque origin; this short bridge contains

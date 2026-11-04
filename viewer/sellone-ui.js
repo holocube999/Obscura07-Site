@@ -40,7 +40,16 @@ function platform(){
 function formatIcon(){const filename=$('mediaInput')?.files?.[0]?.name||'',sys=platform();
  const fmt=/\.([a-z0-9]+)$/i.exec(filename)?.[1]?.toLowerCase()||'';
  const isAmiga=sys==='amiga',isCommodore=['c64','c128','vic20','c16'].includes(sys);
- indicator.textContent=(isAmiga?'◉ ':isCommodore?'C= ':'')+systemBadge(sys);
+ indicator.replaceChildren();
+ if(isAmiga){
+  const boing=document.createElement('span');boing.className='sellone-boing';
+  boing.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><defs><clipPath id="sellone-boing-clip"><circle cx="12" cy="12" r="10"/></clipPath></defs><g clip-path="url(#sellone-boing-clip)"><rect width="24" height="24" fill="#fff"/><path fill="#d74444" d="M-1 0h8v8h-8zm16 0h9v8h-9zM7 8h8v8H7zm-8 8h8v8h-8zm16 0h9v8h-9z"/></g><circle cx="12" cy="12" r="10" fill="none" stroke="#e9e9f3" stroke-width="1"/></svg>';
+  indicator.append(boing);
+ }else if(isCommodore){
+  const commodore=document.createElement('span');commodore.className='sellone-commodore-mark';
+  commodore.textContent='C=';indicator.append(commodore);
+ }
+ indicator.append(document.createTextNode(systemBadge(sys)));
  indicator.dataset.platform=sys||'unknown';
  if(mediaLabel){mediaLabel.querySelector('.sellone-icon')?.remove();putIcon(mediaLabel,fmt==='t64'?'cassette':'disk');mediaLabel.lastChild.textContent=isAmiga?' ADF':isCommodore?(fmt==='t64'?' T64 · Musicassetta':' D64 / T64 / PRG'):' ADF / D64 / T64 / PRG'}
  if(kickLabel){const hide= !isAmiga;kickLabel.classList.toggle('hidden',hide);$('kickInput')?.classList.toggle('hidden',hide)}
@@ -119,7 +128,7 @@ async function openHistory(repo,title){
   try{
    const page=++currentPage,data=await GH.selloneVersions(repo,page);
    if(session!==historySession)return;
-   if(page===1&&data.files.length){textNode(rows,'h3','Build HTML versionate');data.files.forEach(render)}
+   if(page===1&&data.files.length){textNode(rows,'h3','Build HTML versionate');data.files.map(render).forEach(check=>{check().catch(()=>{})})}
    if(data.revisions.length){
     if(page===1)textNode(rows,'h3','Commit GitHub · più recente prima');
     const checks=data.revisions.map(render);

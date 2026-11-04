@@ -41,3 +41,7 @@ body.sellone-fs-body{overflow:hidden}
 .history-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
 .history-actions button{cursor:pointer;min-height:40px;border-radius:7px;border:1px solid #625c88;padding:8px 10px;background:#322d4b;color:white;font:600 12px system-ui}
 .history-actions button:disabled{opacity:.35;cursor:not-allowed}
+
+.sellone-boing{display:inline-flex;width:18px;height:18px;vertical-align:middle;margin-right:5px}
+.sellone-boing svg{width:18px;height:18px}
+.sellone-commodore-mark{font-weight:900;font-size:15px;letter-spacing:-.12em;color:#d7cdff;margin-right:8px}
