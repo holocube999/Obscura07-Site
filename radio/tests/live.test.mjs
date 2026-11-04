@@ -52,3 +52,15 @@ test("native TTS queues real words, pitched utterances and cancels cleanly",asyn
   if(priorU===undefined)delete globalThis.SpeechSynthesisUtterance;else globalThis.SpeechSynthesisUtterance=priorU;
  }
 });
+
+test("pause cleans up both tracks during a pending fade",()=>{
+ let stopped=0;
+ const ctx={currentTime:4,
+  createBufferSource:()=>({connect(){},start(){},stop(){stopped++;},disconnect(){}}),
+  createGain:()=>({gain:{value:1,setValueAtTime(){},linearRampToValueAtTime(){},cancelScheduledValues(){}},connect(){},disconnect(){}})
+ };
+ const first=spliceTrack(ctx,{}, {},null);
+ const second=spliceTrack(ctx,{}, {},first,1);
+ haltTrack(second);
+ assert.ok(stopped>=3); // scheduled old fade + both immediate stops
+});
