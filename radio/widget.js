@@ -1,6 +1,7 @@
 /* RΛNDØM[NULL] RADIO • reusable static UI and JS API */
 import {makePlan,pcmToWav,pcmToMP3,randomSeed,filename,STYLES,MOODS,CONCEPTS,LANGUAGE_PACKS} from "./radio.js";
 import {renderAsync} from "./async.js";
+import {encodeMP3Async} from "./encode.js";
 const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse"};
 const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
@@ -23,19 +24,6 @@ export function mount(root,settings={}){
  const play=qs(root,".rnr-play"),title=qs(root,".rnr-title"),artist=qs(root,".rnr-artist"),panel=qs(root,".rnr-panel"),canvas=qs(root,".rnr-spectrum");
  const ctx2d=canvas.getContext("2d",{alpha:true});
  function message(t){qs(root,".rnr-progress").textContent=t;}
- let encoderPromise=null;
- function ensureEncoder(){
-  if(globalThis.lamejs?.Mp3Encoder)return Promise.resolve();
-  if(encoderPromise)return encoderPromise;
-  encoderPromise=new Promise((resolve,reject)=>{
-   const script=document.createElement("script");
-   script.src=new URL("./vendor/lame.min.js",import.meta.url).href;
-   script.onload=()=>globalThis.lamejs?.Mp3Encoder?resolve():reject(new Error("MP3 encoder failed to initialize"));
-   script.onerror=()=>reject(new Error("Offline MP3 encoder not found"));
-   document.head.appendChild(script);
-  });
-  return encoderPromise;
- }
  function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox};}
  function update(plan){
   title.textContent=plan.title;artist.textContent=plan.artist+" · "+plan.style;
@@ -87,7 +75,7 @@ export function mount(root,settings={}){
    if(!state.audio){const p=ensurePlan();await new Promise(r=>setTimeout(r,0));state.audio=await renderAsync(p);}
    let blob;
    if(format==="mp3"){
-    await ensureEncoder();await new Promise(r=>setTimeout(r,0));blob=pcmToMP3(state.audio);
+    blob=await encodeMP3Async(state.audio);
    }else blob=pcmToWav(state.audio);
    const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename(state.plan,format);document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);message("Export "+format.toUpperCase()+" complete");
   }catch(e){message("Export error: "+e.message);console.error("[RNR]",e);}finally{state.busy=false;root.classList.remove("rnr-busy");}
