@@ -37,7 +37,7 @@ function platform(){
  if(/\.(t64|d64|prg)$/i.test(file))return 'c64';
  return '';
 }
-function formatIcon(){const filename=$('mediaInput')?.files?.[0]?.name||'',sys=platform();
+function formatIcon(){const filename=$('mediaInput')?.files?.[0]?.name||$('mediaCandidates')?.value||'',sys=platform();
  const fmt=/\.([a-z0-9]+)$/i.exec(filename)?.[1]?.toLowerCase()||'';
  const isAmiga=sys==='amiga',isCommodore=['c64','c128','vic20','c16'].includes(sys);
  indicator.replaceChildren();
@@ -56,6 +56,7 @@ function formatIcon(){const filename=$('mediaInput')?.files?.[0]?.name||'',sys=p
  if($('mediaInput'))$('mediaInput').accept=isAmiga?'.adf':isCommodore?'.d64,.t64,.prg':'.adf,.d64,.t64,.prg';
 }
 $('mediaInput')?.addEventListener('change',formatIcon);
+$('mediaCandidates')?.addEventListener('change',formatIcon);
 new MutationObserver(formatIcon).observe($('detailName'),{childList:true,characterData:true,subtree:true});
 const state=$('playerStatus');
 function statusStyle(){const t=state.textContent.toLowerCase();state.classList.remove('sellone-ok','sellone-error','sellone-warning');

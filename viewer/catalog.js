@@ -208,6 +208,16 @@ async function boot(){
  const disk=$('mediaInput').files[0]||remoteMedia;
  const kick=$('kickInput').files[0]||remoteKick||null;
  if(!disk||!Retro.supported(disk)){showStatus('Seleziona un ADF, D64, T64 o PRG valido (massimo 3 MiB).',true);return}
+ const originalSystem=String(selected?.origin_system||'').toLowerCase();
+ if(originalSystem==='amiga'&&!/\.adf$/i.test(disk.name)){
+  showStatus('Questo progetto nasce su Amiga: seleziona un ADF.',true);return;
+ }
+ if(['c64','c128','vic20','c16'].includes(originalSystem)&&/\.adf$/i.test(disk.name)){
+  showStatus('Questo progetto Commodore non usa immagini ADF Amiga.',true);return;
+ }
+ if(['c128','vic20','c16'].includes(originalSystem)){
+  showStatus('Il core dedicato a '+originalSystem.toUpperCase()+' non è ancora disponibile in questo WebPlayer.',true);return;
+ }
  if(Retro.needsKick(disk)&&!Retro.validKick(kick)){
   showStatus('Per l’avvio Amiga seleziona una Kickstart valida e di tua disponibilità.',true);return;
  }
