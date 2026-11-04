@@ -61,7 +61,7 @@ export function makePlan(options={}){
  const bpm=Math.round(whole(options.bpm,42,132,recipe?parseInt(recipe[7],36):style==="synthwave"?94+q()*25:50+q()*57));
  const duration=Math.round(whole(options.duration,16,125,recipe?parseInt(recipe[8],36):40+q()*31));
  const withVox=Boolean(options.withVox??options.withVøx??(recipe?recipe[10]==="1":false));
- const intensity=whole(options.intensity,0,1,recipe?parseInt(recipe[9],36)/1000:.27+q()*.5);
+ const intensity=Math.round(whole(options.intensity,0,1,recipe?parseInt(recipe[9],36)/1000:.27+q()*.5)*1000)/1000;
  const seed=["R1",base,STYLES.indexOf(style).toString(36),MOODS.indexOf(mood).toString(36),CONCEPTS.indexOf(concept).toString(36),langs.indexOf(language).toString(36),TUNINGS.indexOf(tuning).toString(36),bpm.toString(36),duration.toString(36),Math.round(intensity*1000).toString(36),withVox?"1":"0"].join(".");
  const r=rngFor(seed+"|RNR|arrangement-v1");
  const artist=select(r,PREFIX)+" "+select(r,SUFFIX);
