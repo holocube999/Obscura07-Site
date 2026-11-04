@@ -11,7 +11,7 @@ export function spliceTrack(context,buffer,output,previous=null,fadeSeconds=1.8)
   gain.gain.setValueAtTime(0,time);
   gain.gain.linearRampToValueAtTime(1,time+duration);
   source.start(time);
-  const active={source,gain};
+  const active={source,gain,previous};
   if(previous){
     const oldGain=previous.gain.gain;
     oldGain.cancelScheduledValues(time);
@@ -23,7 +23,10 @@ export function spliceTrack(context,buffer,output,previous=null,fadeSeconds=1.8)
   return active;
 }
 export function haltTrack(track){
-  if(!track)return;
-  try{track.source.stop();}catch(_){}
-  try{track.source.disconnect();track.gain.disconnect();}catch(_){}
+  // Stop both current and any overlapping fade tails when playback is paused.
+  while(track){
+    try{track.source.stop();}catch(_){}
+    try{track.source.disconnect();track.gain.disconnect();}catch(_){}
+    track=track.previous;
+  }
 }

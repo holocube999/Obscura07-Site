@@ -1,4 +1,4 @@
-/* Native, offline device TTS. Spoken words are real; native output cannot be routed into WebAudio. */
+/* Device Web Speech TTS. Native speech is intelligible but its synthesis provider may depend on device/network. */
 import {rngFor} from "./radio.js";
 const C=(x,a,b)=>Math.max(a,Math.min(b,x));
 const LANG={en:"en-US",it:"it-IT",fr:"fr-FR",es:"es-ES",de:"de-DE",pt:"pt-PT",nl:"nl-NL",sv:"sv-SE",fi:"fi-FI",pl:"pl-PL",tr:"tr-TR",ja:"ja-JP",ko:"ko-KR",zh:"zh-CN",ar:"ar-SA",hi:"hi-IN",el:"el-GR",ru:"ru-RU"};
