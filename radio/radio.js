@@ -46,17 +46,24 @@ function pitch(t,n,base){if(t.ratios)return base*t.ratios[((n%t.ratios.length)+t
 function phrase(r,language){const pack=LANGUAGE_PACKS[language]||LANGUAGE_PACKS.en;return pack.map(part=>select(r,part)).join(" ");}
 function voiceIdentity(r){return {id:Math.floor(r()*1000000),base:85+r()*120,grain:r(),drive:r(),formant:0.65+r()*1.6,rate:.75+r()*.6,whisper:r()*.75,robot:r(),vibrato:r()*.08};}
 export function makePlan(options={}){
- const seed=String(options.seed??randomSeed()).slice(0,128);
- const r=rngFor(seed+"|RNR|v1");
- const style=STYLES.includes(options.style)?options.style:select(r,STYLES);
- const mood=MOODS.includes(options.mood)?options.mood:select(r,MOODS);
- const concept=CONCEPTS.includes(options.concept)?options.concept:select(r,CONCEPTS);
- const language=LANGUAGE_PACKS[options.language]?options.language:select(r,Object.keys(LANGUAGE_PACKS));
- const tuning=select(r,TUNINGS);
- const bpm=Math.round(whole(options.bpm,42,132,style==="synthwave"?94+r()*25:50+r()*57));
- const duration=Math.round(whole(options.duration,16,125,40+r()*31));
- const withVox=Boolean(options.withVox??options.withVøx??false);
- const intensity=whole(options.intensity,0,1,.27+r()*.5);
+ // R1 recipe keeps all audible settings inside the seed token.
+ const input=String(options.seed??randomSeed()).slice(0,128);
+ const bits=input.split(".");
+ const recipe=bits[0]==="R1"&&bits.length===11?bits:null;
+ const base=(recipe?recipe[1]:input).replace(/[.|]/g,"-").slice(0,48)||"null";
+ const q=rngFor(base+"|RNR|metadata-v1");
+ const style=STYLES.includes(options.style)?options.style:recipe&&STYLES[parseInt(recipe[2],36)]||select(q,STYLES);
+ const mood=MOODS.includes(options.mood)?options.mood:recipe&&MOODS[parseInt(recipe[3],36)]||select(q,MOODS);
+ const concept=CONCEPTS.includes(options.concept)?options.concept:recipe&&CONCEPTS[parseInt(recipe[4],36)]||select(q,CONCEPTS);
+ const langs=Object.keys(LANGUAGE_PACKS);
+ const language=LANGUAGE_PACKS[options.language]?options.language:recipe&&langs[parseInt(recipe[5],36)]||select(q,langs);
+ const tuning=recipe&&TUNINGS[parseInt(recipe[6],36)]||select(q,TUNINGS);
+ const bpm=Math.round(whole(options.bpm,42,132,recipe?parseInt(recipe[7],36):style==="synthwave"?94+q()*25:50+q()*57));
+ const duration=Math.round(whole(options.duration,16,125,recipe?parseInt(recipe[8],36):40+q()*31));
+ const withVox=Boolean(options.withVox??options.withVøx??(recipe?recipe[10]==="1":false));
+ const intensity=whole(options.intensity,0,1,recipe?parseInt(recipe[9],36)/1000:.27+q()*.5);
+ const seed=["R1",base,STYLES.indexOf(style).toString(36),MOODS.indexOf(mood).toString(36),CONCEPTS.indexOf(concept).toString(36),langs.indexOf(language).toString(36),TUNINGS.indexOf(tuning).toString(36),bpm.toString(36),duration.toString(36),Math.round(intensity*1000).toString(36),withVox?"1":"0"].join(".");
+ const r=rngFor(seed+"|RNR|arrangement-v1");
  const artist=select(r,PREFIX)+" "+select(r,SUFFIX);
  const title=select(r,TITLES_A)+" "+select(r,TITLES_B);
  const root=[41.2,43.65,48.999,55,61.735,65.406,73.416,82.407,98][Math.floor(r()*9)];
