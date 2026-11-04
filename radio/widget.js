@@ -6,7 +6,6 @@ function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.ma
 export function mount(root,settings={}){
  if(root.__rnr)return root.__rnr;
  const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox)}};
- const inline=String(root.dataset.base||settings.base||"").replace(/\/?$/,"/");
  root.classList.add("rnr-root");
  root.innerHTML='<section class="rnr-shell" aria-label="RΛNDØM[NULL] RADIO">'+
  '<div class="rnr-main"><button type="button" class="rnr-play" title="Riproduci" aria-label="Riproduci">▶</button>'+
@@ -23,10 +22,24 @@ export function mount(root,settings={}){
  const play=qs(root,".rnr-play"),title=qs(root,".rnr-title"),artist=qs(root,".rnr-artist"),panel=qs(root,".rnr-panel"),canvas=qs(root,".rnr-spectrum");
  const ctx2d=canvas.getContext("2d",{alpha:true});
  function message(t){qs(root,".rnr-progress").textContent=t;}
- function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.withVox};}
+ let encoderPromise=null;
+ function ensureEncoder(){
+  if(globalThis.lamejs?.Mp3Encoder)return Promise.resolve();
+  if(encoderPromise)return encoderPromise;
+  encoderPromise=new Promise((resolve,reject)=>{
+   const script=document.createElement("script");
+   script.src=new URL("./vendor/lame.min.js",import.meta.url).href;
+   script.onload=()=>globalThis.lamejs?.Mp3Encoder?resolve():reject(new Error("MP3 encoder failed to initialize"));
+   script.onerror=()=>reject(new Error("Offline MP3 encoder not found"));
+   document.head.appendChild(script);
+  });
+  return encoderPromise;
+ }
+ function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox};}
  function update(plan){
   title.textContent=plan.title;artist.textContent=plan.artist+" · "+plan.style;
   qs(root,".rnr-seed").value=plan.seed;
+  qs(root,'[data-param="withVox"]').checked=plan.withVox;
   qs(root,".rnr-meta").textContent=plan.tuning+" · "+plan.bpm+" BPM · "+plan.duration+"s · "+plan.language.toUpperCase()+(plan.withVox?" · VOX":"")+" · "+plan.mood;
  }
  function ensurePlan(){if(!state.plan){state.plan=makePlan(config());state.settings.seed=state.plan.seed;update(state.plan);}return state.plan;}
@@ -73,8 +86,7 @@ export function mount(root,settings={}){
    if(!state.audio){const p=ensurePlan();await new Promise(r=>setTimeout(r,0));state.audio=renderPCM(p);}
    let blob;
    if(format==="mp3"){
-    if(!globalThis.lamejs?.Mp3Encoder)throw new Error("MP3 encoder missing");
-    await new Promise(r=>setTimeout(r,0));blob=pcmToMP3(state.audio);
+    await ensureEncoder();await new Promise(r=>setTimeout(r,0));blob=pcmToMP3(state.audio);
    }else blob=pcmToWav(state.audio);
    const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download=filename(state.plan,format);document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),5000);message("Export "+format.toUpperCase()+" complete");
   }catch(e){message("Export error: "+e.message);console.error("[RNR]",e);}finally{state.busy=false;root.classList.remove("rnr-busy");}
@@ -92,7 +104,7 @@ export function mount(root,settings={}){
  });
  root.querySelectorAll("[data-param]").forEach(input=>{
   const key=input.dataset.param;if(state.settings[key]!==undefined)input.type==="checkbox"?input.checked=state.settings[key]:input.value=state.settings[key];
-  input.addEventListener("change",()=>{state.settings[key]=input.type==="checkbox"?input.checked:input.value;reset(state.settings.seed||randomSeed());});
+  input.addEventListener("change",()=>{if(state.settings.seed.startsWith("R1."))state.settings.seed=state.settings.seed.split(".")[1];state.settings[key]=input.type==="checkbox"?input.checked:input.value;reset(state.settings.seed||randomSeed());});
  });
  const query=new URLSearchParams(location.search);
  if(settings.readQuery!==false&&query.has("seed")){state.settings.seed=query.get("seed").slice(0,128);for(const [a,b] of [["style","style"],["mood","mood"],["concept","concept"],["lang","language"],["duration","duration"]])if(query.has(a)){state.settings[b]=query.get(a);const el=root.querySelector('[data-param="'+b+'"]');if(el)el.value=state.settings[b];}state.settings.withVox=query.get("vox")==="1";qs(root,'[data-param="withVox"]').checked=state.settings.withVox;}
