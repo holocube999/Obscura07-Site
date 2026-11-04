@@ -167,7 +167,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "origin_system": "c64"
     },
     {
       "id": "RoboCop3-JS",
@@ -178,7 +179,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "origin_system": "amiga"
     },
     {
       "id": "ARMigaOs",
@@ -255,7 +257,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "origin_system": "amiga"
     },
     {
       "id": "JSQuest",
@@ -277,7 +280,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "origin_system": "amiga"
     },
     {
       "id": "JSDesert",
@@ -321,7 +325,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "origin_system": "c64"
     },
     {
       "id": "JSLeader",
@@ -387,7 +392,8 @@
       "published": true,
       "url": "viewer/deathmask/lab.html",
       "advanced_url": "viewer/deathmask/",
-      "viewer_type": "amiga_media"
+      "viewer_type": "amiga_media",
+      "origin_system": "amiga"
     },
     {
       "id": "Obscura07-Site",

@@ -235,5 +235,44 @@ async function unlock(password){
  token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
 }
 function forget(){token='';localStorage.removeItem(STORAGE)}
-window.SelloneGitHub=Object.freeze({normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+
+function selloneVersionNumber(value){
+ const m=String(value||'').match(/(?:^|[^\da-z])v?(\d+(?:[._-]\d+){1,5})(?=[^\da-z]|$)/i);
+ return m?m[1].replace(/[_-]/g,'.'):'';
+}
+function selloneVersionCompare(a,b){
+ const x=String(a||'').split('.').map(Number),y=String(b||'').split('.').map(Number);
+ for(let i=0;i<Math.max(x.length,y.length);i++){
+  if((x[i]||0)!==(y[i]||0))return (y[i]||0)-(x[i]||0);
+ }
+ return 0;
+}
+async function selloneVersions(name){
+ const repo=normalizeRepo(name),base='https://api.github.com/repos/'+repo;
+ const [head,commits]=await Promise.all([discover(name),api(base+'/commits?per_page=50')]);
+ const files=head.files.map(path=>{
+  const version=selloneVersionNumber(path.split('/').pop());
+  return version?{kind:'file',name:'v'+version,version,ref:head.ref,path,sha:head.ref,description:'Build HTML presente nel repository'}:null
+ }).filter(Boolean).sort((a,b)=>selloneVersionCompare(a.version,b.version)).slice(0,60);
+ const revisions=(Array.isArray(commits)?commits:[]).filter(c=>shaPattern.test(c.sha||'')).map(c=>{
+  const message=String(c.commit?.message||'').split('\n')[0].slice(0,100),version=selloneVersionNumber(message);
+  return {kind:'commit',name:version?'v'+version:'Revisione '+c.sha.slice(0,8),
+   version,ref:c.sha,sha:c.sha,path:null,defaultPath:head.path,
+   date:c.commit?.committer?.date||c.commit?.author?.date||'',description:message};
+ });
+ return {files,revisions,head:head.ref};
+}
+async function selloneHistoricalPath(name,sha,preferred){
+ if(!shaPattern.test(sha||''))throw Error('SHA revisione non valido');
+ const repo=normalizeRepo(name);
+ const tree=await api('https://api.github.com/repos/'+repo+'/git/trees/'+sha+'?recursive=1');
+ if(tree.truncated)throw Error('Albero storico troppo grande');
+ const candidates=(tree.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
+  !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
+  .map(x=>rank(x.path,repo)).sort(compare).map(x=>x.path);
+ if(!candidates.length)throw Error('Revisione senza build HTML');
+ return candidates.includes(preferred)?preferred:candidates[0];
+}
+
+window.SelloneGitHub=Object.freeze({selloneVersions,selloneHistoricalPath,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();

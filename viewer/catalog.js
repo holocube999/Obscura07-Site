@@ -170,7 +170,7 @@ async function githubHTML(opts={}){
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
   a.id='commitAction';a.target='_blank';a.rel='noopener noreferrer';
   const url=new URL(location.href);url.searchParams.set('repo',selected.repo);
-  url.searchParams.delete('ref');url.searchParams.delete('path');
+  if(opts.explicit||opts.pin){url.searchParams.set('ref',result.ref);url.searchParams.set('path',result.path)}else{url.searchParams.delete('ref');url.searchParams.delete('path')}
   history.replaceState(null,'',url.pathname+url.search);
  }catch(error){emptyFrame();handleError(error)}
  finally{enableUI(false)}
@@ -262,10 +262,11 @@ async function selectView(next){
   if(!disk)showStatus('Confronto pronto: seleziona ADF/D64/T64/PRG oppure cerca i media su GitHub.');
  }
 }
-function showDetail(repo){
+function showDetail(repo,explicit=null){
  $('listing').classList.add('hidden');$('detail').classList.remove('hidden');
  selected=byRepo(repo)||{repo,title:repo,description:'Repository GitHub',viewer_type:'web_js',published:false};
  const item=selected;
+ $('detail').dataset.originalSystem=item.origin_system||'';
  loaded=null;remoteMedia=null;remoteKick=null;mediaRevision=null;sourceRevision=null;
  syncChannel=newChannel();syncReady={js:false,original:false};
  $('detailName').textContent=item.title;
@@ -289,7 +290,8 @@ function showDetail(repo){
  emptyFrame();showFrame();updateSync();
  if(view==='source')githubSource();
  else if(view==='js'){
-  if(initialRef&&initialPath&&item.repo.toLowerCase()===initial.toLowerCase())
+  if(explicit?.ref&&explicit?.path)githubHTML({explicit});
+  else if(initialRef&&initialPath&&item.repo.toLowerCase()===initial.toLowerCase())
    githubHTML({explicit:{ref:initialRef,path:initialPath}});
   else githubHTML();
  }else showStatus('Originale: seleziona un supporto locale o GitHub e avvia il core.');
@@ -306,7 +308,7 @@ async function loadCatalog(){
    seen.add(item.repo.toLowerCase());
    all.push({repo:item.repo,title:String(item.title||item.repo).slice(0,90),
     description:String(item.description||'').slice(0,250),kind:String(item.kind||''),
-    viewer_type:types[item.viewer_type]?item.viewer_type:'archive',
+    viewer_type:types[item.viewer_type]?item.viewer_type:'archive',origin_system:String(item.origin_system||''),
     published:item.published===true&&!!approvedBuild(item.url),url:item.url});
   }
   if(initial&&validRepo.test(initial))showDetail(initial);
@@ -348,5 +350,14 @@ $('restartPair').onclick=async()=>{
  showStatus('Riavvio delle due istanze richiesto · stessa sessione input, senza sincronizzazione deterministica dei frame.');
 };
 $('forgetGitToken').onclick=()=>{GH.forget();$('authBox').classList.add('hidden');showStatus('Token cifrato eliminato.')};
+window.addEventListener('sellone:history-open',event=>{
+ const d=event.detail||{};
+ if(!validRepo.test(d.repo||'')||!/^[a-f0-9]{40}$/i.test(d.ref||'')||
+  !/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(d.path||''))return;
+ const url=new URL(location.href);url.searchParams.set('repo',d.repo);
+ url.searchParams.set('ref',d.ref);url.searchParams.set('path',d.path);
+ history.pushState(null,'',url.pathname+url.search);
+ showDetail(d.repo,{ref:d.ref,path:d.path});
+});
 loadCatalog();
 })();
