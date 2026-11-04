@@ -52,7 +52,7 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
 });
 test('GitHub engine verifies full revision and blob SHA, vault does not enter game iframe',()=>{
  const gh=read('viewer/github-runtime.js');
- for(const fragment of ['commits/','default_branch','git/trees/','contents/','crypto.subtle.digest','SHA-1','checkBlob(bytes','PBKDF2','AES-GCM','discoverMedia','loadMedia','setToken','unlock'])
+ for(const fragment of ['commits/','default_branch','git/trees/','contents/','subtle.digest(\'SHA-1\'', 'sha1Fallback', 'SHA-1','checkBlob(bytes','PBKDF2','AES-GCM','discoverMedia','loadMedia','setToken','unlock'])
   assert.ok(gh.includes(fragment),fragment);
  assert.ok(gh.includes("headers.Authorization='Bearer '+token"));
  assert.ok(gh.includes("credentials:'omit'"));
