@@ -197,14 +197,18 @@ export function pcmToWav(audio){
  for(let i=0;i<n;i++){dv.setInt16(44+i*4,Math.round(clamp(L[i],-1,1)*32767),true);dv.setInt16(46+i*4,Math.round(clamp(R[i],-1,1)*32767),true);}
  return new Blob([out],{type:"audio/wav"});
 }
+function syncsafe(buffer,offset,length){
+ buffer[offset]=(length>>>21)&127;buffer[offset+1]=(length>>>14)&127;buffer[offset+2]=(length>>>7)&127;buffer[offset+3]=length&127;
+}
 function id3StringFrame(id,value){
- const encoder=new TextEncoder(),data=encoder.encode(String(value)),size=data.length+1,b=new Uint8Array(10+size);const d=new DataView(b.buffer);
- for(let i=0;i<4;i++)b[i]=id.charCodeAt(i);d.setUint32(4,size,false);b[10]=3;b.set(data,11);return b;
+ const data=new TextEncoder().encode(String(value)),size=data.length+1,b=new Uint8Array(10+size);
+ for(let i=0;i<4;i++)b[i]=id.charCodeAt(i);syncsafe(b,4,size);b[10]=3;b.set(data,11);return b;
 }
 function id3Tag(plan){
- const frames=[id3StringFrame("TIT2",plan.title),id3StringFrame("TPE1",plan.artist),id3StringFrame("TALB","RΛNDØM[NULL] RADIO"),id3StringFrame("TCON","Xenarmonic"),id3StringFrame("COMM","RNR "+plan.seed),id3StringFrame("TXXX","RNR|"+VERSION+"|"+plan.seed+"|"+plan.tuning+"|vox="+Number(plan.withVox))];
- const len=frames.reduce((a,b)=>a+b.length,0),head=new Uint8Array(10),tag=new Uint8Array(10+len);head.set([73,68,51,3,0,0]);
- for(let i=0;i<4;i++)head[9-i]=(len>>>(i*7))&127;tag.set(head);let p=10;for(const f of frames){tag.set(f,p);p+=f.length;}return tag;
+ const recipe=JSON.stringify({generator:"RNR",version:VERSION,seed:plan.seed,tuning:plan.tuning,style:plan.style,vox:plan.withVox});
+ const frames=[id3StringFrame("TIT2",plan.title),id3StringFrame("TPE1",plan.artist),id3StringFrame("TALB","RΛNDØM[NULL] RADIO"),id3StringFrame("TCON","Xenarmonic"),id3StringFrame("TXXX","RNR\u0000"+recipe)];
+ const len=frames.reduce((a,b)=>a+b.length,0),head=new Uint8Array(10),tag=new Uint8Array(10+len);head.set([73,68,51,4,0,0]);syncsafe(head,6,len);tag.set(head);
+ let p=10;for(const f of frames){tag.set(f,p);p+=f.length;}return tag;
 }
 export function pcmToMP3(audio,bitrate=128){
  if(!globalThis.lamejs?.Mp3Encoder)throw new Error("Encoder MP3 statico non caricato (vendor/lame.min.js).");
