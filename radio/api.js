@@ -1,5 +1,6 @@
 /* Static JavaScript API — no server, no npm, no external CDN. */
 import {makePlan,renderPCM,pcmToWav,pcmToMP3,filename,randomSeed} from "./radio.js";
+import {renderAsync} from "./async.js";
 let mp3Library=null;
 export async function ensureMP3(){
  if(globalThis.lamejs?.Mp3Encoder)return;
@@ -17,7 +18,7 @@ export async function ensureMP3(){
 export function compose(params={}){return makePlan(params);}
 export function synthesize(params={}){const plan=makePlan(params);return {plan,pcm:renderPCM(plan)};}
 export async function exportTrack(params={},format="mp3"){
- const {plan,pcm}=synthesize(params),type=String(format).toLowerCase();
+ const plan=makePlan(params),pcm=await renderAsync(plan),type=String(format).toLowerCase();
  if(type==="mp3")await ensureMP3();
  if(type!=="mp3"&&type!=="wav")throw new RangeError("Unsupported format; use mp3 or wav");
  const blob=type==="mp3"?pcmToMP3(pcm):pcmToWav(pcm);
