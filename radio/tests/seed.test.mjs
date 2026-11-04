@@ -20,7 +20,8 @@ test("the seed recipe reproduces style, metadata, voices and events",()=>{
 test("different seeds yield different arrangements",()=>{
  assert.notDeepEqual(makePlan({seed:"AAA"}),makePlan({seed:"BBB"}));
  assert.equal(Object.keys(LANGUAGE_PACKS).length,18);
- assert.equal(STYLES.length,9);
+ assert.equal(STYLES.length,18);
+ assert.deepEqual(STYLES.slice(0,9),["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse"]);
 });
 
 test("PCM signal is finite, nonempty and bitwise deterministic",()=>{
