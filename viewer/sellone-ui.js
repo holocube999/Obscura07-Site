@@ -62,38 +62,90 @@ dlg.querySelector('.history-close').onclick=()=>dlg.close();
 dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.close()});
 function textNode(parent,tag,value,cls){const el=document.createElement(tag);if(cls)el.className=cls;el.textContent=value;parent.append(el);return el}
 function displayDate(value){if(!value)return '';const d=new Date(value);return isNaN(d.getTime())?'':d.toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'})}
+let historySession=0;
 async function openHistory(repo,title){
+ const session=++historySession;
  dlg.querySelector('h2').textContent='Versioni · '+title;
  const info=dlg.querySelector('.history-info'),rows=dlg.querySelector('.history-rows');
  info.textContent='Caricamento revisioni GitHub…';rows.replaceChildren();if(!dlg.open)dlg.showModal();
- try{
- const list=await GH.selloneVersions(repo);
- const render=items=>{
-  for(const item of items){
-   const btn=textNode(rows,'button','','history-entry');btn.type='button';
-   textNode(btn,'strong',item.name,'entry-title');
-   textNode(btn,'span',[displayDate(item.date),item.sha.slice(0,8)].filter(Boolean).join(' · '),'entry-meta');
-   if(item.description)textNode(btn,'small',item.description,'entry-description');
-   btn.onclick=async()=>{
-    btn.disabled=true;info.textContent='Verifica revisione…';
-    try{
-     const path=item.path||await GH.selloneHistoricalPath(repo,item.ref,item.defaultPath);
-     dlg.close();
-     window.dispatchEvent(new CustomEvent('sellone:history-open',{detail:{repo,ref:item.ref,path}}));
-    }catch(err){info.textContent=String(err.message||err);btn.disabled=false}
-   };
-  }
+ let currentPage=0,more=true,loading=false;
+ const next=textNode(dlg.querySelector('.sellone-history-box'),'button','Carica altre revisioni','history-more');
+ next.type='button';
+ function exitHistory(){next.remove();historySession++}
+ dlg.addEventListener('close',exitHistory,{once:true});
+ const sizeLabel=n=>{
+  if(n==null||!Number.isFinite(n))return 'N/D';
+  return n>=1024**3?(n/1024**3).toFixed(2)+' GiB':
+   n>=1024**2?(n/1024**2).toFixed(2)+' MiB':
+   (n/1024).toFixed(1)+' KiB';
  };
- if(list.files.length){textNode(rows,'h3','Build HTML versionate');render(list.files)}
- if(list.revisions.length){textNode(rows,'h3','Revisioni GitHub · più recente prima');render(list.revisions)}
- info.textContent='Cronologia reale GitHub · fino a 50 commit, build versionate ordinate.';
- if(!list.files.length&&!list.revisions.length)info.textContent='Nessuna versione disponibile.';
- }catch(err){info.textContent='Storico non disponibile: '+String(err.message||err)}
+ function openAt(ref,path,mode){
+  dlg.close();window.dispatchEvent(new CustomEvent('sellone:history-open',{detail:{repo,ref,path,mode}}));
+ }
+ function render(item){
+  const row=textNode(rows,'div','','history-entry'),heading=textNode(row,'strong',item.name,'entry-title');
+  textNode(row,'span',[displayDate(item.date),item.sha.slice(0,12)].filter(Boolean).join(' · '),'entry-meta');
+  const sizes=textNode(row,'span','Dimensione: calcolo su richiesta…','entry-meta');
+  if(item.description)textNode(row,'small',item.description,'entry-description');
+  const actions=textNode(row,'div','','history-actions');
+  const run=textNode(actions,'button','▶ Avvia questa revisione','history-run'),code=textNode(actions,'button','⌘ Codice a questa revisione','history-code');
+  run.type=code.type='button';
+  let details=null,detailsError='';
+  const loadDetails=async()=>{
+   if(details)return details;
+   if(detailsError)throw Error(detailsError);
+   try{
+    details=await GH.selloneRevisionDetails(repo,item.ref,item.path||item.defaultPath||'');
+    sizes.textContent='Snapshot sorgenti: '+sizeLabel(details.totalBytes)+
+       (details.path?' · HTML: '+sizeLabel(details.bytes):' · nessun HTML eseguibile');
+    if(!details.path){run.disabled=true;run.title='Revisione senza build HTML, sorgenti disponibili'}
+    return details;
+   }catch(error){detailsError=String(error.message||error);sizes.textContent='Dimensione non disponibile';throw error}
+  };
+  run.onclick=async()=>{
+   run.disabled=true;info.textContent='Verifica del commit e della build storica…';
+   try{const d=await loadDetails();if(!d.path)throw Error('Questa revisione non contiene HTML: usa Codice');
+    openAt(item.ref,d.path,'js');}
+   catch(error){info.textContent=String(error.message||error);run.disabled=!!details&&!details.path}
+  };
+  code.onclick=()=>openAt(item.ref,'','source');
+  // Fetch only visible-page sizes, at a limited concurrency. Never invent
+  // download/archive size: the displayed total is the committed snapshot.
+  return loadDetails;
+ }
+ async function loadMore(){
+  if(loading||!more||session!==historySession)return;
+  loading=true;next.disabled=true;next.textContent='Caricamento…';
+  try{
+   const page=++currentPage,data=await GH.selloneVersions(repo,page);
+   if(session!==historySession)return;
+   if(page===1&&data.files.length){textNode(rows,'h3','Build HTML versionate');data.files.forEach(render)}
+   if(data.revisions.length){
+    if(page===1)textNode(rows,'h3','Commit GitHub · più recente prima');
+    const checks=data.revisions.map(render);
+    // Resolve sizes with a concurrency cap of 3; don't block more pagination.
+    (async()=>{
+     const queue=checks.slice();
+     const worker=async()=>{while(queue.length&&session===historySession){
+      const check=queue.shift();try{await check()}catch{}}
+     };
+     await Promise.all([worker(),worker(),worker()]);
+    })();
+   }
+   more=data.hasMore;
+   next.classList.toggle('hidden',!more);
+   info.textContent='Pagina '+page+' · revisioni in ordine cronologico decrescente. Le dimensioni indicano lo snapshot GitHub, non un archivio ZIP.';
+   if(!data.revisions.length&&page===1)info.textContent='Nessun commit disponibile.';
+  }catch(err){currentPage--;info.textContent='Errore cronologia: '+String(err.message||err)}
+  finally{loading=false;next.disabled=false;next.textContent='Carica altre revisioni'}
+ }
+ next.onclick=loadMore;
+ await loadMore();
 }
 function enhanceCards(){for(const card of document.querySelectorAll('#grid .project:not([data-history])')){
  const href=card.querySelector('a[href*="repo="]')?.href;if(!href)continue;
  const repo=new URL(href,location.href).searchParams.get('repo');if(!/^[A-Za-z0-9_.-]{1,100}$/.test(repo||''))continue;
- card.dataset.history='1';const btn=textNode(card,'button','Visualizza altre versioni','sellone-history-link');
+ card.dataset.history='1';const btn=textNode(card,'button','Versioni / revisioni','sellone-history-link');
  putIcon(btn,'history');btn.onclick=()=>openHistory(repo,card.querySelector('h3')?.textContent||repo);
 }}
 const grid=$('grid');if(grid){new MutationObserver(enhanceCards).observe(grid,{childList:true});enhanceCards()}

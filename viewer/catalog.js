@@ -3,13 +3,13 @@
 const $=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search);
 const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999\//i,'');
-const initialRef=q.get('ref'),initialPath=q.get('path');
+const initialRef=q.get('ref'),initialPath=q.get('path'),initialView=q.get('view');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
-let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,view='js',busy=false;
+let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,selectedRevision='',view='js',busy=false;
 let syncChannel='',syncReady={js:false,original:false};
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
 function link(node,label,url,secondary){
@@ -170,7 +170,7 @@ async function githubHTML(opts={}){
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
   a.id='commitAction';a.target='_blank';a.rel='noopener noreferrer';
   const url=new URL(location.href);url.searchParams.set('repo',selected.repo);
-  if(opts.explicit||opts.pin){url.searchParams.set('ref',result.ref);url.searchParams.set('path',result.path)}else{url.searchParams.delete('ref');url.searchParams.delete('path')}
+  if(opts.explicit||opts.pin){selectedRevision=result.ref;url.searchParams.set('ref',result.ref);url.searchParams.set('path',result.path)}else{selectedRevision='';url.searchParams.delete('ref');url.searchParams.delete('path')}
   history.replaceState(null,'',url.pathname+url.search);
  }catch(error){emptyFrame();handleError(error)}
  finally{enableUI(false)}
@@ -232,7 +232,7 @@ async function githubSource(refresh=true){
  if(!selected)return;
  enableUI(true);showStatus('Lettura sorgenti GitHub e verifica SHA…');
  try{
-  if(refresh||!sourceRevision)sourceRevision=await GH.discoverFiles(currentRepo());
+  if(refresh||!sourceRevision)sourceRevision=await GH.discoverFiles(currentRepo(),selectedRevision);
   const file=$('sourceFiles').value&&sourceRevision.files.includes($('sourceFiles').value)?$('sourceFiles').value:sourceRevision.path;
   fillPaths($('sourceFiles'),sourceRevision.files,file);
   const result=await GH.loadText({repo:currentRepo(),ref:sourceRevision.ref,path:file});
@@ -267,7 +267,7 @@ function showDetail(repo,explicit=null){
  selected=byRepo(repo)||{repo,title:repo,description:'Repository GitHub',viewer_type:'web_js',published:false};
  const item=selected;
  $('detail').dataset.originalSystem=item.origin_system||'';
- loaded=null;remoteMedia=null;remoteKick=null;mediaRevision=null;sourceRevision=null;
+ loaded=null;remoteMedia=null;remoteKick=null;mediaRevision=null;sourceRevision=null;selectedRevision=explicit?.ref||'';
  syncChannel=newChannel();syncReady={js:false,original:false};
  $('detailName').textContent=item.title;
  $('detailKind').textContent=types[item.viewer_type]||'PROGETTO';
@@ -285,7 +285,7 @@ function showDetail(repo,explicit=null){
   const available=item.viewer_type==='web_js'||item.viewer_type==='amiga_media'||b.dataset.view==='source';
   b.disabled=!available;
  }
- presentMode(item.viewer_type==='amiga_media'?'original':
+ presentMode(explicit?.mode==='source'?'source':item.viewer_type==='amiga_media'?'original':
   ['archive','native'].includes(item.viewer_type)?'source':'js');
  emptyFrame();showFrame();updateSync();
  if(view==='source')githubSource();
@@ -311,7 +311,7 @@ async function loadCatalog(){
     viewer_type:types[item.viewer_type]?item.viewer_type:'archive',origin_system:String(item.origin_system||''),
     published:item.published===true&&!!approvedBuild(item.url),url:item.url});
   }
-  if(initial&&validRepo.test(initial))showDetail(initial);
+  if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&initialView==='source'?{ref:initialRef,mode:'source'}:null);
   else {listing();if(initial)$('message').textContent='Identificativo repository non valido'}
  }catch(error){$('message').textContent='Errore catalogo: '+String(error.message||error)}
 }
@@ -337,7 +337,7 @@ $('unlockGitToken').onclick=async()=>{
 };
 for(const b of $('viewModes').querySelectorAll('[data-view]'))b.onclick=()=>selectView(b.dataset.view);
 $('openSource').onclick=()=>githubSource(false);
-$('reloadSource').onclick=()=>githubSource(true);
+$('reloadSource').onclick=()=>{selectedRevision='';sourceRevision=null;githubSource(true)};
 $('sourceFiles').onchange=()=>githubSource(false);
 $('linkedInput').onchange=()=>updateSync();
 $('restartPair').onclick=async()=>{
@@ -353,11 +353,12 @@ $('forgetGitToken').onclick=()=>{GH.forget();$('authBox').classList.add('hidden'
 window.addEventListener('sellone:history-open',event=>{
  const d=event.detail||{};
  if(!validRepo.test(d.repo||'')||!/^[a-f0-9]{40}$/i.test(d.ref||'')||
-  !/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(d.path||''))return;
+  (d.mode!=='source'&&!/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(d.path||'')))return;
  const url=new URL(location.href);url.searchParams.set('repo',d.repo);
- url.searchParams.set('ref',d.ref);url.searchParams.set('path',d.path);
+ url.searchParams.set('ref',d.ref);if(d.path)url.searchParams.set('path',d.path);else url.searchParams.delete('path');
+ if(d.mode==='source')url.searchParams.set('view','source');else url.searchParams.delete('view');
  history.pushState(null,'',url.pathname+url.search);
- showDetail(d.repo,{ref:d.ref,path:d.path});
+ showDetail(d.repo,{ref:d.ref,path:d.path,mode:d.mode});
 });
 loadCatalog();
 })();

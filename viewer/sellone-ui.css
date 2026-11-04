@@ -34,3 +34,10 @@
 @media(hover:hover) and (pointer:fine){:is(#playarea:fullscreen,#playarea.sellone-fs-fallback):hover #sellone-fullscreen{opacity:1}:is(#playarea:fullscreen,#playarea.sellone-fs-fallback):hover #sellone-fullscreen .fs-label{display:inline}}
 @media(max-width:850px){:is(#playarea:fullscreen,#playarea.sellone-fs-fallback).compare{grid-template-columns:minmax(0,1fr);grid-template-rows:repeat(2,minmax(0,1fr))}}
 body.sellone-fs-body{overflow:hidden}
+
+.history-more{display:block;margin:16px auto;padding:11px 17px;background:#3f3560;border:1px solid #ab96ee;border-radius:9px;color:white;cursor:pointer;min-height:44px}
+.history-more:disabled{opacity:.5;cursor:progress}
+.history-entry{align-items:stretch}
+.history-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:7px}
+.history-actions button{cursor:pointer;min-height:40px;border-radius:7px;border:1px solid #625c88;padding:8px 10px;background:#322d4b;color:white;font:600 12px system-ui}
+.history-actions button:disabled{opacity:.35;cursor:not-allowed}

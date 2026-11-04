@@ -123,10 +123,12 @@ const mediaPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|p
 const biosPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:rom|bin|kick|a500|a1200)$/i;
 async function discoverMedia(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const meta=await api(base);
- const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
- if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
- const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
+ const commit=requestedRef?{sha:requestedRef}:(async()=>{
+  const meta=await api(base);return api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ })();
+ const resolved=await commit;
+ if(!shaPattern.test(resolved.sha||''))throw Error('Revisione GitHub non valida');
+ const tree=await api(base+'/git/trees/'+resolved.sha+'?recursive=1');
  if(tree.truncated)throw Error('Albero GitHub troppo grande');
  const files=(tree.tree||[]).filter(x=>x.type==='blob'&&mediaPattern.test(x.path)&&
   x.size>0&&x.size<=3*1024*1024&&!/^(history|tests|docs|vendor|fixtures|node_modules)\//i.test(x.path))
@@ -178,7 +180,7 @@ async function loadBios(input){
 
 
 const textPattern=/^(?:[A-Za-z0-9_.-]+\/){0,6}[A-Za-z0-9_.-]+\.(?:md|txt|json|js|mjs|cjs|ts|css|html?|py|c|cpp|h|hpp|asm|s|yml|yaml|toml|ini|sh|ps1|bat|cmd|xml|csv|java|kt|rs|go|lua|scad)$/i;
-async function discoverFiles(input){
+async function discoverFiles(input,requestedRef=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
  const meta=await api(base);
  const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
@@ -191,7 +193,7 @@ async function discoverFiles(input){
    return rank(a)-rank(b)||a.localeCompare(b);
   }).slice(0,800);
  if(!files.length)throw Error('Nessun file di testo visualizzabile nel repository');
- return {repo,ref:commit.sha,files,path:files[0]};
+ return {repo,ref:resolved.sha,files,path:files[0]};
 }
 async function loadText(input){
  const repo=normalizeRepo(input.repo),ref=input.ref,path=input.path;
@@ -247,32 +249,50 @@ function selloneVersionCompare(a,b){
  }
  return 0;
 }
-async function selloneVersions(name){
+async function selloneVersions(name,page=1){
+ if(!Number.isSafeInteger(page)||page<1||page>10000)throw Error('Pagina revisioni non valida');
  const repo=normalizeRepo(name),base='https://api.github.com/repos/'+repo;
- const [head,commits]=await Promise.all([discover(name),api(base+'/commits?per_page=50')]);
- const files=head.files.map(path=>{
+ const perPage=20;
+ const [head,commits]=await Promise.all([
+  page===1?discover(name):Promise.resolve(null),
+  api(base+'/commits?per_page='+perPage+'&page='+page)
+ ]);
+ const files=head?head.files.map(path=>{
   const version=selloneVersionNumber(path.split('/').pop());
-  return version?{kind:'file',name:'v'+version,version,ref:head.ref,path,sha:head.ref,description:'Build HTML presente nel repository'}:null
- }).filter(Boolean).sort((a,b)=>selloneVersionCompare(a.version,b.version)).slice(0,60);
+  return version?{kind:'file',name:'v'+version,version,ref:head.ref,path,sha:head.ref,
+   description:'Build HTML presente nel repository',date:''}:null
+ }).filter(Boolean).sort((a,b)=>selloneVersionCompare(a.version,b.version)).slice(0,60):[];
  const revisions=(Array.isArray(commits)?commits:[]).filter(c=>shaPattern.test(c.sha||'')).map(c=>{
   const message=String(c.commit?.message||'').split('\n')[0].slice(0,100),version=selloneVersionNumber(message);
   return {kind:'commit',name:version?'v'+version:'Revisione '+c.sha.slice(0,8),
-   version,ref:c.sha,sha:c.sha,path:null,defaultPath:head.path,
+   version,ref:c.sha,sha:c.sha,path:null,defaultPath:head?.path||'',
    date:c.commit?.committer?.date||c.commit?.author?.date||'',description:message};
  });
- return {files,revisions,head:head.ref};
+ return {files,revisions,head:head?.ref||'',page,hasMore:revisions.length===perPage};
+}
+const selloneRevisionCache=new Map();
+async function selloneRevisionDetails(name,sha,preferred=''){
+ if(!shaPattern.test(sha||''))throw Error('SHA revisione non valido');
+ const repo=normalizeRepo(name),key=repo+':'+sha;
+ if(selloneRevisionCache.has(key))return selloneRevisionCache.get(key);
+ const tree=await api('https://api.github.com/repos/'+repo+'/git/trees/'+sha+'?recursive=1');
+ if(tree.truncated)throw Error('Albero GitHub incompleto: dimensione non calcolabile');
+ const blobs=(tree.tree||[]).filter(x=>x.type==='blob'&&Number.isSafeInteger(x.size)&&x.size>=0);
+ const totalBytes=blobs.reduce((sum,x)=>sum+x.size,0);
+ const html=blobs.filter(x=>pathPattern.test(x.path)&&x.size<=12*1024*1024&&
+  !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path));
+ const choices=html.map(x=>rank(x.path,repo)).sort(compare);
+ const path=html.some(x=>x.path===preferred)?preferred:choices[0]?.path||'';
+ const bytes=html.find(x=>x.path===path)?.size??null;
+ const result={repo,sha,path,bytes,totalBytes};
+ selloneRevisionCache.set(key,result);
+ if(selloneRevisionCache.size>120)selloneRevisionCache.delete(selloneRevisionCache.keys().next().value);
+ return result;
 }
 async function selloneHistoricalPath(name,sha,preferred){
- if(!shaPattern.test(sha||''))throw Error('SHA revisione non valido');
- const repo=normalizeRepo(name);
- const tree=await api('https://api.github.com/repos/'+repo+'/git/trees/'+sha+'?recursive=1');
- if(tree.truncated)throw Error('Albero storico troppo grande');
- const candidates=(tree.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
-  !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
-  .map(x=>rank(x.path,repo)).sort(compare).map(x=>x.path);
- if(!candidates.length)throw Error('Revisione senza build HTML');
- return candidates.includes(preferred)?preferred:candidates[0];
+ const info=await selloneRevisionDetails(name,sha,preferred);
+ if(!info.path)throw Error('Revisione senza build HTML: apri i sorgenti');
+ return info.path;
 }
-
-window.SelloneGitHub=Object.freeze({selloneVersions,selloneHistoricalPath,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+window.SelloneGitHub=Object.freeze({selloneVersions,selloneRevisionDetails,selloneHistoricalPath,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();
