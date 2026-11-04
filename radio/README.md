@@ -46,3 +46,12 @@ Pure offline generative synthesizer. No recordings of other artists, songs or li
 ## Development gates
 
 Test determinism: compare `JSON.stringify(makePlan(params))` with `JSON.stringify(makePlan({seed:makePlan(params).seed}))`; compare PCM arrays and test MP3 bitstream decode in Chromium/Firefox/Android before claiming compatibility on those devices. Node 22 static regression suite is configured in GitHub Actions. Browser interaction/real Android QA is outstanding.
+
+
+## Live continuity / spoken TTS / sleeve (2026-11-04)
+
+- Changing style, mood, language, concept or seed while playing **does not stop the current audio**: the renderer prepares the next PCM buffer first, then ramps the old and new WebAudio sources for 1.85 s. Old music loops temporarily if rendering is slow; play/pause remains explicit. Auto-next begins the next render before the nominal track end.
+- The unobtrusive mini album sleeve is seed-deterministic Canvas generative art (atmospheric, film-grain, landscape, abstract, architectural families), drawn locally without third-party services. **It is not a photorealistic AI image generator or a real licensed photograph.** Such a source could be added separately when available.
+- When `withVox` is enabled, browser playback additionally uses native `speechSynthesis` to speak actual words/phrases in supported device languages, with seeded rate, device-voice choice, pitch quantization in the track microtonal tuning and occasional word-level hard/xeno tuning. Actual voices/language quality depend on installed voices and browser; neither hundreds of true independent voice timbres nor full pitch-tracking Auto-Tune of Web Speech audio is guaranteed.
+- **Export limitation:** browser native `speechSynthesis` audio is not capturable by the Web Audio rendering graph. Downloaded WAV/MP3 still contain original procedural synthetic vox textures, **not** the native spoken TTS overlay. True spoken-TTS export and DSP Auto-Tune require an offline speech PCM engine or another authorized PCM-producing TTS source; do not label the current exported audio as spoken TTS.
+- New regression tests in `radio/tests/live.test.mjs` check seeded cover/voice selection, xenotune grid snapping and crossfade scheduling. Two-browser real speech/device quality remains an explicit QA gate.

@@ -14,7 +14,11 @@
 .rnr-vox{display:flex!important;gap:7px;align-items:center;color:#ead3ff!important;white-space:nowrap}.rnr-vox span{display:block;color:#9c91ae;font-size:8px;white-space:normal;letter-spacing:0}.rnr-vox input{accent-color:#ac80e0}
 .rnr-seed-row{display:flex;align-items:end;gap:6px;margin:0 0 10px}.rnr-seed-row label{flex:1;min-width:0}.rnr-restore{border:1px solid rgba(195,175,221,.25)!important;padding:7px 6px}
 .rnr-download{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.rnr-download button{border:1px solid rgba(195,175,221,.3);background:rgba(102,76,123,.19);padding:7px 9px;font-size:10px}.rnr-progress{color:#afa5bc;font-size:9px;flex:1}.rnr-meta{color:#92849e;font-size:9px;margin-top:8px}
-.rnr-root.rnr-busy .rnr-play{opacity:.5;pointer-events:none}
+.rnr-root.rnr-busy .rnr-play{opacity:.7}
 .rnr-obscura-dock{position:fixed;z-index:105;left:clamp(12px,2vw,28px);bottom:clamp(12px,2vw,24px);pointer-events:auto}
 @media(max-width:540px){.rnr-root{width:min(350px,calc(100vw - 22px));min-width:0}.rnr-obscura-dock{left:11px;bottom:11px}.rnr-spectrum{width:51px}.rnr-main{gap:5px;padding:7px}.rnr-root{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.rnr-shell{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+/* Album sleeve is intentionally compact; dock layout stays intact. */
+.rnr-cover{width:43px;height:43px;flex:0 0 43px;object-fit:cover;border-radius:3px;box-shadow:0 1px 8px #0008;border:1px solid #fff2}
+@media(max-width:540px){.rnr-cover{width:35px;height:35px;flex-basis:35px}.rnr-spectrum{width:40px}}
