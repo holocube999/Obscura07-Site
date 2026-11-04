@@ -63,11 +63,36 @@ function bytesFromBase64(data){
  const n=chunks.reduce((sum,v)=>sum+v.length,0),out=new Uint8Array(n);
  let i=0;for(const chunk of chunks){out.set(chunk,i);i+=chunk.length}return out;
 }
+function sha1Fallback(bytes){
+ // Git blob object identity verification on HTTP origins without SubtleCrypto.
+ const len=bytes.length,padded=Math.ceil((len+9)/64)*64,data=new Uint8Array(padded);
+ data.set(bytes);data[len]=128;
+ const view=new DataView(data.buffer),bits=len*8;
+ view.setUint32(padded-8,Math.floor(bits/4294967296),false);view.setUint32(padded-4,bits>>>0,false);
+ let h0=0x67452301,h1=0xefcdab89,h2=0x98badcfe,h3=0x10325476,h4=0xc3d2e1f0;
+ const rot=(v,n)=>(v<<n)|(v>>>(32-n)),words=new Int32Array(80);
+ for(let block=0;block<padded;block+=64){
+  for(let i=0;i<16;i++)words[i]=view.getInt32(block+i*4,false);
+  for(let i=16;i<80;i++)words[i]=rot(words[i-3]^words[i-8]^words[i-14]^words[i-16],1);
+  let a=h0,b=h1,c=h2,d=h3,e=h4;
+  for(let i=0;i<80;i++){
+   let f,k;
+   if(i<20){f=(b&c)|(~b&d);k=0x5a827999}
+   else if(i<40){f=b^c^d;k=0x6ed9eba1}
+   else if(i<60){f=(b&c)|(b&d)|(c&d);k=0x8f1bbcdc}
+   else{f=b^c^d;k=0xca62c1d6}
+   const t=(rot(a,5)+f+e+k+words[i])|0;
+   e=d;d=c;c=rot(b,30);b=a;a=t;
+  }
+  h0=(h0+a)|0;h1=(h1+b)|0;h2=(h2+c)|0;h3=(h3+d)|0;h4=(h4+e)|0;
+ }
+ return [h0,h1,h2,h3,h4].map(x=>(x>>>0).toString(16).padStart(8,'0')).join('');
+}
 async function checkBlob(bytes,expectedSha){
  const header=new TextEncoder().encode('blob '+bytes.length+'\0');
  const input=new Uint8Array(header.length+bytes.length);input.set(header);input.set(bytes,header.length);
- const hash=await crypto.subtle.digest('SHA-1',input);
- const hex=Array.from(new Uint8Array(hash),c=>c.toString(16).padStart(2,'0')).join('');
+ const subtle=typeof crypto!=='undefined'&&crypto.subtle;
+ const hex=subtle?Array.from(new Uint8Array(await subtle.digest('SHA-1',input)),c=>c.toString(16).padStart(2,'0')).join(''):sha1Fallback(input);
  if(hex!==expectedSha.toLowerCase())throw Error('Blob SHA-1 GitHub non corrispondente');
 }
 async function load(input){
