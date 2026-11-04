@@ -1,0 +1,21 @@
+name: RNR Static Radio QA
+on:
+  push:
+    paths:
+      - 'radio/**'
+      - '.github/workflows/radio.yml'
+  pull_request:
+    paths:
+      - 'radio/**'
+      - '.github/workflows/radio.yml'
+jobs:
+  node-static-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test deterministic synth, PCM and MP3
+        run: node --test radio/tests/seed.test.mjs
