@@ -4,7 +4,7 @@
 
 - **Live UI:** [Radio](./index.html) — play, regenerate, mute, actual mini FFT spectrum, MP3/WAV download, seed copy link.
 - **Seed:** self-contained `R1....` token encodes all arrangement settings including tuning, duration and `withVox`; `makePlan({seed: token})` reconstructs the same plan. The renderer is sample deterministic in the same JS runtime/version, not formally guaranteed bit-perfect across every architecture/browser.
-- **Music:** 19/22/31/53-EDO and 7-limit just intonation; nine style families; arranged drones, pads, pulse, leads, bells, plucked guitar simulation, bass, electronic drum voices, noise textures and simple stereo feedback effects. Consonance is favoured by curated pitch sets, but pleasingness is subjective and cannot be mathematically guaranteed.
+- **Music:** 19/22/31/53-EDO and 7-limit just intonation; eighteen style families; arranged drones, pads, pulse, leads, bells, plucked guitar simulation, bass, electronic drum voices, noise textures and simple stereo feedback effects. Consonance is favoured by curated pitch sets, but pleasingness is subjective and cannot be mathematically guaranteed.
 - **withVøx:** optional, off by default; 18 language phrase banks, >1000 combinatorial written expressions, 1 million identity IDs plus continuously variable synthesis parameters, mood/concept metadata, deterministic robot/formant/whisper vocal processing. **This is synthetic vocoder-like speech, not intelligible natural TTS in all 18 languages.** Some syllables will not be recognizable. No external or device voice output is used.
 - **MP3:** LGPL-3-licensed lamejs bundled in `vendor/lame.min.js`, lazily loaded only when exporting, used as separate unmodified library. See [license](./vendor/LICENSE.txt); credit [zhuker/lamejs](https://github.com/zhuker/lamejs), [LAME](https://lame.sourceforge.net/). WAV is produced by the original engine.
 - **Origin:** MP3 contains ID3 title, artist and generation information, and PCM includes a repeated low-level watermark. This is a traceability hint, **not** invisible or tamper-proof DRM: as static JS source is public there can be no genuinely secret signing key in the browser. An attacker can erase metadata or process/remix audio, and watermark survives no guaranteed transformation. Keep independent signed master receipts privately for strong provenance.
@@ -29,7 +29,7 @@ const mp3ByteStream = stream(); // browser ReadableStream, not HTTP streaming
 // Use blob in <audio>, a File, fetch-like Response, download, postMessage, etc.
 ```
 
-Parameters: `seed`, `style`, `mood`, `concept`, `language`, `duration` (16–125 seconds), `bpm` (42–132), `intensity` (0–1), `withVox`. Without `seed`, one is created with crypto.getRandomValues. Title and artist also derive from seed. For a full replay use the **returned** `plan.seed` (R1 recipe), rather than the originally supplied bare seed plus external options.
+Parameters: `seed`, `style`, `mood`, `concept`, `language`, `duration` (16–125 seconds), `bpm` (42–205), `intensity` (0–1), `withVox`. Without `seed`, one is created with crypto.getRandomValues. Title and artist also derive from seed. For a full replay use the **returned** `plan.seed` (R1 recipe), rather than the originally supplied bare seed plus external options.
 
 To embed in an iframe and request a Blob, load `bridge.js` on the radio page and use `postMessage({channel:"RNR/API/1",action:"generate",id:"1",params:{seed:"..."},format:"mp3"}, targetOrigin)`. The radio iframe answers with `{channel,action:"result",id,plan,blob,mime}`. Unlike a true HTTP endpoint this is a browser message exchange. It will not work as `GET /api/generate.mp3` on static GitHub Pages.
 
@@ -57,3 +57,12 @@ Test determinism: compare `JSON.stringify(makePlan(params))` with `JSON.stringif
 - New regression tests in `radio/tests/live.test.mjs` check seeded cover/voice selection, xenotune grid snapping and crossfade scheduling. Two-browser real speech/device quality remains an explicit QA gate.
 
 Device TTS may use an operating-system or browser speech provider; whether synthesis is fully on-device depends on installed voices. The application itself makes no explicit network requests for speech. The player keeps speech optional and does not claim offline voice synthesis on every device.
+
+
+## Arranger v2 — 2026-11-04
+
+Every R1 seed now produces a sectioned, deterministic arrangement via arrangement.js. Supported styles: legacy xenodrone/vaporwave/dreamwave/synthwave/guitar/ritual/biosphere/darkambient/pulse plus chiptune, harpsichord, medieval, meditation, hangdrum, metal, techno, punk, glitch. Sound comes from original procedural oscillators, not copied recorded instrument samples. The medieval/hangpan/metal timbres are synthesis approximations, not sampled acoustic instruments or human performances.
+
+The arranger uses 3/4, 4/4, 5/4 and 7/4 sections, per-section tempo modulation, break/drop silences with short fades, motif transformations, melodic runs, syncopation and occasional triplet grids. plan.sections and plan.breaks expose the arrangement for debugging, and the post-mix breaks affect WAV/MP3 too. No musical style guarantees professional composition or true infinite nonrepetition; randomness is cryptographically seeded when created normally, then deterministic when replaying the saved R1 token. New engine v0.2.0 reinterprets older R1 recipes musically (the style-index prefix remains compatible) and intentionally does not promise bit-identical older v0.1 audio.
+
+With withVox, lyrics.js selects distinct words, slogans or full statements (one of each for sufficiently long pieces) using seeded templates; an exact phrase is not repeated within a track. Italian, English, Spanish and French have hand-authored sentence/slogan templates; the remaining supported languages use phrase-bank fallbacks. As before, playback TTS depends on device capabilities and the native spoken track is not captured in WAV/MP3 exports; those still contain synthetic vox only.

@@ -1,8 +1,10 @@
 /* RΛNDØM[NULL] RADIO • static seeded xenarmonic engine • original synthesis
    Browser ES module. No server, telemetry, samples, npm or CDN. */
-export const VERSION="0.1.0";
+import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
+import {composeVoices} from "./lyrics.js";
+export const VERSION="0.2.0";
 export const SAMPLE_RATE=22050;
-export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse"];
+export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse",...EXTRA_STYLES];
 export const MOODS=["liminal","euphoric","melancholic","nocturnal","hypnotic","curious","serene","alien","nostalgic","ominous","weightless","electric"];
 export const CONCEPTS=["memory","time","horizon","machines","sleep","ocean","stars","ghosts","silence","light","dreams","cities","echoes","entropy","origin"];
 export const LANGUAGE_PACKS={
@@ -92,7 +94,8 @@ export function makePlan(options={}){
  const langs=Object.keys(LANGUAGE_PACKS);
  const language=LANGUAGE_PACKS[options.language]?options.language:recipe&&langs[parseInt(recipe[5],36)]||select(q,langs);
  const tuning=recipe&&TUNINGS[parseInt(recipe[6],36)]||select(q,TUNINGS);
- const bpm=Math.round(whole(options.bpm,42,132,recipe?parseInt(recipe[7],36):style==="synthwave"?94+q()*25:50+q()*57));
+ const preferred=style==="punk"?158+q()*42:style==="metal"?125+q()*60:style==="techno"?124+q()*30:style==="chiptune"?120+q()*56:style==="glitch"?95+q()*85:style==="harpsichord"||style==="medieval"?70+q()*52:style==="meditation"||style==="hangdrum"?48+q()*47:style==="synthwave"?94+q()*25:50+q()*57;
+ const bpm=Math.round(whole(options.bpm,42,205,recipe?parseInt(recipe[7],36):preferred));
  const duration=Math.round(whole(options.duration,16,125,recipe?parseInt(recipe[8],36):40+q()*31));
  const withVox=Boolean(options.withVox??options.withVøx??(recipe?recipe[10]==="1":false));
  const intensity=Math.round(whole(options.intensity,0,1,recipe?parseInt(recipe[9],36)/1000:.27+q()*.5)*1000)/1000;
@@ -101,50 +104,12 @@ export function makePlan(options={}){
  const artist=select(r,PREFIX)+" "+select(r,SUFFIX);
  const title=select(r,TITLES_A)+" "+select(r,TITLES_B);
  const root=[41.2,43.65,48.999,55,61.735,65.406,73.416,82.407,98][Math.floor(r()*9)];
- const measure=240/bpm, events=[], voices=[];
- const put=(kind,time,length,n,amp=.3,pan=0)=>events.push({kind,time:+time.toFixed(4),length:+length.toFixed(4),freq:+pitch(tuning,n,root).toFixed(5),amp:+amp.toFixed(4),pan:+pan.toFixed(3),phase:r()*6.2832,noiseSeed:Math.floor(r()*2**31)});
- const bars=Math.ceil(duration/measure);
- const rhythmic=["pulse","synthwave","vaporwave","ritual"].includes(style);
- const pads=["dreamwave","darkambient","xenodrone","biosphere","vaporwave"].includes(style);
- const chords=tuning.chord;
- for(let bar=0;bar<bars;bar++){
-  const b=bar*measure, trans=(Math.floor(bar/(2+Math.floor(r()*3)))%4===3)?-1:0;
-  if(pads||bar%2===0){
-   for(let k=0;k<(style==="xenodrone"?4:3);k++){
-    const n=chords[k]+trans;put(k===0?"drone":"pad",b,Math.min(duration-b,measure*(style==="xenodrone"?2.1:1.12)),n,(k===0?.17:.09)*(1+intensity),(.6*r()-.3));
-   }
-  }
-  if(["guitar","dreamwave","vaporwave","synthwave","pulse"].includes(style)){
-   const divisions=style==="guitar"?8:4;
-   for(let step=0;step<divisions;step++){
-    if(r()<(style==="dreamwave"?.38:.73)){
-     const n=select(r,tuning.mel)+(r()>.76? (tuning.steps||tuning.ratios.length):0);
-     put(style==="guitar"?"guitar":style==="synthwave"?"lead":"bell",b+step*measure/divisions,Math.min(duration-b-step*measure/divisions,measure/divisions*(style==="guitar"?1.8:2.6)),n,(.07+.13*r())*(.7+intensity),r()*1.3-.65);
-    }
-   }
-  }
-  if(rhythmic){
-   for(let beat=0;beat<4;beat++){
-    let p=b+beat*60/bpm;if(p>=duration)break;
-    if(beat%2===0||style==="synthwave")put("kick",p,.31,0,.28+intensity*.23,0);
-    if(beat%2===1)put("snare",p,.19,0,.09+intensity*.13,r()*.3-.15);
-    for(let sub=0;sub<2;sub++)if(r()<(.43+intensity*.38))put("hat",p+sub*30/bpm,.085,0,.038+intensity*.064,r()*1.2-.6);
-   }
-   put("bass",b,measure*.83,tuning.chord[0]-(tuning.steps||tuning.ratios.length),.17+intensity*.16,0);
-  }
-  if(style==="biosphere"||style==="darkambient"||style==="xenodrone"){
-   if(r()<.7)put("nature",b,Math.min(measure*1.5,duration-b),0,.037+r()*.06,r()*1.1-.55);
-  }
- }
- if(withVox){
-  const count=Math.max(1,Math.floor(duration/(9+r()*9)));
-  for(let i=0;i<count;i++){
-   const time=clamp(4+i*(duration-7)/count+(r()-.5)*2,0,duration-3);
-   voices.push({time:+time.toFixed(3),text:phrase(r,language,concept),language,mood,concept,voice:voiceIdentity(r,mood,concept)});
-  }
- }
- const plan={version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,artist,title,tuning:tuning.name,events:events.filter(x=>x.length>.02&&x.time<duration),voices};
- return plan;
+ // Arrangement is deterministic for a given recipe; style indices 0–8 remain compatible.
+ const {events,sections,breaks}=arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity},tuning,root,rngFor,pitch);
+ const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,withVox,breaks},
+   LANGUAGE_PACKS,CONCEPT_TERMS,CONCEPTS,rngFor,voiceIdentity);
+ return {version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,
+  artist,title,tuning:tuning.name,events,sections,breaks,voices};
 }
 function renderEvent(channels,event,sr,seed){
  const L=channels[0],R=channels[1],from=Math.max(0,Math.floor(event.time*sr)),count=Math.min(Math.ceil(event.length*sr),L.length-from),f=event.freq,amp=event.amp;
@@ -159,6 +124,7 @@ function renderEvent(channels,event,sr,seed){
   if(kind==="kick"){env=Math.exp(-t*16);v=Math.sin(6.283185*(63*t+55*(1-Math.exp(-t*31))/31));}
   else if(kind==="snare"){env=Math.exp(-t*24);v=noise*.82+Math.sin(6.283185*176*t)*.18;}
   else if(kind==="hat"){env=Math.exp(-t*54);v=noise-prev;prev=noise;}
+  else if(kind==="clap"){env=Math.exp(-t*26);v=noise*((t<.02||t>.036&&t<.055||t>.085)?1:.17);}
   else if(kind==="nature"){low=low*.995+noise*.005;v=(noise*.11+low*2)*Math.sin(6.283185*(.07+.17*u)*t);env=Math.sin(Math.PI*u);}
   else {
    const wobble=1+.0016*Math.sin(6.283185*(.18+event.phase*.12)*t);
@@ -170,6 +136,16 @@ function renderEvent(channels,event,sr,seed){
    if(kind==="lead"){env*=.76+.23*Math.sin(t*7);v=Math.tanh((s+.39*s3)*1.7);}
    if(kind==="guitar"){env*=Math.exp(-4.2*u);v=(s*.6+s2*.26+s3*.1+noise*.045)*(.93+.07*Math.sin(6.283185*3.5*t));}
    if(kind==="bass"){env*=Math.exp(-.8*u);v=s*.7+s2*.16+Math.sin(p*.5)*.18;}
+   if(kind==="chip"){env*=Math.exp(-.48*u);const x=(f*t+phase/(2*Math.PI))%1;v=(x<.22?1:-1)*.64+Math.sin(p*2)*.18;}
+   if(kind==="chipbass"){env*=Math.exp(-1.7*u);const x=(f*t+phase/(2*Math.PI))%1;v=(x<.5?1:-1)*.42+Math.sin(p)*.53;}
+   if(kind==="harpsichord"){env*=Math.exp(-6.5*t);v=s*.47+Math.sin(2*p)*.28+Math.sin(3.01*p)*.18+Math.sin(4.97*p)*.08;}
+   if(kind==="lute"){env*=Math.exp(-4.2*t);v=s*.52+s2*.22+Math.sin(3*p)*.12+noise*.04;}
+   if(kind==="flute"){env*=.7+.3*Math.sin(Math.PI*u);v=.85*Math.sin(p+.013*Math.sin(6.283185*4.8*t))+.07*noise;}
+   if(kind==="handpan"){env*=Math.exp(-3.1*t);v=s*.54+Math.sin(p*2.02)*.27+Math.sin(p*3.92)*.13+Math.sin(p*.501)*.09;}
+   if(kind==="metal"){env*=Math.exp(-.7*u);v=Math.tanh((s*.81+Math.sin(p*2.004)*.38+Math.sin(3.01*p)*.22)*4.5)*.83;}
+   if(kind==="acid"){env*=Math.exp(-1.8*u);const saw=2*((f*t+phase/(2*Math.PI))%1)-1;low=low*.9+saw*.1;v=Math.tanh((saw*.52+(saw-low)*1.9)*2.1);}
+   if(kind==="glitch"){const gate=Math.floor(t*18)%6;env*=gate===1||gate===4?.08:1;v=Math.round((s*.67+s2*.22)*7)/7;}
+   if(kind==="choir"){env*=.55+.45*Math.sin(Math.PI*u);v=(Math.sin(p)*.49+Math.sin(p*1.005)*.32+Math.sin(p*.5)*.21);}
   }
   const out=amp*env*v;L[from+j]+=out*lg;R[from+j]+=out*rg;
  }
@@ -205,6 +181,20 @@ function watermark(channels,seed,sr){
   for(let i=0;i<n;i++){const e=Math.sin(Math.PI*i/n)**2;const v=bit*.00013*e*Math.sin(6.283185*f*i/sr);L[start+i]+=v;R[start+i]+=v;}
  }
 }
+function applyArrangementBreaks(channels,breaks,sr){
+ // Short fades bound true silence in the final PCM, after delay feedback.
+ if(!breaks?.length)return;
+ const n=channels[0].length,edge=Math.max(1,Math.round(sr*.015));
+ for(const br of breaks){
+  const start=Math.max(0,Math.min(n,Math.floor(br.start*sr)));
+  const end=Math.max(start,Math.min(n,Math.ceil(br.end*sr)));
+  for(const ch of channels){
+   for(let i=Math.max(0,start-edge);i<start;i++)ch[i]*=(start-i)/edge;
+   ch.fill(0,start,end);
+   for(let i=end;i<Math.min(n,end+edge);i++)ch[i]*=(i-end)/edge;
+  }
+ }
+}
 export function renderPCM(plan,sampleRate=SAMPLE_RATE){
  const sr=whole(sampleRate,16000,48000,SAMPLE_RATE),n=Math.ceil(plan.duration*sr);
  const channels=[new Float32Array(n),new Float32Array(n)];
@@ -219,6 +209,7 @@ export function renderPCM(plan,sampleRate=SAMPLE_RATE){
  }
  const gain=m>0?.86/Math.max(m,.86):1;
  for(let i=0;i<n;i++){L[i]=Math.tanh(L[i]*gain*.91);R[i]=Math.tanh(R[i]*gain*.91);}
+ applyArrangementBreaks(channels,plan.breaks,sr);
  watermark(channels,plan.seed,sr);
  return {channels,sampleRate:sr,plan};
 }

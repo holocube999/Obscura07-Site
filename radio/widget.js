@@ -6,7 +6,7 @@ import {spliceTrack,haltTrack} from "./transition.js";
 import {createLiveVoice} from "./live-voice.js";
 import {drawCover} from "./cover-art.js";
 import {renderPCM} from "./radio.js";
-const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse"};
+const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse",chiptune:"Chiptune",harpsichord:"Clavicembalo",medieval:"Medievale",meditation:"Meditativa",hangdrum:"Hangdrum",metal:"Metal",techno:"Techno",punk:"Punk",glitch:"Glitch"};
 const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
 export function mount(root,settings={}){
@@ -34,7 +34,7 @@ export function mount(root,settings={}){
   qs(root,".rnr-seed").value=plan.seed;
   drawCover(qs(root,".rnr-cover"),plan);
   qs(root,'[data-param="withVox"]').checked=plan.withVox;
-  qs(root,".rnr-meta").textContent=plan.tuning+" · "+plan.bpm+" BPM · "+plan.duration+"s · "+plan.language.toUpperCase()+(plan.withVox?" · VOX":"")+" · "+plan.mood;
+  qs(root,".rnr-meta").textContent=plan.tuning+" · "+plan.bpm+" BPM · "+plan.duration+"s · "+plan.language.toUpperCase()+(plan.withVox?" · VOX":"")+" · "+plan.mood+" · "+(plan.sections?.length||0)+" movements";
  }
  function ensurePlan(){if(!state.plan){state.plan=makePlan(config());state.settings.seed=state.plan.seed;update(state.plan);}return state.plan;}
  function reset(seed){state.token++;clearTimeout(state.nextTimer);state.nextTimer=null;state.plan=null;state.audio=null;state.settings.seed=seed===undefined?randomSeed():seed;const p=ensurePlan();if(state.playing)void start();else message("Seed ready");return p;}
