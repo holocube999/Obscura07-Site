@@ -399,6 +399,17 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "site"
+    },
+    {
+      "id": "JSWolf3D",
+      "repo": "JSWolf3D",
+      "title": "JSWolf3D",
+      "kind": "Gioco",
+      "description": "FPS raycasting JavaScript offline-first · editor mobile-first · multiplayer sperimentale. In sviluppo.",
+      "published": false,
+      "url": null,
+      "advanced_url": null,
+      "viewer_type": "web_js"
     }
   ]
 }
