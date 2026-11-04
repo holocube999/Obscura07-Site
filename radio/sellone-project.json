@@ -7,7 +7,7 @@
   "language": "JavaScript",
   "runtime": "browser-static",
   "deps": "vendor/lame.min.js",
-  "url": "https://holocube999.github.io/Obscura07-Site/radio/",
+  "url": "radio/",
   "viewer_type": "web_js",
   "capabilities": [
     "audio",
@@ -37,5 +37,10 @@
     "No secret signing keys in public JS",
     "User gesture required for audio",
     "No cross-project modifications without lease"
-  ]
+  ],
+  "integrations": {
+    "catalog": "../../catalog.json",
+    "webPlayer": "web_js",
+    "status": "registered-in-site-catalog; sellone-local-import-unverified"
+  }
 }
