@@ -1,7 +1,7 @@
 /* RNR generative arranger v2: seeded sections, polymeter, break/drop, melodic motifs.
  * Uses the existing microtonal pitch mapping and emits ordinary renderPCM events.
  * This file deliberately has no external dependencies or samples. */
-export const EXTRA_STYLES=["chiptune","harpsichord","medieval","meditation","hangdrum","metal","techno","punk","glitch"];
+export const EXTRA_STYLES=["chiptune","harpsichord","medieval","meditation","hangdrum","metal","techno","punk","glitch","hiphop"];
 const profiles={
  xenodrone:{lead:"choir",harmony:"drone",bass:"bass",drums:0,density:.25,triplets:.20},
  vaporwave:{lead:"bell",harmony:"pad",bass:"bass",drums:.4,density:.38,triplets:.28},
@@ -20,7 +20,8 @@ const profiles={
  metal:{lead:"metal",harmony:"metal",bass:"bass",drums:1,density:.76,triplets:.35},
  techno:{lead:"acid",harmony:"pad",bass:"chipbass",drums:1,density:.74,triplets:.41},
  punk:{lead:"metal",harmony:"guitar",bass:"bass",drums:1,density:.74,triplets:.31},
- glitch:{lead:"glitch",harmony:"chip",bass:"chipbass",drums:.91,density:.8,triplets:.66}
+ glitch:{lead:"glitch",harmony:"chip",bass:"chipbass",drums:.91,density:.8,triplets:.66},
+ hiphop:{lead:"bell",harmony:"pad",bass:"bass",drums:1,density:.55,triplets:.42}
 };
 const choose=(r,a)=>a[Math.floor(r()*a.length)];
 const clip=(x,a,b)=>Math.min(b,Math.max(a,x));
@@ -41,6 +42,51 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
  };
  const barsize=(meter,tempo)=>meter*60/tempo;
  const progression=[0,3,4,1,5,2,3,0],shape=["intro","verse","build","drop","bridge","breakdown","return","outro"];
+ if(plan.style==="hiphop"){
+  // Stable 4/4 bars and swung sixteenth hats, with classic half-time snare
+  // backbeat on beats 2 & 4. The verse generator uses these exact bar starts.
+  const beat=60/plan.bpm,bar=4*beat;
+  const n=Math.ceil(plan.duration/bar);
+  const chord=[0,3,5,4,2,3,0,4];
+  for(let index=0;index<n;index++){
+   const start=index*bar,end=Math.min(plan.duration,start+bar);
+   const label=index===0?"intro":index>n-3?"outro":index%8===0?"hook":"verse";
+   const bass=chord[Math.floor(index/2)%chord.length];
+   sections.push({name:label,start:+start.toFixed(4),end:+end.toFixed(4),
+    bpm:plan.bpm,meter:4,triplets:index%4===3});
+   mk("bass",start,Math.min(bar*.95,end-start),bass-scale.length,
+      .14+.08*plan.intensity,0);
+   mk("pad",start,Math.min(bar*.99,end-start),bass,
+      .055+.027*plan.intensity,-.18);
+   mk("pad",start,Math.min(bar*.9,end-start),bass+2,
+      .044+.024*plan.intensity,.28);
+   for(let k=0;k<4;k++){
+    const t=start+k*beat;
+    if(t>=end)break;
+    if(k===0||k===2||((index+k)%7===0))
+     mk("kick",t,.3,0,.28+.14*plan.intensity,0);
+    if(k===1||k===3)mk("snare",t,.18,0,.18+.075*plan.intensity,0);
+    if(k===0||k===2)mk("chipbass",t,beat*.9,bass-scale.length,
+      .075+.045*plan.intensity,-.1);
+    for(let j=0;j<4;j++){
+     // Deterministic swing: late offbeat sixteenths follow the groove.
+     const shifted=j%2?beat*.045:0,hit=t+j*beat/4+shifted;
+     if(hit>=end||r()>.85)continue;
+     mk("hat",hit,.045,0,.02+.014*plan.intensity,pan());
+    }
+   }
+   if(index%2===1){
+    for(let k=0;k<4;k++){
+     const t=start+k*beat;
+     if(t<end)mk("bell",t,beat*.68,bass+(k%3),
+       .023+plan.intensity*.022,pan());
+    }
+   }
+  }
+  events.sort((a,b)=>a.time-b.time);
+  return {events,sections,breaks};
+ }
+
  let time=0,s=0;
  let motif=Array.from({length:12},(_,i)=>choose(r,[0,1,2,3,4,5,6,7])+((i%6===5)?1:0));
  while(time<plan.duration-.05&&s<48){

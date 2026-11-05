@@ -3,7 +3,11 @@
 import {mount} from './widget.js';
 const root=document.getElementById('rnrEmbedded');
 const api=mount(root,{style:'darkambient',duration:120,withVox:false,
-                      volume:0.045,autonext:true,readQuery:false});
+                      volume:0.045,voiceMix:0.20,autonext:true,readQuery:false,
+                      onCoverOpen({src,title,artist}){
+                       if(window.parent!==window)window.parent.postMessage({
+                        type:'randomnullradio:cover',src,title,artist},location.origin);
+                      }});
 api.setVolume(0.045);
 const notify=(state)=>{if(window.parent!==window)window.parent.postMessage(
   {type:'randomnullradio:status',state},location.origin);};
@@ -26,3 +30,5 @@ notify('ready');
 // Best effort only: Web Audio autoplay may be blocked until a user gesture.
 // The embedded player always remains accessible for manual activation.
 void start();
+if(typeof navigator!=="undefined"&&"serviceWorker" in navigator&&window.isSecureContext)
+ navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{});

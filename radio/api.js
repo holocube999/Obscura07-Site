@@ -2,6 +2,7 @@
 import {makePlan,renderPCM,pcmToWav,pcmToMP3,filename,randomSeed} from "./radio.js";
 import {renderAsync} from "./async.js";
 import {encodeMP3Async} from "./encode.js";
+import {renderVocalBus,mixVocalBus} from "./voice-render.js";
 let mp3Library=null;
 export async function ensureMP3(){
  if(globalThis.lamejs?.Mp3Encoder)return;
@@ -17,9 +18,15 @@ export async function ensureMP3(){
  return mp3Library;
 }
 export function compose(params={}){return makePlan(params);}
-export function synthesize(params={}){const plan=makePlan(params);return {plan,pcm:renderPCM(plan)};}
+export function synthesize(params={}){
+ const plan=makePlan(params),pcm=renderPCM(plan);
+ const vocal=renderVocalBus(plan,{sampleRate:pcm.sampleRate});
+ return {plan,pcm:mixVocalBus(pcm,vocal,params.voiceMix??.22)};
+}
 export async function exportTrack(params={},format="mp3"){
- const plan=makePlan(params),pcm=await renderAsync(plan),type=String(format).toLowerCase();
+ const plan=makePlan(params),rendered=await renderAsync(plan),type=String(format).toLowerCase();
+ const vocals=rendered.voiceChannels?{channels:rendered.voiceChannels}:null;
+ const pcm=mixVocalBus(rendered,vocals,params.voiceMix??.22);
  if(type==="mp3")await ensureMP3();
  if(type!=="mp3"&&type!=="wav")throw new RangeError("Unsupported format; use mp3 or wav");
  const blob=type==="mp3"?await encodeMP3Async(pcm):pcmToWav(pcm);

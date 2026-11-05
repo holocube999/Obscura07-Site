@@ -24,3 +24,18 @@
  .rnr-site-toggle{min-height:30px;font-size:9px;padding:6px 9px}
  .rnr-site-iframe{height:min(53svh,390px)}}
 @media(prefers-reduced-motion:reduce){.rnr-site-toggle{backdrop-filter:none}}
+
+
+/* Page-level album lightbox, not clipped by the embedded iframe. */
+.rnr-site-cover-modal{position:fixed;inset:0;margin:auto;width:fit-content;
+ max-width:min(94vw,880px);max-height:96vh;overflow:auto;
+ border:1px solid #81739b;border-radius:14px;
+ background:#0e0c1a;color:#f1eaff;padding:16px;
+ box-shadow:0 22px 75px #000e;text-align:center;z-index:99999}
+.rnr-site-cover-modal::backdrop{background:#040308e9;backdrop-filter:blur(6px)}
+.rnr-site-cover-image{display:block;max-width:min(86vw,760px);
+ max-height:78vh;object-fit:contain;border-radius:8px}
+.rnr-site-cover-caption{font:12px/1.4 ui-monospace,monospace;margin:12px 0 0}
+.rnr-site-cover-close{position:absolute;right:7px;top:6px;
+ background:#231b32;color:#f2e6ff;border:1px solid #aa98c3;
+ border-radius:50%;font:23px sans-serif;width:34px;height:34px;cursor:pointer}

@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {STYLES,makePlan,renderPCM} from "../radio.js";
-const styles=["xenodrone","chiptune","harpsichord","medieval","meditation","hangdrum","metal","techno","punk","glitch"];
+const styles=["xenodrone","chiptune","harpsichord","medieval","meditation","hangdrum","metal","techno","punk","glitch","hiphop"];
 test("nine new musical styles are selectable while legacy IDs stay stable",()=>{
- assert.equal(STYLES.length,18);
+ assert.equal(STYLES.length,19);
  assert.equal(STYLES[0],"xenodrone");
  assert.ok(styles.every(x=>STYLES.includes(x)));
 });

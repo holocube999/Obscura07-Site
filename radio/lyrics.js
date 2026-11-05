@@ -1,5 +1,6 @@
 /* Seeded varied spoken material: isolated words, slogans, full statements.
  * No online lyric corpus. Exact repeats within one song are rejected. */
+import {OFFLINE_DICTIONARY,originalSentence,rhymeStanza} from './linguistic-corpus.js';
 const pick=(r,a)=>a[Math.floor(r()*a.length)];
 const TERMS={
  it:["silenzio","eclissi","macchina","infinito","memoria","vuoto","orizzonte","rinascita","antenna","segnale","ombra","luce","eternità","stella","oceano","tempo","entropia"],
@@ -33,9 +34,53 @@ const CLAUSES={
   slogans:["Sans retour","Au-delà du signal","Souviens-toi de demain","Le silence vit","Hors du temps"]
  }
 };
+export function quantizeVoiceTime(time,sections=[],breaks=[],duration=60,form="slogan",bpm=100){
+ const max=Math.max(.025,Number.isFinite(duration)?duration-.05:59.95);
+ const target=Math.max(0,Math.min(max,Number.isFinite(time)?time:0));
+ const selected=(Array.isArray(sections)?sections:[]).filter(x=>
+  x&&Number.isFinite(x.start)&&Number.isFinite(x.end)&&x.end>x.start&&
+  Number.isFinite(x.bpm)&&x.bpm>0);
+ const options=selected.length?selected:[{start:0,end:duration,bpm,meter:4}];
+ let best=target,score=Infinity;
+ for(const section of options){
+  const beat=60/section.bpm;
+  const step=form==="word"?beat/2:form==="sentence"?beat*(section.meter||4):beat;
+  const n=Math.round((target-section.start)/step);
+  for(const ix of [n-1,n,n+1]){
+   const at=section.start+ix*step;
+   if(at<section.start-1e-5||at>Math.min(max,section.end-.025))continue;
+   if((Array.isArray(breaks)?breaks:[]).some(br=>br&&at>=br.start-.001&&at<br.end+.001))continue;
+   const dist=Math.abs(at-target);
+   if(dist<score){score=dist;best=at}
+  }
+ }
+ return +best.toFixed(3);
+}
+
 export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,voiceIdentity){
  if(!plan.withVox)return [];
  const r=rngFor(plan.seed+"|speech-arrangement-v2"),lang=plan.language;
+ if(plan.style==="hiphop"){
+  // One original line per 4/4 bar, with the final rhyming word exactly on
+  // beat four. AABB / ABAB alternate per four-line stanza.
+  const bpm=plan.bpm||94,beat=60/bpm,bar=4*beat;
+  const starts=bar; // instrumental count-in
+  const count=Math.max(1,Math.min(22,Math.floor((plan.duration-starts-.08)/bar)));
+  const voices=[];let stanza=[];
+  for(let i=0;i<count;i++){
+   if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4));
+   const phrase=stanza[i%4];
+   const time=starts+i*bar;
+   const voice=voiceIdentity(r,plan.mood,plan.concept);
+   voices.push({time:+time.toFixed(3),rhymeTime:+(time+beat*3).toFixed(3),
+    barEnd:+Math.min(plan.duration,time+bar).toFixed(3),
+    text:phrase.text,rhymeWord:phrase.rhymeWord,
+    rhymeFamily:phrase.family,scheme:phrase.scheme,
+    form:"rap",delivery:"hiphop",language:lang,
+    mood:plan.mood,concept:plan.concept,voice});
+  }
+  return voices;
+ }
  const lines=CLAUSES[lang]||CLAUSES.en,bank=languagePacks[lang]||languagePacks.en;
  const terms=TERMS[lang]||(conceptTerms[lang]||conceptTerms.en).split("|");
  const count=Math.max(1,Math.min(14,Math.floor(plan.duration/(6+r()*6))));
@@ -45,7 +90,11 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   const form=["word","slogan","sentence"][(i+startMode)%3];
   let text="";
   for(let n=0;n<24;n++){
-   if(form==="word")text=pick(r,terms);
+   if(OFFLINE_DICTIONARY[lang]&&r()<.84){
+     const kind=form==="sentence"?(r()<.32?"question":r()<.22?"abstract":"statement"):
+      form==="slogan"?(r()<.36?"question":"slogan"):"word";
+     text=originalSentence(r,lang,kind,plan.context||"");
+   }else if(form==="word")text=pick(r,terms);
    else if(form==="slogan"){
      text=pick(r,lines.slogans);
      if(r()<.4)text+=". "+pick(r,terms)+"!";
@@ -68,7 +117,8 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
     if(Math.abs(br.end-time)<4)time=Math.min(plan.duration-1,br.end+.12);
   }
   const voice=voiceIdentity(r,plan.mood,plan.concept);
-  voices.push({time:+time.toFixed(3),text,form,language:lang,mood:plan.mood,concept:plan.concept,voice});
+  const onset=quantizeVoiceTime(time,plan.sections,plan.breaks,plan.duration,form,plan.bpm);
+  voices.push({time:onset,text,form,language:lang,mood:plan.mood,concept:plan.concept,voice});
  }
  return voices;
 }

@@ -94,10 +94,10 @@ export function makePlan(options={}){
  const langs=Object.keys(LANGUAGE_PACKS);
  const language=LANGUAGE_PACKS[options.language]?options.language:recipe&&langs[parseInt(recipe[5],36)]||select(q,langs);
  const tuning=recipe&&TUNINGS[parseInt(recipe[6],36)]||select(q,TUNINGS);
- const preferred=style==="punk"?158+q()*42:style==="metal"?125+q()*60:style==="techno"?124+q()*30:style==="chiptune"?120+q()*56:style==="glitch"?95+q()*85:style==="harpsichord"||style==="medieval"?70+q()*52:style==="meditation"||style==="hangdrum"?48+q()*47:style==="synthwave"?94+q()*25:50+q()*57;
+ const preferred=style==="hiphop"?78+q()*32:style==="punk"?158+q()*42:style==="metal"?125+q()*60:style==="techno"?124+q()*30:style==="chiptune"?120+q()*56:style==="glitch"?95+q()*85:style==="harpsichord"||style==="medieval"?70+q()*52:style==="meditation"||style==="hangdrum"?48+q()*47:style==="synthwave"?94+q()*25:50+q()*57;
  const bpm=Math.round(whole(options.bpm,42,205,recipe?parseInt(recipe[7],36):preferred));
  const duration=Math.round(whole(options.duration,16,125,recipe?parseInt(recipe[8],36):40+q()*31));
- const withVox=Boolean(options.withVox??options.withVøx??(recipe?recipe[10]==="1":false));
+ const withVox=Boolean(options.withVox??options.withVøx??(recipe?recipe[10]==="1":style==="hiphop"));
  const intensity=Math.round(whole(options.intensity,0,1,recipe?parseInt(recipe[9],36)/1000:.27+q()*.5)*1000)/1000;
  const seed=["R1",base,STYLES.indexOf(style).toString(36),MOODS.indexOf(mood).toString(36),CONCEPTS.indexOf(concept).toString(36),langs.indexOf(language).toString(36),TUNINGS.indexOf(tuning).toString(36),bpm.toString(36),duration.toString(36),Math.round(intensity*1000).toString(36),withVox?"1":"0"].join(".");
  const r=rngFor(seed+"|RNR|arrangement-v1");
@@ -106,7 +106,7 @@ export function makePlan(options={}){
  const root=[41.2,43.65,48.999,55,61.735,65.406,73.416,82.407,98][Math.floor(r()*9)];
  // Arrangement is deterministic for a given recipe; style indices 0–8 remain compatible.
  const {events,sections,breaks}=arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity},tuning,root,rngFor,pitch);
- const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,withVox,breaks},
+ const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,withVox,breaks,sections,context:String(options.extraText||"").slice(0,3200)},
    LANGUAGE_PACKS,CONCEPT_TERMS,CONCEPTS,rngFor,voiceIdentity);
  return {version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,
   artist,title,tuning:tuning.name,events,sections,breaks,voices};

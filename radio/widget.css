@@ -44,3 +44,37 @@
 .rnr-site-dock[data-playing=true] .rnr-site-toggle{border-color:rgba(140,199,187,.5)}
 @media(max-width:640px){.rnr-site-dock{top:10px;right:10px}.rnr-site-toggle{font-size:9px;padding:6px 9px}
  .rnr-site-panel{max-height:70svh}}
+
+
+/* Master gain is always visible. Voice trim belongs to the advanced panel. */
+.rnr-volume-row,.rnr-voice-row{display:flex!important;align-items:center;gap:9px;
+ color:#baacd4;font-size:9px;letter-spacing:.12em;white-space:nowrap}
+.rnr-volume-row{padding:2px 12px 8px;border-top:1px solid rgba(193,176,219,.13)}
+.rnr-voice-row{padding:4px 0 11px;margin-bottom:10px;
+ border-bottom:1px solid rgba(193,176,219,.14)}
+.rnr-volume-row input,.rnr-voice-row input{flex:1;min-width:28px;height:15px;
+ accent-color:#ac87d3;cursor:pointer}
+.rnr-volume-row output,.rnr-voice-row output{font:10px ui-monospace,Consolas,monospace;
+ letter-spacing:0;min-width:35px;text-align:right;color:#e5d8f4}
+.rnr-context-label{display:block;margin-bottom:10px;color:#bcb0cf;font-size:9px}
+.rnr-context{display:block;width:100%;resize:vertical;min-height:40px;max-height:130px;
+ padding:8px;margin-top:4px;border:1px solid rgba(195,175,221,.22);
+ background:#0b0c18;color:#eee4f7;border-radius:6px;
+ font:11px/1.4 ui-monospace,monospace;outline-offset:2px}
+.rnr-cover-open{margin:0;padding:0!important;flex:none;border:0;border-radius:4px;
+ line-height:0!important;background:transparent!important}
+.rnr-cover-open:hover .rnr-cover,.rnr-cover-open:focus-visible .rnr-cover{
+ outline:1px solid #cbbbe9;outline-offset:2px;filter:brightness(1.13)}
+.rnr-cover-dialog{position:fixed;inset:0;margin:auto;
+ max-width:min(93vw,880px);max-height:94vh;width:fit-content;
+ background:#0c0b16;color:#e9e2f5;
+ border:1px solid #77658a;border-radius:14px;
+ box-shadow:0 20px 65px #000c;padding:18px;text-align:center}
+.rnr-cover-dialog::backdrop{background:#020206dc;backdrop-filter:blur(6px)}
+.rnr-cover-large{display:block;max-width:min(82vw,760px);max-height:75vh;
+ width:auto;height:auto;object-fit:contain;border-radius:6px}
+.rnr-cover-close{position:absolute;top:3px;right:8px;font:24px sans-serif!important;
+ background:#1a1628!important;border-radius:50%!important;padding:3px 9px!important}
+.rnr-cover-caption{margin:13px 0 2px;font:12px ui-monospace,monospace;overflow-wrap:anywhere}
+@media(max-width:540px){.rnr-volume-row{padding:3px 8px 7px}
+.rnr-cover-dialog{padding:12px}}
