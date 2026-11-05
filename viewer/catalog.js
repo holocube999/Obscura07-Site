@@ -8,7 +8,7 @@ const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
-const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO'};
+const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO',utility:'UTILITY',audio:'AUDIO'};
 let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,selectedRevision='',view='js',busy=false;
 let syncChannel='',syncReady={js:false,original:false};
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
@@ -20,12 +20,18 @@ function showStatus(msg,error=false){
  $('playerStatus').style.color=error?'#ffc5d3':'#b7c9d6';
 }
 function approvedBuild(path){
- if(typeof path!=='string'||!/^viewer\/[A-Za-z0-9_.\/-]+\.html?$/i.test(path)||path.split('/').includes('..'))return '';
+ // Only audited first-party pages. Never allow arbitrary GitHub paths here.
+ if(typeof path!=='string')return '';
+ const allowed=/^viewer\/[A-Za-z0-9_.\/-]+\.html?$/i.test(path)||
+  ['radio/index.html','apps/obscura-emu/index.html','transfer/index.html'].includes(path);
+ if(!allowed||path.split('/').includes('..'))return '';
  const url=new URL(path,root);
- return url.origin===location.origin&&url.pathname.startsWith(approvedPrefix.pathname)&&!url.search&&!url.hash?url.href:'';
+ return url.origin===location.origin&&url.pathname.startsWith(root.pathname)&&!url.search&&!url.hash?url.href:'';
 }
-function viewLink(repo){return './?repo='+encodeURIComponent(repo)}
-function byRepo(repo){return all.find(x=>x.repo.toLowerCase()===repo.toLowerCase())}
+function viewLink(item){return './?repo='+encodeURIComponent(item.id||item.repo)}
+function byRepo(key){return all.find(x=>x.id.toLowerCase()===key.toLowerCase())||
+ all.find(x=>x.repo.toLowerCase()===key.toLowerCase())}
+
 function card(item){
  const el=document.createElement('article');el.className='panel project';
  const head=text(el,'div','');head.className='head';
@@ -34,7 +40,7 @@ function card(item){
  text(el,'h3',item.title);
  text(el,'p',item.description);
  const acts=text(el,'div','');acts.className='actions';
- link(acts,'▶ Apri nel WebPlayer',viewLink(item.repo),false);
+ link(acts,item.published?'▶ Apri applicazione':'▶ Apri nel WebPlayer',viewLink(item),false);
  return el;
 }
 function listing(value=''){
@@ -47,7 +53,11 @@ function listing(value=''){
  $('stats').textContent=count+' / '+all.length+' progetti · '+all.filter(x=>x.published).length+' anteprime pubbliche';
  $('message').textContent=count?'':'Nessun progetto corrispondente';
 }
-function emptyFrame(){const frame=$('playframe');frame.removeAttribute('src');frame.srcdoc='<!doctype html><title>Sellone WebPlayer</title><body style="background:#090b14;color:#b9c3d2;font:15px system-ui;padding:24px">Seleziona una build o un supporto da avviare.</body>';}
+function emptyFrame(){
+ const trusted=$('localAppFrame');trusted.removeAttribute('src');trusted.classList.add('hidden');
+ const frame=$('playframe');frame.classList.remove('hidden');frame.removeAttribute('src');
+ frame.srcdoc='<!doctype html><title>Sellone WebPlayer</title><body style="background:#090b14;color:#b9c3d2;font:15px system-ui;padding:24px">Seleziona una build o un supporto da avviare.</body>';
+}
 function showFrame(){ $('unavailable').classList.add('hidden');$('playarea').classList.remove('hidden');}
 function newChannel(){
  const bytes=crypto.getRandomValues(new Uint8Array(16));
@@ -97,7 +107,8 @@ function bridgeHtml(html){
  return idx>=0?html.slice(0,idx)+tag+html.slice(idx):html+tag;
 }
 function showJS(result){
- $('playframe').removeAttribute('src');
+ $('localAppFrame').removeAttribute('src');$('localAppFrame').classList.add('hidden');
+ $('playframe').classList.remove('hidden');$('playframe').removeAttribute('src');
  $('playframe').srcdoc=bridgeHtml(result.html);
  syncReady.js=false;updateSync();
 }
@@ -171,7 +182,7 @@ async function githubHTML(opts={}){
   if(existing)existing.remove();
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
   a.id='commitAction';a.target='_blank';a.rel='noopener noreferrer';
-  const url=new URL(location.href);url.searchParams.set('repo',selected.repo);
+  const url=new URL(location.href);url.searchParams.set('repo',selected.id||selected.repo);
   if(opts.explicit||opts.pin){selectedRevision=result.ref;url.searchParams.set('ref',result.ref);url.searchParams.set('path',result.path)}else{selectedRevision='';url.searchParams.delete('ref');url.searchParams.delete('path')}
   history.replaceState(null,'',url.pathname+url.search);
  }catch(error){emptyFrame();handleError(error)}
@@ -234,10 +245,13 @@ function localBuild(item){
  const url=item.published?approvedBuild(item.url):'';
  if(!url)return false;
  showFrame();
- $('playframe').srcdoc='';$('playframe').src=url;
- $('detailStatus').textContent='Anteprima web pubblicata';
- const a=link($('detailActions'),'↗ Apri anteprima pubblica',url,true);a.target='_blank';a.rel='noopener noreferrer';
- showStatus('Build web pubblica caricata.');return true;
+ // Untrusted GitHub code remains confined to the opaque-origin playframe.
+ // Only vetted local apps are loaded in this separate first-party frame.
+ $('playframe').classList.add('hidden');
+ const frame=$('localAppFrame');frame.classList.remove('hidden');frame.src=url;
+ $('detailStatus').textContent='Applicazione statica pubblicata';
+ showStatus('Applicazione aperta dal catalogo; nessun token GitHub richiesto.');
+ return true;
 }
 
 async function githubSource(refresh=true){
@@ -266,7 +280,7 @@ async function selectView(next){
  presentMode(next);showFrame();updateSync();
  if(next==='source'){await githubSource();return}
  if(['js','both'].includes(next)&&(previous==='original'||previous==='source')){
-  if(loaded)showJS(loaded);else await githubHTML();
+  if(!localBuild(selected)){if(loaded)showJS(loaded);else await githubHTML()}
  }
  if(next==='both'&&!loaded)await githubHTML();
  if(next==='original'||next==='both'){
@@ -276,7 +290,7 @@ async function selectView(next){
 }
 function showDetail(repo,explicit=null){
  $('listing').classList.add('hidden');$('detail').classList.remove('hidden');
- selected=byRepo(repo)||{repo,title:repo,description:'Repository GitHub',viewer_type:'web_js',published:false};
+ selected=byRepo(repo)||{id:repo,repo,title:repo,description:'Repository GitHub',viewer_type:'web_js',published:false};
  const item=selected;
  $('detail').dataset.originalSystem=item.origin_system||'';
  loaded=null;remoteMedia=null;remoteKick=null;mediaRevision=null;sourceRevision=null;selectedRevision=explicit?.ref||'';
@@ -303,9 +317,9 @@ function showDetail(repo,explicit=null){
  if(view==='source')githubSource();
  else if(view==='js'){
   if(explicit?.ref&&explicit?.path)githubHTML({explicit});
-  else if(initialRef&&initialPath&&item.repo.toLowerCase()===initial.toLowerCase())
+  else if(initialRef&&initialPath&&(item.id||item.repo).toLowerCase()===initial.toLowerCase())
    githubHTML({explicit:{ref:initialRef,path:initialPath}});
-  else githubHTML();
+  else if(!localBuild(item))githubHTML();
  }else showStatus('Originale: seleziona un supporto locale o GitHub e avvia il core.');
 }
 async function loadCatalog(){
@@ -316,9 +330,10 @@ async function loadCatalog(){
   if(data.schema!==2||!Array.isArray(data.projects))throw Error('Catalogo incompatibile');
   const seen=new Set();
   for(const item of data.projects){
-   if(!item||!validRepo.test(item.repo||'')||seen.has(item.repo.toLowerCase()))continue;
-   seen.add(item.repo.toLowerCase());
-   all.push({repo:item.repo,title:String(item.title||item.repo).slice(0,90),
+   const id=String(item?.id||item?.repo||'');
+   if(!item||!validRepo.test(item.repo||'')||!validRepo.test(id)||seen.has(id.toLowerCase()))continue;
+   seen.add(id.toLowerCase());
+   all.push({id,repo:item.repo,title:String(item.title||item.repo).slice(0,90),
     description:String(item.description||'').slice(0,250),kind:String(item.kind||''),
     viewer_type:types[item.viewer_type]?item.viewer_type:'archive',origin_system:String(item.origin_system||''),
     published:item.published===true&&!!approvedBuild(item.url),url:item.url});

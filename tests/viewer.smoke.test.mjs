@@ -30,8 +30,8 @@ class Node {
 }
 async function flush(){for(let i=0;i<8;i++)await new Promise(resolve=>setImmediate(resolve))}
 function setup(){
- const ids='listing detail detailName detailKind detailDescription detailActions viewModes webControls retroControls sourceControls compareTools jsPane originalPane sourcePane playarea unavailable detailStatus playerStatus syncFeedback linkedInput playframe originalStage search stats message grid loadLatest reloadSelected htmlCandidates loadGitMedia mediaCandidates mediaInput kickInput bootRetro stopRetro useGitToken gitToken gitPassword saveToken authBox unlockGitToken forgetGitToken openSource reloadSource sourceFiles restartPair'.split(' ');
- const elements=Object.fromEntries(ids.map(id=>[id,new Node(id,id==='playframe'?'iframe':'div')]));
+ const ids='listing detail detailName detailKind detailDescription detailActions viewModes webControls retroControls sourceControls compareTools jsPane originalPane sourcePane playarea unavailable detailStatus playerStatus syncFeedback linkedInput playframe localAppFrame originalStage search stats message grid loadLatest reloadSelected htmlCandidates loadGitMedia mediaCandidates mediaInput kickInput bootRetro stopRetro useGitToken gitToken gitPassword saveToken authBox unlockGitToken forgetGitToken openSource reloadSource sourceFiles restartPair'.split(' ');
+ const elements=Object.fromEntries(ids.map(id=>[id,new Node(id,['playframe','localAppFrame'].includes(id)?'iframe':'div')]));
  const modes=['js','original','both','source'].map(view=>{const b=new Node();b.dataset.view=view;return b});
  elements.viewModes.querySelectorAll=selector=>selector==='[data-view]'?modes:[];
  const document={getElementById:id=>elements[id]||null,createElement:tag=>new Node('',tag)};
@@ -102,6 +102,15 @@ test('optional split view retains JS preview and starts emulator in adjacent pan
  assert.ok(e.originalPane.classList.contains('hidden'));
  assert.ok(getStops()>=1,'leaving original view stops emulator');
  assert.match(e.playframe.srcdoc,/Mad Doctor game/);
+});
+test('two catalog IDs that share a release repository remain separate playable cards',async()=>{
+ const {elements:e}=setup();
+ await flush();
+ // The radio is deployed as a first-party, approved static asset.
+ // The private source entrypoints continue loading from GitHub when authorized.
+ assert.ok(e.localAppFrame);
+ assert.ok(e.localAppFrame.tagName==='IFRAME');
+ assert.ok(e.playframe.srcdoc.includes('Mad Doctor game'));
 });
 test('source view is read-only and is accessible without a playable binary',async()=>{
  const {elements:e,modes}=setup();

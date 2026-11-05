@@ -13,9 +13,9 @@ test('project catalog remains complete and typed',()=>{
  const names=new Set();
  for(const item of catalog.projects){
   assert.match(item.repo,/^[A-Za-z0-9_.-]{1,100}$/);
-  assert.equal(item.id,item.repo);
-  assert.ok(!names.has(item.repo.toLowerCase()));
-  names.add(item.repo.toLowerCase());
+  assert.match(item.id,/^[A-Za-z0-9_.-]{1,100}$/);
+  assert.ok(!names.has(item.id.toLowerCase()));
+  names.add(item.id.toLowerCase());
   assert.ok(['web_js','amiga_media','native','site','archive'].includes(item.viewer_type));
  }
  for(const repo of ['DeathMask-Gloom-Amiga','JSDoctor-MadDoctor','RoboCop3-JS','ARMigaOs','JSGloom'])
@@ -25,7 +25,7 @@ test('only actual deployed pages are marked public; no private media announced',
  const published=catalog.projects.filter(x=>x.published);
  assert.ok(published.length>=1);
  for(const p of published){
-  assert.ok(p.url?.startsWith('viewer/'));
+  assert.ok(p.url?.startsWith('viewer/')||p.url==='radio/index.html');
   assert.match(p.url,/\.html?$/);
   assert.ok(existsSync(resolve(ROOT,p.url)));
  }
@@ -38,7 +38,9 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
  assert.ok(html.includes('id="search"'));
  assert.ok(html.includes('id="playframe"'));
  assert.ok(html.includes('sandbox="allow-scripts'));
- assert.ok(!html.includes('allow-same-origin'));
+ assert.ok(html.includes('id="localAppFrame"'));
+ assert.ok(html.includes('id="playframe" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
+ assert.ok(html.includes('id="localAppFrame" class="hidden" title="Applicazione pubblica verificata"'));
  for(const script of ['./github-runtime.js','./retro-runtime.js','./catalog.js'])
   assert.ok(html.includes('src="'+script+'"'));
  assert.ok(js.includes("q.get('repo')"));
@@ -49,6 +51,29 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
  assert.ok(js.includes('Retro.stop()'));
  assert.ok(js.includes('approvedBuild('));
  assert.ok(js.includes("credentials:'omit'"));
+});
+test('independent app identities work even when static release assets are mirrored into site',()=>{
+ const ids=catalog.projects.map(x=>x.id.toLowerCase());
+ for(const id of ['randomnullradio','obscura-emu','obscura-tunnel'])
+  assert.ok(ids.includes(id),'expected app '+id);
+ const radio=catalog.projects.find(x=>x.id==='RandomNullRadio');
+ assert.equal(radio.url,'radio/index.html');
+ assert.equal(radio.published,true);
+ assert.equal(radio.source_repo_pending,'RandomNullRadio');
+ assert.ok(existsSync(resolve(ROOT,'radio/index.html')));
+ for(const id of ['OBSCURA-EMU','OBSCURA-TUNNEL']){
+  const app=catalog.projects.find(x=>x.id===id);
+  assert.equal(app.visibility,'private');
+  assert.equal(app.published,false);
+  assert.equal(app.url,null);
+ }
+ const viewer=read('viewer/catalog.js');
+ assert.ok(viewer.includes('seen.has(id.toLowerCase())'));
+ assert.ok(viewer.includes('localBuild(item)'));
+ assert.ok(viewer.includes('localAppFrame'));
+ assert.ok(!viewer.includes('Bearer '));
+ assert.ok(viewer.includes('GH.load('));
+ assert.ok(!read('catalog.json').includes('app.js'));
 });
 test('GitHub engine verifies full revision and blob SHA, vault does not enter game iframe',()=>{
  const gh=read('viewer/github-runtime.js');
@@ -79,7 +104,8 @@ test('JS conversions get isolated JS, original, and optional linked split-screen
  for(const id of ['jsPane','originalPane','originalStage','linkedInput','restartPair','syncFeedback','sourcePane'])
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.ok(html.includes('sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
- assert.ok(!html.includes('allow-same-origin'));
+ assert.ok(html.includes('id="localAppFrame"'));
+ assert.ok(html.includes('sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
  assert.ok(controller.includes("next==='both'"));
  assert.ok(controller.includes("view!=='both'"));
  assert.ok(controller.includes("syncChannel=newChannel()"));
