@@ -44,7 +44,7 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
  for(const script of ['./github-runtime.js','./retro-runtime.js','./catalog.js'])
   assert.ok(html.includes('src="'+script+'"'));
  assert.ok(js.includes("q.get('repo')"));
- assert.ok(js.includes('showDetail(initial)'));
+ assert.ok(js.includes('showDetail(initial,'));
  assert.ok(js.includes('GH.load('));
  assert.ok(js.includes('GH.loadMedia('));
  assert.ok(js.includes('Retro.start('));
