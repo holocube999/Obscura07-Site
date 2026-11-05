@@ -603,6 +603,10 @@ if(!window.__OBSCURA07_TRACE_STATS__ || window.__OBSCURA07_TRACE_STATS__.mode!==
  setTimeout(dismiss,20000);
 })();
 </script><script src="assets/embed-bridge.js" defer></script>
-<div class="rnr-obscura-dock" data-null-radio data-query="off" aria-label="RΛNDØM[NULL] RADIO"></div>
-<script type="module" src="radio/widget.js"></script>
+<div id="siteRadioDock" class="rnr-site-dock" aria-label="Random[null]Radio, sottofondo ambientale">
+<button id="siteRadioToggle" class="rnr-site-toggle" type="button" aria-expanded="false" aria-controls="siteRadioPanel" title="Apri la radio"><span class="site-radio-label">♫ RADIO · PLAY</span></button>
+<div id="siteRadioPanel" class="rnr-site-panel" hidden>
+<div id="siteRadioWidget" data-null-radio data-query="off" aria-label="RΛNDØM[NULL] RADIO"></div>
+</div></div>
+<script type="module" src="radio/site-dock.js"></script>
 </body></html>

@@ -11,7 +11,7 @@ const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
 export function mount(root,settings={}){
  if(root.__rnr)return root.__rnr;
- const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,token:0,nextTimer:null,liveVoice:null,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox)}};
+ const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,token:0,nextTimer:null,liveVoice:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):1,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox)}};
  root.classList.add("rnr-root");
  root.innerHTML='<section class="rnr-shell" aria-label="RΛNDØM[NULL] RADIO">'+
  '<div class="rnr-main"><button type="button" class="rnr-play" title="Riproduci" aria-label="Riproduci">▶</button>'+
@@ -64,7 +64,7 @@ export function mount(root,settings={}){
   if(state.raf)cancelAnimationFrame(state.raf);state.raf=0;paint();
  }
  async function initContext(){
-  if(!state.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error("Web Audio non supportato");state.ctx=new C();state.gain=state.ctx.createGain();state.analyser=state.ctx.createAnalyser();state.analyser.fftSize=256;state.analyser.smoothingTimeConstant=.72;state.gain.connect(state.analyser);state.analyser.connect(state.ctx.destination);state.gain.gain.value=state.muted?0:1;}
+  if(!state.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)throw new Error("Web Audio non supportato");state.ctx=new C();state.gain=state.ctx.createGain();state.analyser=state.ctx.createAnalyser();state.analyser.fftSize=256;state.analyser.smoothingTimeConstant=.72;state.gain.connect(state.analyser);state.analyser.connect(state.ctx.destination);state.gain.gain.value=state.muted?0:state.volume;}
   if(state.ctx.state==="suspended")await state.ctx.resume();
  }
  async function start(){
@@ -104,7 +104,7 @@ export function mount(root,settings={}){
  }
  play.addEventListener("click",()=>state.playing?stop():start());
  qs(root,".rnr-next").addEventListener("click",()=>{const wasPlaying=state.playing;reset();if(!wasPlaying)void start();});
- qs(root,".rnr-mute").addEventListener("click",e=>{state.muted=!state.muted;if(state.gain)state.gain.gain.value=state.muted?0:1;e.currentTarget.textContent=state.muted?"×":"♪";e.currentTarget.setAttribute("aria-label",state.muted?"Attiva audio":"Mute");});
+ qs(root,".rnr-mute").addEventListener("click",e=>{state.muted=!state.muted;if(state.gain)state.gain.gain.value=state.muted?0:state.volume;e.currentTarget.textContent=state.muted?"×":"♪";e.currentTarget.setAttribute("aria-label",state.muted?"Attiva audio":"Mute");});
  qs(root,".rnr-more").addEventListener("click",()=>{panel.hidden=!panel.hidden;});
  qs(root,".rnr-mp3").addEventListener("click",()=>download("mp3"));
  qs(root,".rnr-wav").addEventListener("click",()=>download("wav"));
@@ -120,7 +120,7 @@ export function mount(root,settings={}){
  const query=new URLSearchParams(location.search);
  if(settings.readQuery!==false&&query.has("seed")){state.settings.seed=query.get("seed").slice(0,128);for(const [a,b] of [["style","style"],["mood","mood"],["concept","concept"],["lang","language"],["duration","duration"]])if(query.has(a)){state.settings[b]=query.get(a);const el=root.querySelector('[data-param="'+b+'"]');if(el)el.value=state.settings[b];}state.settings.withVox=query.get("vox")==="1";qs(root,'[data-param="withVox"]').checked=state.settings.withVox;}
  ensurePlan();paint();
- root.__rnr={start,stop,next:()=>reset(),download,get plan(){return state.plan;},get audio(){return state.audio;},regenerate:(options={})=>{Object.assign(state.settings,options);return reset(options.seed??state.settings.seed??randomSeed());},setMuted:(v)=>{state.muted=Boolean(v);if(state.gain)state.gain.gain.value=state.muted?0:1;}};
+ root.__rnr={start,stop,next:()=>reset(),download,get plan(){return state.plan;},get audio(){return state.audio;},regenerate:(options={})=>{Object.assign(state.settings,options);return reset(options.seed??state.settings.seed??randomSeed());},setMuted:(v)=>{state.muted=Boolean(v);if(state.gain)state.gain.gain.value=state.muted?0:state.volume;},setVolume:(v)=>{if(!Number.isFinite(v)||v<0||v>1)throw RangeError('Volume 0..1');state.volume=v;if(state.gain)state.gain.gain.value=state.muted?0:v;},get playing(){return state.playing;}};
  return root.__rnr;
 }
 if(typeof document!=="undefined"){

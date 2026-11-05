@@ -22,3 +22,25 @@
 /* Album sleeve is intentionally compact; dock layout stays intact. */
 .rnr-cover{width:43px;height:43px;flex:0 0 43px;object-fit:cover;border-radius:3px;box-shadow:0 1px 8px #0008;border:1px solid #fff2}
 @media(max-width:540px){.rnr-cover{width:35px;height:35px;flex-basis:35px}.rnr-spectrum{width:40px}}
+
+
+/* Obscura07 integrates this independently versioned component as a quiet,
+   dismissible top-right dock. The standalone /radio/ remains full size. */
+.rnr-site-dock{position:fixed;right:clamp(10px,2vw,28px);top:clamp(10px,2vw,23px);
+ z-index:150;display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+ max-width:calc(100vw - 20px);pointer-events:none}
+.rnr-site-dock>*{pointer-events:auto}
+.rnr-site-toggle{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;
+ border:1px solid rgba(170,162,193,.31);border-radius:999px;
+ color:#cfcae4;background:rgba(10,9,18,.65);
+ backdrop-filter:blur(14px);box-shadow:0 3px 15px #0008;
+ font:10px ui-monospace,Consolas,monospace;letter-spacing:.04em;
+ cursor:pointer;white-space:nowrap}
+.rnr-site-toggle:focus-visible{outline:2px solid #cfc8ea;outline-offset:3px}
+.rnr-site-panel[hidden]{display:none!important}
+.rnr-site-panel{width:min(380px,calc(100vw - 20px));max-height:min(75svh,650px);
+ overflow:auto;overscroll-behavior:contain;border-radius:12px}
+.rnr-site-panel .rnr-root{width:100%;min-width:0}
+.rnr-site-dock[data-playing=true] .rnr-site-toggle{border-color:rgba(140,199,187,.5)}
+@media(max-width:640px){.rnr-site-dock{top:10px;right:10px}.rnr-site-toggle{font-size:9px;padding:6px 9px}
+ .rnr-site-panel{max-height:70svh}}
