@@ -1,54 +1,62 @@
-/* First-party integration of the independent Random[null]Radio component.
-   Never assumes that browsers permit audible autoplay. */
-import {mount} from './widget.js';
-
-function setupSiteDock(){
- const host=document.getElementById('siteRadioDock');
- const widget=document.getElementById('siteRadioWidget');
+/* The host page ONLY embeds Random[null]Radio. Audio/synthesis live inside
+   an isolated iframe; this adapter positions the chip clear of the site menu. */
+function installRadioDock(){
+ const dock=document.getElementById('siteRadioDock');
  const toggle=document.getElementById('siteRadioToggle');
  const panel=document.getElementById('siteRadioPanel');
- if(!host||!widget||!toggle||!panel)return;
- const radio=mount(widget,{style:'darkambient',duration:120,withVox:false,
-                           volume:0.045,autonext:true,readQuery:false});
- radio.setVolume(0.045); // low ambient gain, below main site content
- let busy=false,interacted=false;
- function expand(open){
-  panel.hidden=!open;
-  toggle.setAttribute('aria-expanded',String(open));
-  toggle.title=open?'Nascondi la radio':'Apri la radio';
+ const iframe=document.getElementById('siteRadioFrame');
+ const nav=document.getElementById('navigation');
+ const menu=document.getElementById('menu-toggle');
+ const header=document.getElementById('top');
+ if(!dock||!toggle||!panel||!iframe)return;
+ const label=toggle.querySelector('.site-radio-label');
+ let expanded=false;
+ function align(){
+  const menuOpen=!!(nav?.classList.contains('open')||
+                     menu?.getAttribute('aria-expanded')==='true');
+  // The navigation takes absolute priority over the radio, on all viewports.
+  dock.hidden=menuOpen;
+  if(menuOpen){
+   expanded=false;panel.hidden=true;
+   toggle.setAttribute('aria-expanded','false');
+   return;
+  }
+  // The header is not fixed but still occupies the top-right of the page.
+  const headBottom=header?.getBoundingClientRect().bottom||0;
+  const offset=Math.max(92,Math.min(146,headBottom+12));
+  dock.style.top=offset+'px';
+  panel.style.maxHeight=Math.max(100,window.innerHeight-offset-16)+'px';
  }
- function label(text){toggle.querySelector('.site-radio-label').textContent=text}
- function attempt(){
-  if(busy||radio.playing)return;
-  busy=true;
-  Promise.resolve(radio.start()).then(()=>{
-   if(radio.playing){label('♫ RADIO · LIVE');host.dataset.playing='true'}
-   else label('♫ RADIO · PLAY');
-  }).catch(()=>{
-   label('♫ RADIO · PLAY');
-  }).finally(()=>{busy=false});
+ function setExpanded(open){
+  expanded=!!open;
+  panel.hidden=!expanded;
+  toggle.setAttribute('aria-expanded',String(expanded));
+  align();
+ }
+ function wakeRadio(){
+  iframe.contentWindow?.postMessage({type:'randomnullradio:start'},location.origin);
  }
  toggle.addEventListener('click',()=>{
-  expand(panel.hidden);
-  interacted=true;
-  attempt();
+  setExpanded(!expanded);
+  if(expanded)wakeRadio();
  });
- // Autostart is best effort; Web Audio in modern browsers generally needs
- // a user activation. We queue a quiet start at page entry, and retry at
- // the first user gesture without hijacking any of the site's click targets.
- attempt();
- const activate=()=>{
-  if(interacted||radio.playing)return;
-  interacted=true;
-  attempt();
- };
- window.addEventListener('pointerdown',activate,{once:true,capture:true});
- window.addEventListener('keydown',activate,{once:true,capture:true});
- document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden&&radio.playing)label('♫ RADIO · LIVE');
+ window.addEventListener('message',event=>{
+  if(event.origin!==location.origin||event.source!==iframe.contentWindow)return;
+  if(!event.data||event.data.type!=='randomnullradio:status')return;
+  const playing=event.data.state==='playing';
+  dock.dataset.playing=String(playing);
+  label.textContent=playing?'♫ RADIO · LIVE':'♫ RADIO · PLAY';
  });
- expand(false);
+ // Navigation may be toggled after loading, not just on initial layout.
+ menu?.addEventListener('click',()=>queueMicrotask(align));
+ nav?.addEventListener('click',()=>queueMicrotask(align));
+ document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){if(expanded)setExpanded(false);queueMicrotask(align)}
+ });
+ window.addEventListener('resize',align,{passive:true});
+ window.addEventListener('scroll',align,{passive:true});
+ setExpanded(false);
 }
-if(document.readyState==='loading')
- document.addEventListener('DOMContentLoaded',setupSiteDock,{once:true});
-else setupSiteDock();
+if(document.readyState==='loading'){
+ document.addEventListener('DOMContentLoaded',installRadioDock,{once:true});
+}else installRadioDock();

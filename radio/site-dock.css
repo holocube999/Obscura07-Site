@@ -1,0 +1,26 @@
+/* Obscura07 host adapter for an EMBEDDED, independently versioned radio.
+   No synthesizer, audio engine or application state is implemented here. */
+.rnr-site-dock{position:fixed;right:clamp(12px,2vw,28px);top:clamp(80px,8vw,110px);
+ z-index:2140;display:flex;flex-direction:column;align-items:flex-end;gap:7px;
+ max-width:calc(100vw - 24px);pointer-events:none}
+.rnr-site-dock>*{pointer-events:auto}
+.rnr-site-dock[hidden]{display:none!important}
+.rnr-site-toggle{display:inline-flex;gap:7px;align-items:center;min-height:32px;
+ border:1px solid rgba(204,190,224,.55);border-radius:999px;
+ color:#efe4f9;background:rgba(13,13,24,.89);
+ box-shadow:0 4px 24px #05040a9e;backdrop-filter:blur(12px);
+ padding:7px 12px;font:600 10px/1.1 ui-monospace,Consolas,monospace;
+ cursor:pointer;white-space:nowrap;letter-spacing:.04em}
+.rnr-site-toggle:hover{border-color:#e0d6ef;color:#fff}
+.rnr-site-toggle:focus-visible{outline:2px solid #cfc7e3;outline-offset:2px}
+.rnr-site-panel[hidden]{display:none!important}
+.rnr-site-panel{width:min(380px,calc(100vw - 24px));max-height:min(68svh,540px);
+ overflow:auto;overscroll-behavior:contain;background:rgba(9,8,16,.86);
+ border:1px solid #66547799;border-radius:12px;padding:5px}
+.rnr-site-iframe{display:block;width:100%;height:min(52svh,365px);
+ border:0;border-radius:8px;background:transparent}
+.rnr-site-dock[data-playing=true] .rnr-site-toggle{border-color:#8bc1b6}
+@media(max-width:640px){.rnr-site-dock{right:9px;top:74px}
+ .rnr-site-toggle{min-height:30px;font-size:9px;padding:6px 9px}
+ .rnr-site-iframe{height:min(53svh,390px)}}
+@media(prefers-reduced-motion:reduce){.rnr-site-toggle{backdrop-filter:none}}

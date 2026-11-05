@@ -65,7 +65,7 @@ body{color:#D7D3E6;background-color:#09080D}
 .classified-wave{color:#9270bd;font:23px ui-monospace,monospace;letter-spacing:.12em;white-space:nowrap;overflow:hidden;text-overflow:clip}
 @media(max-width:760px){.classified-repository .classified-grid{grid-template-columns:1fr}.classified-repository .classified-card{min-height:220px}}
 </style>
-<link rel="stylesheet" href="radio/widget.css">
+<link rel="stylesheet" href="radio/site-dock.css">
 </head>
 <body>
 <canvas id="world-canvas" aria-hidden="true"></canvas>
@@ -606,7 +606,7 @@ if(!window.__OBSCURA07_TRACE_STATS__ || window.__OBSCURA07_TRACE_STATS__.mode!==
 <div id="siteRadioDock" class="rnr-site-dock" aria-label="Random[null]Radio, sottofondo ambientale">
 <button id="siteRadioToggle" class="rnr-site-toggle" type="button" aria-expanded="false" aria-controls="siteRadioPanel" title="Apri la radio"><span class="site-radio-label">♫ RADIO · PLAY</span></button>
 <div id="siteRadioPanel" class="rnr-site-panel" hidden>
-<div id="siteRadioWidget" data-null-radio data-query="off" aria-label="RΛNDØM[NULL] RADIO"></div>
+<iframe id="siteRadioFrame" class="rnr-site-iframe" src="radio/embed.html" title="Random[null]Radio · player musicale embedded" sandbox="allow-scripts allow-same-origin allow-downloads" allow="autoplay" loading="eager"></iframe>
 </div></div>
 <script type="module" src="radio/site-dock.js"></script>
 </body></html>
