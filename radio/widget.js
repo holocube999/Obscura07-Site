@@ -5,13 +5,14 @@ import {encodeMP3Async} from "./encode.js";
 import {spliceTrack,haltTrack} from "./transition.js";
 import {mixVocalBus} from "./voice-render.js";
 import {drawCover} from "./cover-art.js";
+import {lyricSheet} from "./lyrics.js";
 import {renderPCM} from "./radio.js";
 const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse",chiptune:"Chiptune",harpsichord:"Clavicembalo",medieval:"Medievale",meditation:"Meditativa",hangdrum:"Hangdrum",metal:"Metal",techno:"Techno",punk:"Punk",glitch:"Glitch",hiphop:"Hip-Hop / Rap"};
 const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
 export function mount(root,settings={}){
  if(root.__rnr)return root.__rnr;
- const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:""}};
+ const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:"",generatedLyrics:false}};
  root.classList.add("rnr-root");
  root.innerHTML='<section class="rnr-shell" aria-label="RΛNDØM[NULL] RADIO">'+
  '<div class="rnr-main"><button type="button" class="rnr-play" title="Riproduci" aria-label="Riproduci">▶</button>'+
@@ -23,7 +24,7 @@ export function mount(root,settings={}){
  '<div class="rnr-field"><label>CONCEPT<select data-param="concept">'+optionMarkup(CONCEPTS,true)+'</select></label><label>LANGUAGE<select data-param="language">'+optionMarkup(Object.keys(LANGUAGE_PACKS).map(s=>[s,s.toUpperCase()]),true)+'</select></label></div>'+
  '<div class="rnr-field rnr-small"><label>DURATION<select data-param="duration"><option value="">Random</option><option value="30">30s</option><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></label>'+
  '<label class="rnr-vox"><input type="checkbox" data-param="withVox"> withVøx <span>voce PCM preregistrata · coro / mostro / autotune</span></label></div>'+
- '<label class="rnr-context-label">TEXT INPUT (opzionale: parole proprie o da fonti autorizzate)<textarea class="rnr-context" rows="2" maxlength="3200" aria-label="Lessico aggiuntivo offline" placeholder="Incolla brevi parole o appunti propri, non articoli protetti da copyright"></textarea></label>'+
+ '<label class="rnr-context-label">TEXT INPUT (opzionale: parole proprie o da fonti autorizzate)<button class="rnr-generate-lyrics" type="button" title="Genera testo per il brano corrente" aria-label="Genera testo coerente con il brano">✎</button><textarea class="rnr-context" rows="2" maxlength="3200" aria-label="Lessico aggiuntivo offline" placeholder="Incolla brevi parole o appunti propri, non articoli protetti da copyright"></textarea></label>'+
  '<div class="rnr-seed-row"><label>SEED <input class="rnr-seed" spellcheck="false" maxlength="128" placeholder="random seed"></label><button class="rnr-restore" type="button">↻ SEED</button></div>'+
  '<div class="rnr-download"><button class="rnr-mp3" type="button">↓ MP3</button><button class="rnr-wav" type="button">↓ WAV</button><button class="rnr-share" type="button">COPY LINK</button><span class="rnr-progress" aria-live="polite">Offline • 22.05 kHz</span></div>'+
  '<div class="rnr-meta" aria-live="polite"></div></div></section>'+
@@ -72,14 +73,31 @@ export function mount(root,settings={}){
  voiceSlider.addEventListener("input",()=>setVoiceMix(Number(voiceSlider.value)/100));
  qs(root,".rnr-context").addEventListener("change",event=>{
   state.settings.extraText=event.target.value.slice(0,3200);
+   if(state.settings.generatedLyrics)reset(state.settings.seed||undefined);
   if(state.settings.seed.startsWith("R1."))state.settings.seed=state.settings.seed.split(".")[1];
   reset(state.settings.seed||randomSeed());
  });
  updateLevels();
 
  function message(t){qs(root,".rnr-progress").textContent=t;}
- function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox,extraText:state.settings.extraText};}
- function update(plan){
+ function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox,extraText:state.settings.extraText,lyricsText:state.settings.generatedLyrics?state.settings.extraText:undefined};}
+ qs(root,".rnr-generate-lyrics").addEventListener("click",()=>{
+   const current=ensurePlan();
+   const material=current.withVox?current:makePlan({seed:current.seed.split(".")[1],
+    style:current.style,mood:current.mood,concept:current.concept,
+    language:current.language,bpm:current.bpm,duration:current.duration,
+    intensity:current.intensity,withVox:true,extraText:state.settings.extraText});
+   const lines=lyricSheet(material);
+   if(!lines){message("Nessun testo disponibile");return;}
+   qs(root,".rnr-context").value=lines;
+   state.settings.extraText=lines;
+   state.settings.generatedLyrics=true;
+   state.settings.withVox=true;
+   qs(root,'[data-param="withVox"]').checked=true;
+   reset(material.seed);
+   message("Testo del brano generato e modificabile");
+  });
+  function update(plan){
   title.textContent=plan.title;artist.textContent=plan.artist+" · "+plan.style;
   qs(root,".rnr-seed").value=plan.seed;
   drawCover(qs(root,".rnr-cover"),plan);

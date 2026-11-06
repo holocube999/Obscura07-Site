@@ -79,3 +79,11 @@ With withVox, lyrics.js selects distinct words, slogans or full statements (one 
 - **Offline:** `sw.js` caches the self-contained radio shell, synthesis modules and encoder after the first successful HTTPS visit. Neither the browser engine nor the service worker collects news or sends lyrics anywhere. Offline replay is version-stable when the R1 recipe and local corpus revision are unchanged.
 
 The synthesis pipeline includes a prior-to-play audio rendering step: it is not a real-time speech processor. The generator remains a procedural electronic-voice instrument, not a faithful human rap performance. Browser/autoplay acceptance and listening tests remain separate from unit tests.
+
+## v0.3 · Composizione musicale e voce (2026-11-06)
+
+Le forme deterministiche sono `song` (intro, sviluppo, ritorno e dissolvenza), `loopable`, `loop`, `drone` e `abstract`. Il metro/BPM rimane stabile nei generi ritmici; vengono creati una guida melodica dalle note effettive del brano e un'armonia secondaria nei ritornelli. I loop hanno bordi audio smussati, senza promettere giunzioni musicali sempre perfette.
+
+La voce PCM mantiene un timbro principale riconoscibile per tutto il brano. Le parole rap vengono sintetizzate direttamente nella suddivisione metrica, senza il ricampionamento che ne alterava intonazione e consonanti. Nel rap si usano doubling leggero e delay a tempo; l'intonazione guidata è moderata nei versi e più evidente nei ritornelli. Il vecchio bus vocale distorto non viene più duplicato nell'instrumental.
+
+L'icona **✎** incorporata nella zona TEXT INPUT genera versi dal brano corrente, che restano modificabili. I testi personali sono contenuti indipendenti dal seed e devono essere conservati con esso per riprodurre la modifica manuale. Il suono continua a essere sintesi fonemica procedurale offline, non TTS neurale. Versione precedente recuperabile dal commit `7d1b52dbaa2ef2ad1b607a25142fe3e9ddb30829` senza branch aggiuntivi.

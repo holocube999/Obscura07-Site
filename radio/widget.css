@@ -78,3 +78,7 @@
 .rnr-cover-caption{margin:13px 0 2px;font:12px ui-monospace,monospace;overflow-wrap:anywhere}
 @media(max-width:540px){.rnr-volume-row{padding:3px 8px 7px}
 .rnr-cover-dialog{padding:12px}}
+
+/* Small lyric action attached to the existing TEXT INPUT, no layout redesign. */
+.rnr-generate-lyrics{float:right;min-width:22px;height:18px;padding:0 4px!important;font-size:12px!important;opacity:.85}
+.rnr-generate-lyrics:hover,.rnr-generate-lyrics:focus-visible{opacity:1}

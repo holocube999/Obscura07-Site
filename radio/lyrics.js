@@ -60,6 +60,7 @@ export function quantizeVoiceTime(time,sections=[],breaks=[],duration=60,form="s
 export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,voiceIdentity){
  if(!plan.withVox)return [];
  const r=rngFor(plan.seed+"|speech-arrangement-v2"),lang=plan.language;
+ const provided=String(plan.lyricsText||"").split(/\n+/).map(s=>s.trim().slice(0,180)).filter(Boolean).slice(0,64);
  if(plan.style==="hiphop"){
   // One original line per 4/4 bar, with the final rhyming word exactly on
   // beat four. AABB / ABAB alternate per four-line stanza.
@@ -70,11 +71,14 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   for(let i=0;i<count;i++){
    if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4));
    const phrase=stanza[i%4];
+   const custom=provided.length?provided[i%provided.length]:null;
+   const finalText=custom||phrase.text;
+   const endWord=custom?(custom.match(/[\p{L}\p{N}]+(?=[^\p{L}\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
    const time=starts+i*bar;
    const voice=voiceIdentity(r,plan.mood,plan.concept);
    voices.push({time:+time.toFixed(3),rhymeTime:+(time+beat*3).toFixed(3),
     barEnd:+Math.min(plan.duration,time+bar).toFixed(3),
-    text:phrase.text,rhymeWord:phrase.rhymeWord,
+    text:finalText,rhymeWord:endWord,
     rhymeFamily:phrase.family,scheme:phrase.scheme,
     form:"rap",delivery:"hiphop",language:lang,
     mood:plan.mood,concept:plan.concept,voice});
@@ -109,6 +113,7 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   }
   if(used.has(text))text+=" "+String(i+1); // deterministic escape for exhausted short dictionaries
   used.add(text);
+  if(provided.length)text=provided[i%provided.length];
   const fraction=(i+.35+r()*.45)/(count+.4);
   let time=Math.min(plan.duration-1.1,Math.max(0.4,fraction*plan.duration));
   // Let occasional isolated slogans land directly after a stop/drop.
@@ -121,4 +126,11 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   voices.push({time:onset,text,form,language:lang,mood:plan.mood,concept:plan.concept,voice});
  }
  return voices;
+}
+
+/** Editable draft matching the lyrics already scheduled in the score. */
+export function lyricSheet(plan){
+ const lines=(plan?.voices||[]).filter(v=>typeof v?.text==="string").map(v=>v.text.trim());
+ if(plan.style!=="hiphop")return lines.join("\n");
+ return lines.map((line,i)=>line+(i%4===3&&i<lines.length-1?"\n":"")).join("\n");
 }
