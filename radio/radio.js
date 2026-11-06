@@ -4,7 +4,7 @@ import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
 import {composeVoices} from "./lyrics.js";
 import {renderVocalBus,mixVocalBus} from "./voice-render.js";
 import {chooseMusicalForm,organizeArrangement,createVocalGuide,applyMusicalEnding} from "./musical-form.js";
-export const VERSION="0.3.0";
+export const VERSION="0.4.0";
 export const SAMPLE_RATE=22050;
 export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse",...EXTRA_STYLES];
 export const MOODS=["liminal","euphoric","melancholic","nocturnal","hypnotic","curious","serene","alien","nostalgic","ominous","weightless","electric"];
@@ -153,29 +153,6 @@ function renderEvent(channels,event,sr,seed){
    if(kind==="choir"){env*=.55+.45*Math.sin(Math.PI*u);v=(Math.sin(p)*.49+Math.sin(p*1.005)*.32+Math.sin(p*.5)*.21);}
   }
   const out=amp*env*v;L[from+j]+=out*lg;R[from+j]+=out*rg;
- }
-}
-function renderVox(channels,item,sr){
- const {voice,text,time}=item;const chars=Array.from(text.toLowerCase()).filter(c=>c.trim()).slice(0,90);
- const step=.073/voice.rate,start=Math.floor(time*sr),L=channels[0],R=channels[1];
- let state=voice.id|1;const phonemes="aeiouàèéìòùäöüαειοηωаиоеуыэиあいうえおㅏㅓㅗㅜㅣ";
- for(let c=0;c<chars.length;c++){
-  const ch=chars[c],code=ch.codePointAt(0),vowel=phonemes.includes(ch)||((code%9)<3),vowelBase=code%7;
-  const f0=voice.base*(.85+((code%13)/28)),f1=(vowel?370:850)+(vowelBase*115)*voice.formant,f2=1050+vowelBase*195*voice.formant;
-  const from=start+Math.floor(c*step*sr),n=Math.min(Math.floor(step*sr*.96),L.length-from);
-  if(n<=0)break;
-  let lp=0;
-  for(let i=0;i<n;i++){
-   const t=i/sr,u=i/n;state^=state<<13;state^=state>>>17;state^=state<<5;
-   const noise=state/2147483648,attack=Math.min(1,u*9),tail=Math.min(1,(1-u)*5);
-   const freq=f0*(1+voice.vibrato*Math.sin(6.283185*4*t)),p=6.283185*freq*t;
-   const harmonic=Math.sin(p)+.46*Math.sin(2*p)+.21*Math.sin(3*p);
-   const formant=.47*Math.sin(6.283185*f1*t)+.22*Math.sin(6.283185*f2*t);
-   const raw=((.45+.55*voice.robot)*harmonic*formant+.27*voice.whisper*noise);
-   lp=lp*.78+raw*.22;const distorted=Math.tanh((lp*.7+raw*.3)*(1.7+voice.drive*4));
-   const value=distorted*.055*attack*tail*(vowel?1:.55);
-   L[from+i]+=value*.7;R[from+i]+=value*.7;
-  }
  }
 }
 function watermark(channels,seed,sr){

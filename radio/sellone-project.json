@@ -16,7 +16,13 @@
     "embedded-player",
     "mp3-export",
     "vox",
-    "offline"
+    "offline",
+    "symbolic-phonetics",
+    "articulatory-dsp",
+    "syllable-timing",
+    "melodic-autotune",
+    "semantic-rap",
+    "seed-revision-restore"
   ],
   "embed": {
     "css": "radio/widget.css",
