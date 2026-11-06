@@ -6,13 +6,14 @@ import {spliceTrack,haltTrack} from "./transition.js";
 import {mixVocalBus} from "./voice-render.js";
 import {drawCover} from "./cover-art.js";
 import {lyricSheet} from "./lyrics.js";
+import {createSongLink,shareTargets} from "./share.js";
 import {renderPCM} from "./radio.js";
 const names={xenodrone:"Xeno Drone",vaporwave:"Vaporwave",dreamwave:"Dreamwave",synthwave:"Synthwave",guitar:"Electric Haze",ritual:"Ritual Rhythm",biosphere:"Biosphere",darkambient:"Dark Ambient",pulse:"Pulse",chiptune:"Chiptune",harpsichord:"Clavicembalo",medieval:"Medievale",meditation:"Meditativa",hangdrum:"Hangdrum",metal:"Metal",techno:"Techno",punk:"Punk",glitch:"Glitch",hiphop:"Hip-Hop / Rap"};
 const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
 export function mount(root,settings={}){
  if(root.__rnr)return root.__rnr;
- const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:"",generatedLyrics:false}};
+ const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:"",generatedLyrics:false,lyricsVariant:0}};
  root.classList.add("rnr-root");
  root.innerHTML='<section class="rnr-shell" aria-label="RΛNDØM[NULL] RADIO">'+
  '<div class="rnr-main"><button type="button" class="rnr-play" title="Riproduci" aria-label="Riproduci">▶</button>'+
@@ -24,11 +25,11 @@ export function mount(root,settings={}){
  '<div class="rnr-field"><label>CONCEPT<select data-param="concept">'+optionMarkup(CONCEPTS,true)+'</select></label><label>LANGUAGE<select data-param="language">'+optionMarkup(Object.keys(LANGUAGE_PACKS).map(s=>[s,s.toUpperCase()]),true)+'</select></label></div>'+
  '<div class="rnr-field rnr-small"><label>DURATION<select data-param="duration"><option value="">Random</option><option value="30">30s</option><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></label>'+
  '<label class="rnr-vox"><input type="checkbox" data-param="withVox"> withVøx <span>voce PCM preregistrata · coro / mostro / autotune</span></label></div>'+
- '<label class="rnr-context-label">TEXT INPUT (opzionale: parole proprie o da fonti autorizzate)<button class="rnr-generate-lyrics" type="button" title="Genera testo per il brano corrente" aria-label="Genera testo coerente con il brano">✎</button><textarea class="rnr-context" rows="2" maxlength="3200" aria-label="Lessico aggiuntivo offline" placeholder="Incolla brevi parole o appunti propri, non articoli protetti da copyright"></textarea></label>'+
+ '<label class="rnr-context-label">TEXT INPUT (opzionale: parole proprie o da fonti autorizzate)<button class="rnr-generate-lyrics" type="button" title="Rigenera versi diversi mantenendo la stessa musica" aria-label="Rigenera testo del brano">⟳</button><textarea class="rnr-context" rows="2" maxlength="3200" aria-label="Lessico aggiuntivo offline" placeholder="Incolla brevi parole o appunti propri, non articoli protetti da copyright"></textarea></label>'+
  '<div class="rnr-seed-row"><label>SEED <input class="rnr-seed" spellcheck="false" maxlength="128" placeholder="random seed"></label><button class="rnr-restore" type="button">↻ SEED</button></div>'+
- '<div class="rnr-download"><button class="rnr-mp3" type="button">↓ MP3</button><button class="rnr-wav" type="button">↓ WAV</button><button class="rnr-share" type="button">COPY LINK</button><span class="rnr-progress" aria-live="polite">Offline • 22.05 kHz</span></div>'+
+ '<div class="rnr-download"><button class="rnr-mp3" type="button">↓ MP3</button><button class="rnr-wav" type="button">↓ WAV</button><button class="rnr-share" type="button" title="Condividi il brano">↗ SHARE</button><span class="rnr-progress" aria-live="polite">Offline • 22.05 kHz</span></div>'+
  '<div class="rnr-meta" aria-live="polite"></div></div></section>'+
- '<dialog class="rnr-cover-dialog" aria-label="Copertina album ingrandita"><button type="button" class="rnr-cover-close" aria-label="Chiudi copertina">×</button><img class="rnr-cover-large" alt="Copertina album"><p class="rnr-cover-caption"></p></dialog>';
+ '<dialog class="rnr-share-dialog" aria-label="Condividi questo brano"><p>Condividi brano</p><div class="rnr-share-actions"><a class="rnr-share-whatsapp" target="_blank" rel="noopener noreferrer">WhatsApp</a><a class="rnr-share-telegram" target="_blank" rel="noopener noreferrer">Telegram</a><a class="rnr-share-email">Email</a></div><button type="button" class="rnr-share-copy">Copia link</button><button type="button" class="rnr-share-close" aria-label="Chiudi">×</button></dialog><dialog class="rnr-cover-dialog" aria-label="Copertina album ingrandita"><button type="button" class="rnr-cover-close" aria-label="Chiudi copertina">×</button><img class="rnr-cover-large" alt="Copertina album"><p class="rnr-cover-caption"></p></dialog>';
  const play=qs(root,".rnr-play"),title=qs(root,".rnr-title"),artist=qs(root,".rnr-artist"),panel=qs(root,".rnr-panel"),canvas=qs(root,".rnr-spectrum");
  const ctx2d=canvas.getContext("2d",{alpha:true});
  const cover=qs(root,".rnr-cover"),lightbox=qs(root,".rnr-cover-dialog");
@@ -73,31 +74,30 @@ export function mount(root,settings={}){
  voiceSlider.addEventListener("input",()=>setVoiceMix(Number(voiceSlider.value)/100));
  qs(root,".rnr-context").addEventListener("change",event=>{
   state.settings.extraText=event.target.value.slice(0,3200);
-   if(state.settings.generatedLyrics)reset(state.settings.seed||undefined);
-  if(state.settings.seed.startsWith("R1."))state.settings.seed=state.settings.seed.split(".")[1];
+  state.settings.generatedLyrics=Boolean(state.settings.extraText.trim());
   reset(state.settings.seed||randomSeed());
  });
  updateLevels();
 
  function message(t){qs(root,".rnr-progress").textContent=t;}
- function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox,extraText:state.settings.extraText,lyricsText:state.settings.generatedLyrics?state.settings.extraText:undefined};}
+ function config(){return {seed:state.settings.seed||undefined,style:state.settings.style||undefined,mood:state.settings.mood||undefined,concept:state.settings.concept||undefined,language:state.settings.language||undefined,duration:state.settings.duration?Number(state.settings.duration):undefined,withVox:state.settings.seed.startsWith('R1.')?undefined:state.settings.withVox,extraText:state.settings.extraText,lyricsText:state.settings.generatedLyrics?state.settings.extraText:undefined,lyricsVariant:state.settings.lyricsVariant};}
  qs(root,".rnr-generate-lyrics").addEventListener("click",()=>{
-   const current=ensurePlan();
-   const material=current.withVox?current:makePlan({seed:current.seed.split(".")[1],
-    style:current.style,mood:current.mood,concept:current.concept,
-    language:current.language,bpm:current.bpm,duration:current.duration,
-    intensity:current.intensity,withVox:true,extraText:state.settings.extraText});
-   const lines=lyricSheet(material);
-   if(!lines){message("Nessun testo disponibile");return;}
-   qs(root,".rnr-context").value=lines;
-   state.settings.extraText=lines;
-   state.settings.generatedLyrics=true;
-   state.settings.withVox=true;
-   qs(root,'[data-param="withVox"]').checked=true;
-   reset(material.seed);
-   message("Testo del brano generato e modificabile");
-  });
-  function update(plan){
+  const current=ensurePlan();
+  state.settings.lyricsVariant=(state.settings.lyricsVariant+1)%10000||1;
+  state.settings.generatedLyrics=false;
+  state.settings.extraText="";
+  const material=current.withVox?
+   makePlan({seed:current.seed,lyricsVariant:state.settings.lyricsVariant}):
+   makePlan({seed:current.seed.split(".")[1],style:current.style,mood:current.mood,
+    concept:current.concept,language:current.language,bpm:current.bpm,
+    duration:current.duration,intensity:current.intensity,
+    lyricsVariant:state.settings.lyricsVariant,withVox:true});
+  state.settings.withVox=true;state.settings.seed=material.seed;
+  qs(root,".rnr-context").value=lyricSheet(material);
+  reset(material.seed);
+  message("Nuovi versi #"+state.settings.lyricsVariant+" · modificabili");
+ });
+ function update(plan){
   title.textContent=plan.title;artist.textContent=plan.artist+" · "+plan.style;
   qs(root,".rnr-seed").value=plan.seed;
   drawCover(qs(root,".rnr-cover"),plan);
@@ -188,9 +188,38 @@ export function mount(root,settings={}){
  qs(root,".rnr-mp3").addEventListener("click",()=>download("mp3"));
  qs(root,".rnr-wav").addEventListener("click",()=>download("wav"));
  qs(root,".rnr-restore").addEventListener("click",()=>{const wasPlaying=state.playing;reset(qs(root,".rnr-seed").value.trim()||randomSeed());if(!wasPlaying)void start();});
+ const shareDialog=qs(root,".rnr-share-dialog");
+ let preparedLink="";
+ function currentShareLink(){
+  return createSongLink(new URL("./index.html",import.meta.url),ensurePlan(),{
+   lyricsVariant:state.settings.lyricsVariant,
+   lyrics:state.settings.generatedLyrics?state.settings.extraText:""});
+ }
+ function showShare(){
+  const p=ensurePlan(),link=currentShareLink(),targets=shareTargets(link,p.title);
+  preparedLink=link;
+  for(const name of ["whatsapp","telegram","email"])
+   qs(root,".rnr-share-"+name).href=targets[name];
+  if(typeof shareDialog.showModal==="function")shareDialog.showModal();
+  else shareDialog.setAttribute("open","");
+ }
  qs(root,".rnr-share").addEventListener("click",async()=>{
-  const p=ensurePlan(),url=new URL(location.href);url.searchParams.set("seed",p.seed);url.searchParams.set("vox",p.withVox?"1":"0");url.searchParams.set("style",p.style);url.searchParams.set("mood",p.mood);url.searchParams.set("concept",p.concept);url.searchParams.set("lang",p.language);url.searchParams.set("duration",p.duration);
-  try{await navigator.clipboard.writeText(url.toString());message("Link copied");}catch{message(url.toString());}
+  const p=ensurePlan(),link=currentShareLink();
+  if(typeof navigator.share==="function"){
+   try{await navigator.share({title:p.title,text:p.artist+" · "+p.title,url:link});
+    message("Condivisione avviata");return;
+   }catch(e){if(e?.name==="AbortError")return;}
+  }
+  showShare();
+ });
+ qs(root,".rnr-share-close").addEventListener("click",()=>{
+  if(typeof shareDialog.close==="function")shareDialog.close();
+  else shareDialog.removeAttribute("open");
+ });
+ qs(root,".rnr-share-copy").addEventListener("click",async()=>{
+  try{await navigator.clipboard.writeText(preparedLink||currentShareLink());
+   message("Link copiato");if(typeof shareDialog.close==="function")shareDialog.close();
+  }catch{message(preparedLink||currentShareLink());}
  });
  root.querySelectorAll("[data-param]").forEach(input=>{
   const key=input.dataset.param;if(state.settings[key]!==undefined)input.type==="checkbox"?input.checked=state.settings[key]:input.value=state.settings[key];
@@ -199,7 +228,16 @@ export function mount(root,settings={}){
    reset(state.settings.seed||randomSeed());});
  });
  const query=new URLSearchParams(location.search);
- if(settings.readQuery!==false&&query.has("seed")){state.settings.seed=query.get("seed").slice(0,128);for(const [a,b] of [["style","style"],["mood","mood"],["concept","concept"],["lang","language"],["duration","duration"]])if(query.has(a)){state.settings[b]=query.get(a);const el=root.querySelector('[data-param="'+b+'"]');if(el)el.value=state.settings[b];}state.settings.withVox=query.get("vox")==="1";qs(root,'[data-param="withVox"]').checked=state.settings.withVox;}
+ if(settings.readQuery!==false&&query.has("seed")){state.settings.seed=query.get("seed").slice(0,128);for(const [a,b] of [["style","style"],["mood","mood"],["concept","concept"],["lang","language"],["duration","duration"]])if(query.has(a)){state.settings[b]=query.get(a);const el=root.querySelector('[data-param="'+b+'"]');if(el)el.value=state.settings[b];}state.settings.withVox=query.get("vox")==="1";
+ state.settings.lyricsVariant=Math.max(0,Math.min(9999,Number.parseInt(query.get("lv")||"0",10)||0));
+ if(query.has("lyrics")){
+  state.settings.extraText=String(query.get("lyrics")||"").slice(0,3200);
+  state.settings.generatedLyrics=Boolean(state.settings.extraText.trim());
+  qs(root,".rnr-context").value=state.settings.extraText;
+ }else if(state.settings.lyricsVariant)
+  qs(root,".rnr-context").value=lyricSheet(makePlan({
+   seed:state.settings.seed,lyricsVariant:state.settings.lyricsVariant}));
+ qs(root,'[data-param="withVox"]').checked=state.settings.withVox;}
  ensurePlan();paint();
  root.__rnr={start,stop,next:()=>reset(),download,get plan(){return state.plan;},get audio(){return state.audio;},regenerate:(options={})=>{Object.assign(state.settings,options);return reset(options.seed??state.settings.seed??randomSeed());},setMuted,setVolume,setVoiceMix,showCover,
  get volume(){return state.volume;},get voiceMix(){return state.voiceMix;},
