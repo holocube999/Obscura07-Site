@@ -2,11 +2,11 @@
  * No news scraping, API tokens, telemetry, user text or PCM persisted.
  * Works after the initial successful online visit and install.
  */
-const CACHE="rnr-static-v7";
+const CACHE="rnr-static-v8";
 const STATIC=[
  "./","./index.html","./embed.html","./embed.js","./widget.js",
  "./widget.css","./site-dock.js","./site-dock.css",
- "./radio.js","./arrangement.js","./musical-form.js","./lyrics.js",
+ "./radio.js","./arrangement.js","./musical-form.js","./lyrics.js","./share.js",
  "./linguistic-corpus.js","./vocal-director.js","./phonology.js","./articulatory-dsp.js","./voice-render.js","./cover-art.js",
  "./async.js","./render-worker.js","./transition.js",
  "./api.js","./bridge.js","./encode.js",
@@ -34,16 +34,18 @@ self.addEventListener("fetch",event=>{
  const url=new URL(request.url);
  if(url.origin!==self.location.origin||
     !url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
- event.respondWith(caches.match(request).then(cached=>{
-  if(cached)return cached;
-  return fetch(request).then(response=>{
-   // Cache static same-origin scripts only, never dynamic content.
-   if(response.ok&&["script","style","document","worker"].includes(
-      request.destination||"")){
-    const copy=response.clone();
-    event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)));
-   }
-   return response;
-  });
- }));
+ const isCode=["script","worker","style"].includes(request.destination||"")||
+  /\\.(?:js|css)$/.test(url.pathname);
+ const network=()=>fetch(request).then(response=>{
+  if(response.ok&&["script","style","document","worker",""].includes(request.destination||"")){
+   const copy=response.clone();
+   event.waitUntil(caches.open(CACHE).then(cache=>cache.put(request,copy)));
+  }
+  return response;
+ });
+ // Refresh scripts and styles online; retain exact same local files offline.
+ event.respondWith(isCode?
+  network().catch(()=>caches.match(request).then(cached=>cached||Response.error())):
+  caches.match(request).then(cached=>cached||network()));
+
 });

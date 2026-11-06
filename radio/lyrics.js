@@ -81,7 +81,7 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
     if(usedRap.has(finalText))finalText="Ancora "+(i+1)+", "+base;
    }
    usedRap.add(finalText);
-   const endWord=custom?(custom.match(/[\\p{L}\\p{N}]+(?=[^\\p{L}\\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
+   const endWord=custom?(custom.match(/[\p{L}\p{N}]+(?=[^\p{L}\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
    const section=active[i],time=section.start;
    const voice=voiceIdentity(r,plan.mood,plan.concept);
    voices.push({time:+time.toFixed(3),rhymeTime:+(time+beat*3).toFixed(3),
