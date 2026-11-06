@@ -67,7 +67,46 @@ export function originalSentence(rng,language="it",kind="statement",context=""){
  }
  return a+" "+v+" "+o+" "+choose(rng,rng()<.5?data.places:data.adverbs)+".";
 }
-export function rhymeStanza(rng,language="it",stanza=0){
+/* Compact semantic anchors: all fragments take a direct object, so their
+ * attached rhyme noun phrase remains grammatical. Original, offline only. */
+const RAP_TOPICS={
+ it:{
+  memory:["Nella memoria ritrovo","Sotto la polvere ascolto","Nel ricordo ancora cerco"],
+  time:["Contro il tempo difendo","Sotto l'orologio sento","Nel domani riconosco"],
+  horizon:["Sull'orizzonte inseguo","Oltre la strada cerco","Dal tramonto vedo"],
+  machines:["Tra le macchine scopro","Sotto i circuiti sento","Nel processore rincorro"],
+  sleep:["Dopo il sonno ritrovo","Nel sogno cerco ancora","Da sveglio riconosco"],
+  ocean:["Sotto le onde ascolto","Dove il mare nasconde","Tra le correnti seguo"],
+  stars:["Tra le stelle ritrovo","Nella galassia inseguo","Sotto la luna conosco"],
+  ghosts:["Tra i fantasmi ritrovo","Nelle ombre riconosco","Dietro le porte ascolto"],
+  silence:["Dentro il silenzio ritrovo","Quando la voce tace","Senza rumore inseguo"],
+  light:["Dentro la luce distinguo","Sotto i neon riconosco","Nella penombra seguo"],
+  dreams:["Tra i miei sogni ritrovo","Nel sonno inseguo","Senza svegliarmi ascolto"],
+  cities:["Sotto il cemento ritrovo","Tra le strade inseguo","Dentro la città riconosco"],
+  echoes:["Nell'eco della notte sento","Tra i riflessi ritrovo","Nella distanza inseguo"],
+  entropy:["Nel disordine ritrovo","Dal caos ancora sento","Tra i frammenti rivedo"],
+  origin:["Tornando all'inizio trovo","Dietro ogni causa cerco","Nel principio riconosco"]
+ },
+ en:{
+  memory:["Inside my memory I hear","In the archive I discover","From the past I recover"],
+  time:["Against the clock I follow","Beyond tomorrow I see","At midnight I remember"],
+  horizon:["Beyond the skyline I find","Along the horizon I chase","Past the edge I can see"],
+  machines:["Inside the circuit I hear","Beyond the engines I find","Under the hardware I see"],
+  sleep:["Inside the dream I find","Beyond the pillow I hear","Before I wake I see"],
+  ocean:["Beneath the waves I find","Across the ocean I hear","Under the tide I follow"],
+  stars:["Among the stars I find","Beyond the moon I see","Across the void I chase"],
+  ghosts:["Among the ghosts I find","Beyond the shadows I chase","Under the ruins I see"],
+  silence:["Inside the silence I hear","Without a sound I find","Under the static I see"],
+  light:["Inside the light I see","Beneath the neon I find","Beyond the glow I chase"],
+  dreams:["Inside my dreams I find","Under the moon I see","While I'm asleep I chase"],
+  cities:["Across the city I hear","Under the concrete I find","Across the streets I chase"],
+  echoes:["Inside the echoes I hear","From the signal I find","Across the distance I chase"],
+  entropy:["Inside the static I find","Beyond the noise I hear","Under the chaos I see"],
+  origin:["At the beginning I find","From the first pulse I hear","At the source I see"]
+ }
+};
+
+export function rhymeStanza(rng,language="it",stanza=0,concept=""){
  const data=OFFLINE_DICTIONARY[language]||EN;
  const fam=Object.keys(data.rhyme);
  const first=choose(rng,fam);
@@ -79,7 +118,8 @@ export function rhymeStanza(rng,language="it",stanza=0){
   const remaining=choices.filter(x=>!(used[family]||[]).includes(x));
   const end=choose(rng,remaining);
   (used[family]??=[]).push(end);
-  const text=choose(rng,data.rapPrefixes)+" "+end+".";
+  const prefixes=RAP_TOPICS[language]?.[concept]||data.rapPrefixes;
+   const text=choose(rng,prefixes)+" "+end+".";
   return {text,family,end,scheme:scheme[i],rhymeWord:end.split(/\s+/).pop(),bar:i};
  });
 }

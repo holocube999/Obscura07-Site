@@ -61,26 +61,51 @@ export function organizeArrangement(plan,arranged){
  return {events,sections,breaks};
 }
 export function createVocalGuide(plan,rngFor){
- const r=rngFor(plan.seed+"|vocal-melody-v3");
+ const r=rngFor(plan.seed+"|vocal-lead-v4"),beat=60/plan.bpm;
  const tonal=plan.events.filter(e=>!["kick","snare","hat","clap","glitch"].includes(e.kind)&&
-   Number.isFinite(e.freq)&&e.freq>24&&e.amp>.009);
+  Number.isFinite(e.freq)&&e.freq>24&&e.amp>.009);
  if(!tonal.length)return [];
- const beat=60/plan.bpm,cell=beat*(plan.style==="hiphop"?1:1.5),guide=[];
- for(let t=0;t<plan.duration-.05;t+=cell){
-  const nearby=tonal.filter(e=>e.time<=t+beat*.35&&e.time+e.length>t-beat*.25);
-  const pool=nearby.length?nearby:tonal.slice(0,4);
-  const leads=pool.filter(e=>["pad","bell","choir","handpan","flute","lead","guitar","harpsichord"].includes(e.kind));
-  const choices=leads.length?leads:pool;
-  const note=choices[(Math.floor(t/cell)+Math.floor(r()*3))%choices.length];
-  let hz=note.freq;
-  while(hz<105)hz*=2;
-  while(hz>265)hz/=2;
-  const harmony=pool.find(e=>e!==note&&e.freq!==note.freq);
-  let harmonyHz=harmony?.freq||hz*1.5;
-  while(harmonyHz<135)harmonyHz*=2;
-  while(harmonyHz>350)harmonyHz/=2;
+ const cell=beat*(plan.style==="hiphop"?1:1.5);
+ const motifs=[[0,0,1,0,2,1,0,-1],[0,1,2,1,0,-1,0,1],[0,0,-1,1,0,2,1,0]];
+ const motif=motifs[Math.floor(r()*motifs.length)];
+ const beatShift=r()>.5?0:1;
+ let previous=null,previousHarmony=null;
+ const guide=[];
+ const inRange=(hz,min,max)=>{
+  if(!Number.isFinite(hz)||hz<=0)return min;
+  while(hz<min)hz*=2;
+  while(hz>max)hz/=2;
+  return hz;
+ };
+ const st=(a,b)=>Math.abs(12*Math.log2(a/b));
+ for(let t=0,index=0;t<plan.duration-.05;t+=cell,index++){
+  const nearby=tonal.filter(e=>e.time<=t+beat*.4&&e.time+e.length>t-beat*.18);
+  const notes=nearby.length?nearby:tonal.slice(0,6);
+  // Pitch-class candidates are the pitches actually rendered in the song.
+  const options=[...new Set(notes.map(e=>+inRange(e.freq,108,260).toFixed(3)))];
+  if(!options.length)continue;
+  const phrase=motif[(index+beatShift)%motif.length];
+  const preferred=previous?previous*Math.pow(2,phrase/12):options[0];
+  const scored=options.map(hz=>{
+   const motion=previous?st(previous,hz):0;
+   const phraseCost=st(preferred,hz);
+   const leapPenalty=motion>7?(motion-7)*1.7:0;
+   const tension=notes.some(e=>["pad","choir","bell","handpan"].includes(e.kind)&&
+    st(inRange(e.freq,108,260),hz)<.15)?-.6:0;
+   return {hz,score:phraseCost*.62+motion*.50+leapPenalty+tension};
+  }).sort((a,b)=>a.score-b.score||a.hz-b.hz);
+  const lead=scored[0].hz;
+  const harmonyChoices=options.filter(hz=>st(hz,lead)>2.5).map(hz=>{
+   const interval=st(hz,lead);
+   return {hz,score:Math.abs(interval-4)*.5+(previousHarmony?st(previousHarmony,hz)*.22:0)};
+  }).sort((a,b)=>a.score-b.score||a.hz-b.hz);
+  // If the chord contains a single note, use a supported octave, not an
+  // invented chromatic third; the underlying tuning is microtonal.
+  const harmony=harmonyChoices.length?harmonyChoices[0].hz:
+   inRange(lead/2,110,265);
   guide.push({time:+t.toFixed(4),end:+Math.min(plan.duration,t+cell).toFixed(4),
-   hz:+hz.toFixed(4),harmonyHz:+harmonyHz.toFixed(4)});
+   hz:+lead.toFixed(4),harmonyHz:+harmony.toFixed(4)});
+  previous=lead;previousHarmony=harmony;
  }
  return guide;
 }

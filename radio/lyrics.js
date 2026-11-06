@@ -69,7 +69,7 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   const count=Math.max(1,Math.min(22,Math.floor((plan.duration-starts-.08)/bar)));
   const voices=[];let stanza=[];
   for(let i=0;i<count;i++){
-   if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4));
+   if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4),plan.concept);
    const phrase=stanza[i%4];
    const custom=provided.length?provided[i%provided.length]:null;
    const finalText=custom||phrase.text;
