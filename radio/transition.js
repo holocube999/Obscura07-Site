@@ -6,10 +6,10 @@ function dispose(track){
  try{track.source.disconnect();track.gain.disconnect();}catch(_){}
  pools.get(track.context)?.delete(track);
 }
-export function spliceTrack(context,buffer,output,previous=null,fadeSeconds=1.8){
+export function spliceTrack(context,buffer,output,previous=null,fadeSeconds=1.8,loop=true){
  const time=context.currentTime,duration=previous?Math.max(.05,fadeSeconds):.04;
  let pool=pools.get(context);if(!pool){pool=new Set();pools.set(context,pool);}
- const source=context.createBufferSource();source.buffer=buffer;source.loop=true;
+ const source=context.createBufferSource();source.buffer=buffer;source.loop=Boolean(loop);
  const gain=context.createGain();source.connect(gain);gain.connect(output);
  gain.gain.setValueAtTime(0,time);
  gain.gain.linearRampToValueAtTime(1,time+duration);

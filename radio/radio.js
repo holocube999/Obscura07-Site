@@ -2,6 +2,7 @@
    Browser ES module. No server, telemetry, samples, npm or CDN. */
 import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
 import {composeVoices} from "./lyrics.js";
+import {renderVocalBus,mixVocalBus} from "./voice-render.js";
 import {chooseMusicalForm,organizeArrangement,createVocalGuide,applyMusicalEnding} from "./musical-form.js";
 export const VERSION="0.3.0";
 export const SAMPLE_RATE=22050;
@@ -256,6 +257,8 @@ export function filename(plan,ext="mp3"){
  return clean(plan.artist)+"--"+clean(plan.title)+"--"+clean(plan.seed)+"."+ext;
 }
 export async function generate(options={},format="mp3"){
- const plan=makePlan(options),audio=renderPCM(plan),blob=format==="wav"?pcmToWav(audio):pcmToMP3(audio);
+ const plan=makePlan(options),music=renderPCM(plan);
+ const audio=mixVocalBus(music,renderVocalBus(plan,{sampleRate:music.sampleRate}),options.voiceMix??.22);
+ const blob=format==="wav"?pcmToWav(audio):pcmToMP3(audio);
  return {plan,blob};
 }

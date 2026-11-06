@@ -145,11 +145,13 @@ export function mount(root,settings={}){
    if(ticket!==state.token)return;
    const buf=state.ctx.createBuffer(2,audio.channels[0].length,audio.sampleRate);
    for(let c=0;c<2;c++)buf.copyToChannel(audio.channels[c],c);
-   const next=spliceTrack(state.ctx,buf,state.gain,state.active,1.85);
+   const continuous=["loop","loopable"].includes(plan.form);
+    const crossfade=continuous?1.85:1.35;
+    const next=spliceTrack(state.ctx,buf,state.gain,state.active,crossfade,continuous);
    if(audio.voiceChannels){
     const vocals=state.ctx.createBuffer(2,audio.voiceChannels[0].length,audio.sampleRate);
     for(let c=0;c<2;c++)vocals.copyToChannel(audio.voiceChannels[c],c);
-    state.voiceActive=spliceTrack(state.ctx,vocals,state.voiceGain,state.voiceActive,1.85);
+    state.voiceActive=spliceTrack(state.ctx,vocals,state.voiceGain,state.voiceActive,crossfade,continuous);
    }else if(state.voiceActive){
     haltTrack(state.voiceActive);state.voiceActive=null;
    }
@@ -159,7 +161,7 @@ export function mount(root,settings={}){
    state.nextTimer=setTimeout(()=>{
      if(ticket!==state.token||!state.playing)return;
      if(settings.autonext!==false)reset(randomSeed());else stop();
-   },Math.max(2000,(plan.duration-(settings.autonext===false?0:2.8))*1000));
+   },Math.max(2000,(plan.duration-(settings.autonext===false?0:continuous?2.8:1.65))*1000));
    message("Playing · "+(audio.voiceChannels?"VOX PCM · FX / CHOIR":"instrumental"));
    if(!state.raf)paint();
   }catch(e){message("Error: "+e.message);console.error("[RNR]",e);}
