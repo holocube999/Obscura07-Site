@@ -6,6 +6,7 @@
  * This is a stylized, robotic phoneme synthesizer, not a natural-language TTS
  * replacement. Pronunciation is approximate, especially for non-Latin scripts.
  */
+import {applyMusicalEnding} from "./musical-form.js";
 const TAU=2*Math.PI;
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const VOWELS={
@@ -89,113 +90,102 @@ function timbre(phoneme,pitch,sampleRate,shift=1){
  let sum=0;for(let i=0;i<weights.length;i++)sum+=weights[i];
  return {weights,scale:1/Math.max(.0001,sum)};
 }
+/* Rap diction is synthesized at its allocated timing, never speed-changed by
+ * resampling. Stable source formants identify one voice across a whole song. */
 function buildWord(text,opts,rng){
- const sr=opts.sampleRate,phonemes=textPhonemes(text,opts.language);
- const beat=60/clamp(opts.bpm||100,35,230);
- const speed=clamp(opts.rate||1,.62,1.9);
- const sizes=phonemes.map(token=>{
-  if(token===".")return Math.round(sr*beat*.35);
-  if(token===" ")return Math.round(sr*beat*.13);
-  return Math.round(sr*(VOWELS[token]?beat*.27:beat*.15)/speed);
- });
- const length=sizes.reduce((a,b)=>a+b,0)+Math.round(sr*.018);
+ const sr=opts.sampleRate,phonemes=textPhonemes(text,opts.language).filter(x=>x!==" ");
+ if(!phonemes.length)return new Float32Array(0);
+ const weights=phonemes.map(t=>t==="."?.23:VOWELS[t]?1.55:["s","f","sh","ch","th","ts"].includes(t)?1.05:.85);
+ const total=weights.reduce((a,b)=>a+b,0);
+ const target=Math.max(phonemes.length*5,Math.round(opts.targetSamples||sr*.4));
+ const sizes=weights.map(w=>Math.max(5,Math.round(target*w/total)));
+ const length=sizes.reduce((a,b)=>a+b,0);
  const pcm=new Float32Array(length);
- let at=0,globalPhase=0,noiseSmooth=0,seedPhase=rng()*TAU;
- const base=clamp(opts.pitch||140,45,650);
- const pitch=quantizePitchHz(base,opts.tuning,opts.referenceHz);
- const shift=opts.formantShift||1;
+ let at=0,phase=rng()*TAU,noiseSmooth=0;
+ const base=clamp(opts.pitch||135,65,280),guide=clamp(opts.guideHz||base,65,390);
+ const strength=clamp(opts.tuneStrength||0,0,1);
+ const targetHz=base*Math.pow(guide/base,strength);
+ const pitch=opts.guideHz?targetHz:quantizePitchHz(base,opts.tuning,opts.referenceHz);
+ const shift=clamp(opts.formantShift||1,.83,1.18);
  for(let k=0;k<phonemes.length;k++){
   const token=phonemes[k],count=sizes[k];
-  if(token===" "||token==="."){at+=count;continue}
+  if(token==="."){at+=count;continue;}
   const vowel=Boolean(VOWELS[token]);
-  const voiced=vowel||["l","m","n","r","v","z","j","ny"].includes(token);
-  const h=timbre(VOWELS[token]?token:token==="m"?"u":token==="n"||token==="ny"?"i":"a",
-   pitch,sr,shift);
-  const f=token==="sh"||token==="s"||token==="f"||token==="th"||token==="h"||
-   token==="ts";
+  const voiced=vowel||["l","m","n","r","v","z","j","ny","y"].includes(token);
+  const h=timbre(vowel?token:token==="m"?"u":token==="n"||token==="ny"?"i":"a",pitch,sr,shift);
+  const fricative=["sh","s","f","th","h","ts","z"].includes(token);
   const plosive=["p","b","t","d","k","g","c","ch"].includes(token);
+  const onset=plosive?.003:.008,release=vowel?.024:.009;
   for(let i=0;i<count;i++){
-   const time=i/sr,u=i/count;
-   const attack=clamp(i/(sr*(plosive?.002:.012)),0,1);
-   const release=clamp((count-i)/(sr*.023),0,1);
-   const env=attack*release;
-   // Autotuned source pitch, with restrained human/monster vibrato.
-   const mod=1+(opts.vibrato||0)*Math.sin(TAU*(4.2+k*.21)*(at+i)/sr);
-   globalPhase+=TAU*pitch*mod/sr;
-   if(globalPhase>TAU*4096)globalPhase%=TAU;
-   let harmonic=0;
+   const u=i/Math.max(1,count),atSample=at+i;
+   const env=clamp(i/(sr*onset),0,1)*clamp((count-1-i)/(sr*release),0,1);
+   const mod=1+(opts.vibrato||0)*Math.sin(TAU*4.3*atSample/sr);
+   phase+=TAU*pitch*mod/sr;
+   if(phase>TAU*4096)phase%=TAU;
+   let harmonics=0;
    if(voiced){
-    for(let n=0;n<h.weights.length;n++)
-     harmonic+=Math.sin(globalPhase*(n+1)+seedPhase)*h.weights[n];
-    harmonic*=h.scale;
+    for(let j=0;j<h.weights.length;j++)harmonics+=Math.sin(phase*(j+1))*h.weights[j];
+    harmonics*=h.scale;
    }
    const noise=rng()*2-1;
-   noiseSmooth=noiseSmooth*.76+noise*.24;
-   let signal=voiced?harmonic*.93:0;
-   if(f)signal+=((noise-noiseSmooth)*.56+noiseSmooth*.18);
-   if(plosive)signal+=noise*Math.exp(-u*28)*.83;
-   if(token==="r")signal*=.45+.55*Math.sin(TAU*27*i/sr)**2;
-   if(token==="m"||token==="n"||token==="ny")signal*=.62;
-   if(opts.mode==="robot")signal*=.67+.33*Math.sin(TAU*19*(at+i)/sr);
-   if(opts.mode==="monster")signal=Math.tanh(signal*2.4)*.78;
-   if(opts.mode==="glitch"&&((i>>8)&7)===0)signal*=.2;
+   noiseSmooth=noiseSmooth*.73+noise*.27;
+   let signal=voiced?harmonics*.94:0;
+   if(fricative)signal+=(noise-noiseSmooth)*.42+noiseSmooth*.13;
+   if(plosive)signal+=noise*Math.exp(-u*24)*.50;
+   if(token==="r")signal*=.65+.35*Math.sin(TAU*22*i/sr)**2;
+   if(["m","n","ny"].includes(token))signal*=.68;
+   if(opts.mode==="radio")signal=.84*signal+.16*Math.tanh(signal*1.16);
+   if(opts.mode==="robot")signal*=.90+.10*Math.sin(TAU*16*atSample/sr);
    pcm[at+i]=signal*env*.66;
   }
   at+=count;
  }
  return pcm;
 }
-function processedSegment(text,plan,entry,index,sr,rng,mode){
+function findGuide(plan,time){
+ const guide=plan.vocalGuide||[];
+ if(!guide.length)return null;
+ let selected=guide[0];
+ for(const item of guide){if(item.time>time)break;selected=item;}
+ return selected;
+}
+function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=false){
  const beat=60/clamp(plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end)?.bpm||plan.bpm||100,35,230);
- const base=clamp((entry.voice?.base||140)*(mode==="monster"?.57:mode==="angelic"?1.18:1),45,420);
- const formant=mode==="monster"?.73:mode==="angelic"?1.21:mode==="robot"?.94:1;
- const opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
-             pitch:base,rate:entry.voice?.rate||1,formantShift:formant,
-             vibrato:mode==="angelic"?.008:mode==="monster"?.019:.004,
-             mode,referenceHz:55,tuning:plan.tuning};
- // Word onsets respect half-beat spacing. Text is converted to PCM first,
- // then post-processed; no native speech is ever played in the browser.
- const words=String(text).split(/\s+/).filter(Boolean);
+ const words=String(text).trim().split(/\s+/).filter(Boolean).slice(0,35);
  const rap=Number.isFinite(entry.rhymeTime)&&Number.isFinite(entry.barEnd)&&
-   entry.rhymeTime>entry.time&&entry.barEnd>entry.rhymeTime;
+  entry.rhymeTime>entry.time&&entry.barEnd>entry.rhymeTime;
  const rhymeAt=rap?Math.round((entry.rhymeTime-entry.time)*sr):0;
- const cap=rap?Math.round((entry.barEnd-entry.time)*sr):Math.round(sr*12);
+ const cap=rap?Math.round((entry.barEnd-entry.time)*sr):
+  Math.min(Math.round(sr*8),Math.round((plan.duration-entry.time)*sr));
+ if(cap<=0||!words.length)return new Float32Array(0);
  const scheduled=[];
  let end=0;
+ const slot=Math.max(1,Math.floor(rhymeAt/Math.max(1,words.length-1)));
  for(let i=0;i<words.length;i++){
-  let samples=buildWord(words[i],opts,rng);
-  let start;
-  if(rap){
-   const last=i===words.length-1;
-   const slot=last?Math.max(1,cap-rhymeAt):
-     Math.max(1,Math.floor(rhymeAt/Math.max(1,words.length-1)));
-   // Rap consonants fall on subdivisions; the rhyme enters on beat four.
-   start=last?rhymeAt:Math.floor(i*rhymeAt/Math.max(1,words.length-1));
-   const wanted=Math.max(1,Math.min(samples.length,Math.floor(slot*.91)));
-   if(samples.length>wanted){
-    const sped=new Float32Array(wanted);
-    for(let k=0;k<wanted;k++){
-     const x=k*(samples.length-1)/Math.max(1,wanted-1),j=Math.floor(x);
-     sped[k]=(samples[j]||0)*(1-(x-j))+(samples[j+1]||0)*(x-j);
-    }
-    samples=sped;
-   }
-  }else start=Math.max(end,Math.round(i*beat*.5*sr));
-  scheduled.push({start,samples});
-  end=Math.max(end,start+samples.length);
+  const last=rap&&i===words.length-1;
+  const start=rap?(last?rhymeAt:Math.floor(i*rhymeAt/Math.max(1,words.length-1))):
+   Math.round(i*beat*.55*sr);
+  if(start>=cap)break;
+  const budget=rap?(last?Math.min(cap-start,Math.round(beat*.90*sr)):slot):
+   Math.min(cap-start,Math.round(beat*.49*sr));
+  const available=Math.max(1,Math.min(cap-start,Math.round(budget*(rap?.87:.9))));
+  const note=findGuide(plan,entry.time+start/sr);
+  const section=plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end);
+  const hook=["hook","chorus"].includes(section?.name);
+  const tuneStrength=harmonize?.94:rap?(hook?.70:.17):.60;
+  const opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
+   pitch:identity.base,rate:identity.rate,formantShift:identity.formant,
+   vibrato:rap?.0018:.004,mode,referenceHz:55,tuning:plan.tuning,
+   guideHz:note?(harmonize?note.harmonyHz:note.hz):undefined,
+   tuneStrength,targetSamples:available};
+  const samples=buildWord(words[i],opts,rng);
+  scheduled.push({start,samples});end=Math.max(end,start+samples.length);
  }
- const out=new Float32Array(Math.min(Math.round(sr*12),
-   rap?Math.min(cap,Math.max(end,1)):end+Math.round(sr*.1)));
- for(const {start,samples} of scheduled){
+ const out=new Float32Array(Math.max(1,Math.min(cap,rap?cap:end+Math.round(sr*.04))));
+ for(const {start,samples} of scheduled)
   for(let i=0;i<samples.length&&start+i<out.length;i++)out[start+i]+=samples[i];
- }
- // Multiband-agnostic waveshaping. The underlying phonemes remain audible,
- // but both formants and pitch are deliberately far from unprocessed TTS.
- const drive=mode==="monster"?2.8:mode==="robot"?1.7:mode==="glitch"?2.3:1.05;
- for(let i=0;i<out.length;i++){
-  const v=out[i]*drive;
-  out[i]=Math.tanh(v)/Math.tanh(drive)*.75;
- }
+ // Soft saturation only, with controlled output. No 2x-3x monster drive.
+ for(let i=0;i<out.length;i++)out[i]=Math.tanh(out[i]*1.06)*.86;
  return out;
 }
 function writeDelay(bus,start,segment,amplitude,pan,sr,delay){
@@ -212,51 +202,54 @@ export function renderVocalBus(plan,{sampleRate=22050}={}){
  if(!plan?.withVox||!Array.isArray(plan.voices)||!plan.voices.length)return null;
  const duration=clamp(plan.duration||60,1,130),length=Math.ceil(duration*sr);
  const bus=[new Float32Array(length),new Float32Array(length)];
- const r=random(plan.seed+"|voice-render-v1");
- const modes=["monster","robot","angelic","chorus","autotune","glitch"];
+ const r=random(plan.seed+"|voice-render-v3");
+ const isRap=plan.style==="hiphop";
+ // A single timbre/persona per song: FX are genre-oriented, not randomly
+ // changed for every bar. Rap emphasizes articulation and a centered dry lead.
+ const modes=isRap?["clean","warm","radio"]:["warm","air","chorus","robot"];
+ const mode=modes[Math.floor(r()*modes.length)];
+ const identity={base:isRap?112+r()*34:109+r()*57,
+  formant:mode==="air"?1.07:mode==="radio"?.97:mode==="robot"?.94:1,
+  rate:.96+r()*.08};
  for(let index=0;index<plan.voices.length;index++){
   const entry=plan.voices[index];
   if(!entry||!Number.isFinite(entry.time)||typeof entry.text!=="string")continue;
-  const mode=modes[Math.floor(r()*modes.length)];
-  const phrase=processedSegment(entry.text,plan,entry,index,sr,r,mode);
-  if(!phrase.length)continue;
   const position=clamp(entry.time,0,duration-.03);
-  // Per-phrase soft RMS normalization, not an uncontrolled vocal boost.
+  const phrase=processedSegment(entry.text,plan,entry,index,sr,r,mode,identity);
+  if(!phrase.length)continue;
   let energy=0;for(let i=0;i<phrase.length;i++)energy+=phrase[i]*phrase[i];
   const rms=Math.sqrt(energy/phrase.length);
-  const gain=Math.min(1.2,.17/Math.max(.008,rms));
+  const gain=Math.min(1.25,.18/Math.max(.008,rms));
   const beat=60/clamp(plan.sections?.find(s=>position>=s.start&&position<s.end)?.bpm||plan.bpm||100,35,230);
-  const voices=mode==="chorus"||mode==="angelic"?4:mode==="monster"?3:2;
-  for(let layer=0;layer<voices;layer++){
-   const detune=layer===0?0:mode==="chorus"?[-.035,.035,.07][(layer-1)%3]:
-    mode==="monster"?[-.12,.07][(layer-1)%2]:[-.015,.018][(layer-1)%2];
-   const offset=layer===0?0:.014*layer;
-   const pan=layer===0?0:(layer%2?-.62:.62);
-   const ratio=Math.pow(2,detune);
-   // Resampling gives harmonizing shifts in pre-rendered audio.
-   const temp=new Float32Array(Math.floor(phrase.length/ratio));
-   for(let j=0;j<temp.length;j++){
-    const x=j*ratio,i=Math.floor(x),t=x-i;
-    temp[j]=(phrase[i]||0)*(1-t)+(phrase[i+1]||0)*t;
-   }
-   writeDelay(bus,position,temp,gain*(layer? .27:.7),pan,sr,offset);
+  writeDelay(bus,position,phrase,gain*.92,0,sr,0); // intelligible mono center
+  if(isRap){
+   // Quiet double-track and tasteful 1/8 note/slap echoes; consonants retain
+   // their original pitch/speed (unlike old resampling-based chorusing).
+   writeDelay(bus,position,phrase,gain*.115,-.42,sr,.014);
+   writeDelay(bus,position,phrase,gain*.115,.42,sr,.021);
+   writeDelay(bus,position,phrase,gain*.09,-.34,sr,beat*.5);
+   writeDelay(bus,position,phrase,gain*.053,.34,sr,beat);
+  }else{
+   writeDelay(bus,position,phrase,gain*.13,-.5,sr,.017);
+   writeDelay(bus,position,phrase,gain*.13,.5,sr,.025);
+   writeDelay(bus,position,phrase,gain*.12,.3,sr,beat*.5);
   }
-  // Musical echoes and short room reverb are part of the recorded PCM.
-  const repeats=mode==="monster"?3:mode==="chorus"?5:3;
-  for(let tap=1;tap<=repeats;tap++){
-   writeDelay(bus,position,phrase,gain*Math.pow(.43,tap)*.23,
-      tap%2?.48:-.48,sr,(beat*.5)*tap);
-  }
-  for(const [delay,amp,pan] of [[.031,.083,-.75],[.059,.054,.75],[.097,.036,-.35]]){
-   writeDelay(bus,position,phrase,gain*amp,pan,sr,delay);
+  const section=plan.sections?.find(s=>position>=s.start&&position<s.end);
+  // Actual independent harmonic line from the accompaniment, not a pitch-
+  // shifted copy. Use only on hooks (rap) or occasional melodic phrases.
+  if(plan.vocalGuide?.length&&
+    (isRap?["hook","chorus"].includes(section?.name):index%3===1)){
+   const harmony=processedSegment(entry.text,plan,entry,index,sr,r,mode,identity,true);
+   writeDelay(bus,position,harmony,gain*(isRap?.16:.23),-.28,sr,.026);
   }
  }
- // Stable bus limiter. The voice is attenuated again by the independent
- // VOX LEVEL control and passes through the same master gain as the music.
- for(const channel of bus){
-  for(let i=0;i<channel.length;i++)channel[i]=Math.tanh(channel[i]*1.35)*.77;
- }
- return {sampleRate:sr,channels:bus,preRendered:true,engine:"offline-formant-dsp"};
+ // Light limiter at the bus level and the exact same song-end envelope as
+ // the music, so echoes never become orphaned/cut at the buffer endpoint.
+ for(const channel of bus)
+  for(let i=0;i<channel.length;i++)channel[i]=Math.tanh(channel[i]*1.08)*.94;
+ applyMusicalEnding(bus,plan,sr);
+ return {sampleRate:sr,channels:bus,preRendered:true,engine:"offline-formant-dsp",
+  profile:mode,identity:{...identity},guideUsed:Boolean(plan.vocalGuide?.length)};
 }
 export function mixVocalBus(music,voice,level=.18){
  if(!voice||!music||!music.channels)return music;
