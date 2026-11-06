@@ -2,12 +2,12 @@
  * No news scraping, API tokens, telemetry, user text or PCM persisted.
  * Works after the initial successful online visit and install.
  */
-const CACHE="rnr-static-v5";
+const CACHE="rnr-static-v6";
 const STATIC=[
  "./","./index.html","./embed.html","./embed.js","./widget.js",
  "./widget.css","./site-dock.js","./site-dock.css",
  "./radio.js","./arrangement.js","./musical-form.js","./lyrics.js",
- "./linguistic-corpus.js","./voice-render.js","./cover-art.js",
+ "./linguistic-corpus.js","./phonology.js","./articulatory-dsp.js","./voice-render.js","./cover-art.js",
  "./async.js","./render-worker.js","./transition.js",
  "./api.js","./bridge.js","./encode.js",
  "./vendor/lame.min.js"

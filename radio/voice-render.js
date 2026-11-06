@@ -7,6 +7,8 @@
  * replacement. Pronunciation is approximate, especially for non-Latin scripts.
  */
 import {applyMusicalEnding} from "./musical-form.js";
+import {phonemesFromText,analyzeWord} from "./phonology.js";
+import {synthesizeWord} from "./articulatory-dsp.js";
 const TAU=2*Math.PI;
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const VOWELS={
@@ -37,38 +39,7 @@ function plain(text){
  return transliterated.normalize("NFD").replace(/[\u0300-\u036f]/g,"")
   .replace(/[^\p{L}\p{N}\s.,!?;:'’\-]/gu," ").slice(0,200);
 }
-export function textPhonemes(text,language="it"){
- const latin=plain(text);
- const tokens=[];
- const words=latin.match(/[\p{L}\p{N}]+|[.,!?;:]|\s+/gu)||[];
- for(const word of words){
-  if(/^\s+$/u.test(word)){tokens.push(" ");continue}
-  if(/^[.,!?;:]$/u.test(word)){tokens.push(".");continue}
-  for(let i=0;i<word.length;){
-   const rest=word.slice(i);
-   let code=null,span=1;
-   const patterns=[
-    ["sch","sh"],["gli","ly"],["gn","ny"],["sh","sh"],["ch","k"],
-    ["gh","g"],["ph","f"],["th","th"],["qu","kw"],["sc","sh"],
-    ["ci","ch"],["gi","j"],["ck","k"],["ts","ts"],["zh","zh"],["ll","l"]
-   ];
-   // Italian sc is "sh" only before e/i; elsewhere leave s+c.
-   for(const [pattern,phoneme] of patterns){
-    if(rest.startsWith(pattern) && !(language==="it"&&pattern==="sc"&&!/[ei]/.test(rest[2]||""))){
-     code=phoneme;span=pattern.length;break;
-    }
-   }
-   if(!code)code=word[i];
-   if(code==="ly")tokens.push("l","y");
-   else if(code==="kw")tokens.push("k","u");
-   else if(VOWELS[code]||CONSONANTS.has(code))tokens.push(code);
-   else if(/[0-9]/.test(code))tokens.push(["o","u","d","t","k","c","s","s","o","n"][+code]||"o");
-   else tokens.push("a");
-   i+=span;
-  }
- }
- return tokens.slice(0,180);
-}
+export function textPhonemes(text,language="it"){return phonemesFromText(text,language);}
 export function quantizePitchHz(freq,tuning="12-EDO",reference=55){
  const steps=Math.max(5,Math.min(72,parseInt(String(tuning),10)||12));
  const edo=String(tuning).includes("EDO")?steps:12;
@@ -93,54 +64,7 @@ function timbre(phoneme,pitch,sampleRate,shift=1){
 /* Rap diction is synthesized at its allocated timing, never speed-changed by
  * resampling. Stable source formants identify one voice across a whole song. */
 function buildWord(text,opts,rng){
- const sr=opts.sampleRate,phonemes=textPhonemes(text,opts.language).filter(x=>x!==" ");
- if(!phonemes.length)return new Float32Array(0);
- const weights=phonemes.map(t=>t==="."?.23:VOWELS[t]?1.55:["s","f","sh","ch","th","ts"].includes(t)?1.05:.85);
- const total=weights.reduce((a,b)=>a+b,0);
- const target=Math.max(phonemes.length*5,Math.round(opts.targetSamples||sr*.4));
- const sizes=weights.map(w=>Math.max(5,Math.round(target*w/total)));
- const length=sizes.reduce((a,b)=>a+b,0);
- const pcm=new Float32Array(length);
- let at=0,phase=rng()*TAU,noiseSmooth=0;
- const base=clamp(opts.pitch||135,65,280),guide=clamp(opts.guideHz||base,65,390);
- const strength=clamp(opts.tuneStrength||0,0,1);
- const targetHz=base*Math.pow(guide/base,strength);
- const pitch=opts.guideHz?targetHz:quantizePitchHz(base,opts.tuning,opts.referenceHz);
- const shift=clamp(opts.formantShift||1,.83,1.18);
- for(let k=0;k<phonemes.length;k++){
-  const token=phonemes[k],count=sizes[k];
-  if(token==="."){at+=count;continue;}
-  const vowel=Boolean(VOWELS[token]);
-  const voiced=vowel||["l","m","n","r","v","z","j","ny","y"].includes(token);
-  const h=timbre(vowel?token:token==="m"?"u":token==="n"||token==="ny"?"i":"a",pitch,sr,shift);
-  const fricative=["sh","s","f","th","h","ts","z"].includes(token);
-  const plosive=["p","b","t","d","k","g","c","ch"].includes(token);
-  const onset=plosive?.003:.008,release=vowel?.024:.009;
-  for(let i=0;i<count;i++){
-   const u=i/Math.max(1,count),atSample=at+i;
-   const env=clamp(i/(sr*onset),0,1)*clamp((count-1-i)/(sr*release),0,1);
-   const mod=1+(opts.vibrato||0)*Math.sin(TAU*4.3*atSample/sr);
-   phase+=TAU*pitch*mod/sr;
-   if(phase>TAU*4096)phase%=TAU;
-   let harmonics=0;
-   if(voiced){
-    for(let j=0;j<h.weights.length;j++)harmonics+=Math.sin(phase*(j+1))*h.weights[j];
-    harmonics*=h.scale;
-   }
-   const noise=rng()*2-1;
-   noiseSmooth=noiseSmooth*.73+noise*.27;
-   let signal=voiced?harmonics*.94:0;
-   if(fricative)signal+=(noise-noiseSmooth)*.42+noiseSmooth*.13;
-   if(plosive)signal+=noise*Math.exp(-u*24)*.50;
-   if(token==="r")signal*=.65+.35*Math.sin(TAU*22*i/sr)**2;
-   if(["m","n","ny"].includes(token))signal*=.68;
-   if(opts.mode==="radio")signal=.84*signal+.16*Math.tanh(signal*1.16);
-   if(opts.mode==="robot")signal*=.90+.10*Math.sin(TAU*16*atSample/sr);
-   pcm[at+i]=signal*env*.66;
-  }
-  at+=count;
- }
- return pcm;
+ return synthesizeWord(text,opts,rng);
 }
 function findGuide(plan,time){
  const guide=plan.vocalGuide||[];
