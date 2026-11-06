@@ -58,6 +58,9 @@ export function synthesizeWord(text,opts,rng){
  const base=C(opts.pitch||132,65,280),guide=C(opts.guideHz||base,65,390);
  const tune=C(opts.tuneStrength||0,0,1),fundamental=base*Math.pow(guide/base,tune);
  const formantShift=C(opts.formantShift||1,.83,1.18);
+ const contour=Array.isArray(opts.melody)?opts.melody.filter(f=>Number.isFinite(f)&&f>50):[];
+ const melodyTarget=p=>contour[p.syllable]||guide;
+ let smoothHz=fundamental;
  const spectral=opts.mode==="radio"?.94:opts.mode==="air"?1.03:1;
  const state=[filter(),filter(),filter()];
  let phase=rng(),prevNoise=0,prevSaw=0,low=0,dcPrevX=0,dcPrevY=0,at=0;
@@ -74,7 +77,10 @@ export function synthesizeWord(text,opts,rng){
     const hz=formants(p,previous,next,u).map(f=>f*formantShift);
     co=[coeff(hz[0],4.6,sr),coeff(hz[1],5.6,sr),coeff(hz[2],7.2,sr)];
    }
-   const rate=C(fundamental*(1+(p.stressed?.022:0) + (u-.5)*.017+
+   const goal=base*Math.pow(C(melodyTarget(p),65,390)/base,tune);
+   // A 15-ms portamento between syllables, but no formant transposition.
+   smoothHz+=(goal-smoothHz)*C(1/(sr*.015),.00001,.30);
+   const rate=C(smoothHz*(1+(p.stressed?.019:0) + (u-.5)*.013+
     (opts.vibrato||0)*Math.sin(TAU*4.6*sample/sr)),55,420)/sr;
    phase+=rate;if(phase>=1)phase-=Math.floor(phase);
    const saw=2*phase-1-blep(phase,rate);

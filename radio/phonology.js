@@ -63,6 +63,8 @@ function glyphs(raw,language){
  const stressedIndex=vocalIndices[stressed]??-1;
  for(let i=0;i<cleaned.length;i++){
   const p=cleaned[i],isVowel=syllabic(p.sym),previous=cleaned[i-1];
+  const nextVowel=vocalIndices.findIndex(n=>n>=i);
+  p.syllable=Math.max(0,nextVowel<0?vocalIndices.length-1:nextVowel);
   const geminate=Boolean(previous?.sym===p.sym&&!isVowel);
   p.geminate=geminate;
   p.stressed=i===stressedIndex;

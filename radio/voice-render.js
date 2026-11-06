@@ -9,6 +9,7 @@
 import {applyMusicalEnding} from "./musical-form.js";
 import {phonemesFromText,analyzeWord} from "./phonology.js";
 import {synthesizeWord} from "./articulatory-dsp.js";
+import {planDelivery} from "./vocal-director.js";
 const TAU=2*Math.PI;
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 const VOWELS={
@@ -75,41 +76,27 @@ function findGuide(plan,time){
 }
 function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=false){
  const beat=60/clamp(plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end)?.bpm||plan.bpm||100,35,230);
- const words=String(text).trim().split(/\s+/).filter(Boolean).slice(0,35);
- const rap=Number.isFinite(entry.rhymeTime)&&Number.isFinite(entry.barEnd)&&
-  entry.rhymeTime>entry.time&&entry.barEnd>entry.rhymeTime;
- const rhymeAt=rap?Math.round((entry.rhymeTime-entry.time)*sr):0;
- const cap=rap?Math.round((entry.barEnd-entry.time)*sr):
-  Math.min(Math.round(sr*8),Math.round((plan.duration-entry.time)*sr));
- if(cap<=0||!words.length)return new Float32Array(0);
- const scheduled=[];
- let end=0;
- const slot=Math.max(1,Math.floor(rhymeAt/Math.max(1,words.length-1)));
- for(let i=0;i<words.length;i++){
-  const last=rap&&i===words.length-1;
-  const start=rap?(last?rhymeAt:Math.floor(i*rhymeAt/Math.max(1,words.length-1))):
-   Math.round(i*beat*.55*sr);
-  if(start>=cap)break;
-  const budget=rap?(last?Math.min(cap-start,Math.round(beat*.90*sr)):slot):
-   Math.min(cap-start,Math.round(beat*.49*sr));
-  const available=Math.max(1,Math.min(cap-start,Math.round(budget*(rap?.87:.9))));
-  const note=findGuide(plan,entry.time+start/sr);
-  const section=plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end);
-  const hook=["hook","chorus"].includes(section?.name);
-  const tuneStrength=harmonize?.94:rap?(hook?.70:.17):.60;
-  const opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
+ const slots=planDelivery(text,plan,entry,sr);
+ const rap=slots.some(s=>s.rap);
+ if(!slots.length)return new Float32Array(0);
+ const cap=rap?Math.max(1,Math.round((entry.barEnd-entry.time)*sr)):
+  Math.max(1,Math.min(Math.round(sr*8),Math.round((plan.duration-entry.time)*sr)));
+ const section=plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end);
+ const hook=["hook","chorus"].includes(section?.name);
+ const tuneStrength=harmonize?.96:rap?(hook?.70:.16):.61;
+ const out=new Float32Array(cap);
+ for(let i=0;i<slots.length;i++){
+  const slot=slots[i],opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
    pitch:identity.base,rate:identity.rate,formantShift:identity.formant,
-   vibrato:rap?.0018:.004,mode,referenceHz:55,tuning:plan.tuning,
-   guideHz:note?(harmonize?note.harmonyHz:note.hz):undefined,
-   tuneStrength,targetSamples:available};
-  const samples=buildWord(words[i],opts,rng);
-  scheduled.push({start,samples});end=Math.max(end,start+samples.length);
+   vibrato:rap?.0015:.004,mode,referenceHz:55,tuning:plan.tuning,
+   melody:slot.pitches.map(p=>p?(harmonize?p.harmonyHz:p.hz):null),
+   guideHz:slot.pitches.find(Boolean)?.[harmonize?"harmonyHz":"hz"],
+   tuneStrength,targetSamples:slot.length,rap,accent:slot.accent};
+  const pcm=buildWord(slot.word,opts,rng);
+  for(let k=0;k<pcm.length&&slot.start+k<cap;k++)out[slot.start+k]+=pcm[k];
  }
- const out=new Float32Array(Math.max(1,Math.min(cap,rap?cap:end+Math.round(sr*.04))));
- for(const {start,samples} of scheduled)
-  for(let i=0;i<samples.length&&start+i<out.length;i++)out[start+i]+=samples[i];
- // Soft saturation only, with controlled output. No 2x-3x monster drive.
- for(let i=0;i<out.length;i++)out[i]=Math.tanh(out[i]*1.06)*.86;
+ // Preserve stop attacks and intelligible dry consonants; ceiling only.
+ for(let i=0;i<out.length;i++)out[i]=Math.tanh(out[i]*1.045)*.94;
  return out;
 }
 function writeDelay(bus,start,segment,amplitude,pan,sr,delay){
