@@ -59,22 +59,18 @@ export function quantizeVoiceTime(time,sections=[],breaks=[],duration=60,form="s
 
 export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,voiceIdentity){
  if(!plan.withVox)return [];
- const r=rngFor(plan.seed+"|speech-arrangement-v2"),lang=plan.language;
+ const r=rngFor(plan.seed+"|speech-arrangement-v2"+(plan.lyricsVariant?"|variant:"+plan.lyricsVariant:"")),lang=plan.language;
  const provided=String(plan.lyricsText||"").split(/\n+/).map(s=>s.trim().slice(0,180)).filter(Boolean).slice(0,64);
  if(plan.style==="hiphop"){
-  // One original line per 4/4 bar, with the final rhyming word exactly on
-  // beat four. AABB / ABAB alternate per four-line stanza.
-  const bpm=plan.bpm||94,beat=60/bpm,bar=4*beat;
-  const starts=bar; // instrumental count-in
-  const count=Math.max(1,Math.min(22,Math.floor((plan.duration-starts-.08)/bar)));
-  const voices=[];let stanza=[];const usedRap=new Set();
+  // Scores explicitly mark instrumentals and breakdowns as vocal rests.
+  const beat=60/(plan.bpm||94);
+  const active=(plan.sections||[]).filter(s=>s.voice&&s.name!=="outro"&&s.end>s.start+beat);
+  const count=Math.min(42,active.length),voices=[],usedRap=new Set();
+  let stanza=[];
   for(let i=0;i<count;i++){
    if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4),plan.concept);
-   const phrase=stanza[i%4];
-   const custom=provided.length?provided[i%provided.length]:null;
+   const phrase=stanza[i%4],custom=provided.length?provided[i%provided.length]:null;
    let finalText=custom||phrase.text;
-   // Avoid accidental full-line duplicates in procedural verses, while
-   // permitting intentional repetition when the author supplied lyrics.
    if(!custom&&usedRap.has(finalText)){
     const lead=lang==="it"?["Adesso","Ancora","Da lontano","Stavolta","Senza tregua"]:
      ["Now","Again","From afar","Tonight","This time"];
@@ -85,18 +81,19 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
     if(usedRap.has(finalText))finalText="Ancora "+(i+1)+", "+base;
    }
    usedRap.add(finalText);
-   const endWord=custom?(custom.match(/[\p{L}\p{N}]+(?=[^\p{L}\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
-   const time=starts+i*bar;
+   const endWord=custom?(custom.match(/[\\p{L}\\p{N}]+(?=[^\\p{L}\\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
+   const section=active[i],time=section.start;
    const voice=voiceIdentity(r,plan.mood,plan.concept);
    voices.push({time:+time.toFixed(3),rhymeTime:+(time+beat*3).toFixed(3),
-    barEnd:+Math.min(plan.duration,time+bar).toFixed(3),
-    text:finalText,rhymeWord:endWord,
-    rhymeFamily:phrase.family,scheme:phrase.scheme,
-    form:"rap",delivery:"hiphop",language:lang,
+    barEnd:+Math.min(plan.duration,section.end).toFixed(3),bar:section.bar,
+    text:finalText,rhymeWord:endWord,rhymeFamily:phrase.family,scheme:phrase.scheme,
+    form:"rap",delivery:"hiphop",language:lang,section:section.name,
+    emphasis:section.name==="hook"?.9:.52,restBefore:i===0||section.bar-active[i-1].bar>1,
     mood:plan.mood,concept:plan.concept,voice});
   }
   return voices;
  }
+
  const lines=CLAUSES[lang]||CLAUSES.en,bank=languagePacks[lang]||languagePacks.en;
  const terms=TERMS[lang]||(conceptTerms[lang]||conceptTerms.en).split("|");
  const count=Math.max(1,Math.min(14,Math.floor(plan.duration/(6+r()*6))));

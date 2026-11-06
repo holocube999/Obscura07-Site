@@ -43,43 +43,79 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
  const barsize=(meter,tempo)=>meter*60/tempo;
  const progression=[0,3,4,1,5,2,3,0],shape=["intro","verse","build","drop","bridge","breakdown","return","outro"];
  if(plan.style==="hiphop"){
-  // Stable 4/4 bars and swung sixteenth hats, with classic half-time snare
-  // backbeat on beats 2 & 4. The verse generator uses these exact bar starts.
-  const beat=60/plan.bpm,bar=4*beat;
-  const n=Math.ceil(plan.duration/bar);
+  // A fixed structural score with real instrumental interludes, verse gaps,
+  // groove cuts, pre-drop stops and accented returns. No generic density dice.
+  const beat=60/plan.bpm,bar=4*beat,n=Math.ceil(plan.duration/bar);
   const chord=[0,3,5,4,2,3,0,4];
+  const middleShort=n<11;
   for(let index=0;index<n;index++){
    const start=index*bar,end=Math.min(plan.duration,start+bar);
-   const label=index===0?"intro":index>n-3?"outro":index%8===0?"hook":"verse";
-   const bass=chord[Math.floor(index/2)%chord.length];
+   let label;
+   if(middleShort){
+    label=index===0?"intro":index===n-1?"outro":
+     index===Math.max(2,n-4)?"instrumental":
+     index>=Math.max(3,n-3)?"hook":"verse";
+   }else{
+    const phase=index%16;
+    label=index===0?"intro":index>=n-2?"outro":
+     phase===5||phase===6?"instrumental":
+     phase===13?"breakdown":
+     phase===7||phase===8||phase===14||phase===15?"hook":"verse";
+   }
+   const vocal=label==="verse"||label==="hook";
+   const pickup=label==="hook"&&(index===0||!["hook","verse"].includes(sections.at(-1)?.name));
    sections.push({name:label,start:+start.toFixed(4),end:+end.toFixed(4),
-    bpm:plan.bpm,meter:4,triplets:index%4===3});
-   mk("bass",start,Math.min(bar*.95,end-start),bass-scale.length,
-      .14+.08*plan.intensity,0);
-   mk("pad",start,Math.min(bar*.99,end-start),bass,
-      .055+.027*plan.intensity,-.18);
-   mk("pad",start,Math.min(bar*.9,end-start),bass+2,
-      .044+.024*plan.intensity,.28);
+    bpm:plan.bpm,meter:4,triplets:index%4===3,voice:vocal,bar:index,accent:pickup});
+   // Stop the entire instrumental 3/4 beat before a hook or when the
+   // breakdown hits. RenderPCM applies a short safety fade around each cut.
+   const nextShort=middleShort?index+1>=Math.max(3,n-3):
+    [7,14,15].includes((index+1)%16);
+   if(label==="instrumental"&&nextShort&&index+1<n-1){
+    const cutStart=Math.max(start,end-beat*(.65+.12*r()));
+    breaks.push({start:+cutStart.toFixed(4),end:+(end-.028).toFixed(4),kind:"pre-drop"});
+   }
+   if(label==="breakdown"){
+    breaks.push({start:+start.toFixed(4),end:+Math.min(end,start+beat*1.1).toFixed(4),kind:"stop"});
+   }
+   const bass=chord[Math.floor(index/2)%chord.length];
+   const level=label==="intro"?.55:label==="outro"?.59:
+    label==="breakdown"?.46:label==="instrumental"?.77:
+    label==="hook"?1.16:1;
+   const attack=pickup?1.42:1;
+   mk("bass",start,Math.min(bar*.91,end-start),bass-scale.length,
+      (.14+.08*plan.intensity)*level*attack,0);
+   mk("pad",start,Math.min(bar*.94,end-start),bass,
+      (.049+.02*plan.intensity)*level,-.18);
+   mk("pad",start,Math.min(bar*.89,end-start),bass+2,
+      (.039+.02*plan.intensity)*level,.28);
+   // Insert musical silence at selected internal beats. An instrumental
+   // interlude still has rhythmic motion, unlike a full-track dropout.
    for(let k=0;k<4;k++){
-    const t=start+k*beat;
-    if(t>=end)break;
-    if(k===0||k===2||((index+k)%7===0))
-     mk("kick",t,.3,0,.28+.14*plan.intensity,0);
-    if(k===1||k===3)mk("snare",t,.18,0,.18+.075*plan.intensity,0);
-    if(k===0||k===2)mk("chipbass",t,beat*.9,bass-scale.length,
-      .075+.045*plan.intensity,-.1);
+    const t=start+k*beat;if(t>=end)break;
+    const hold=label==="breakdown"&&k===0;
+    const stopBeat=label==="verse"&&index%4===3&&k===3;
+    if(hold||stopBeat)continue;
+    if(k===0||k===2||pickup||((index+k)%7===0)){
+     mk("kick",t,.25,0,(.24+.15*plan.intensity)*level*(k===0?attack:1),0);
+    }
+    if(k===1||k===3)mk("snare",t,.16,0,
+      (.16+.07*plan.intensity)*level*(pickup?1.16:1),0);
+    if(k===0||k===2)mk("chipbass",t,beat*.73,bass-scale.length,
+      (.075+.04*plan.intensity)*level,-.1);
+    // Nonrepetitive swung hi-hats with deliberate gaps and rolls.
     for(let j=0;j<4;j++){
-     // Deterministic swing: late offbeat sixteenths follow the groove.
-     const shifted=j%2?beat*.045:0,hit=t+j*beat/4+shifted;
-     if(hit>=end||r()>.85)continue;
-     mk("hat",hit,.045,0,.02+.014*plan.intensity,pan());
+     const shifted=j%2?beat*.055:0,hit=t+j*beat/4+shifted;
+     if(hit>=end||r()>(label==="instrumental"?.72:.77))continue;
+     mk("hat",hit,.041,0,(.013+.013*plan.intensity)*level,pan());
     }
    }
-   if(index%2===1){
-    for(let k=0;k<4;k++){
-     const t=start+k*beat;
-     if(t<end)mk("bell",t,beat*.68,bass+(k%3),
-       .023+plan.intensity*.022,pan());
+   const melodic=label==="instrumental"||label==="hook"||index%2===1;
+   if(melodic){
+    const notes=label==="instrumental"?5:4;
+    for(let k=0;k<notes;k++){
+     const t=start+k*bar/notes;
+     if(t<end)mk("bell",t,beat*.55,bass+((k+index)%3),
+       (.026+plan.intensity*.017)*level,pan());
     }
    }
   }

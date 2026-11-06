@@ -62,6 +62,12 @@ export function synthesizeWord(text,opts,rng){
  const melodyTarget=p=>contour[p.syllable]||guide;
  let smoothHz=fundamental;
  const spectral=opts.mode==="radio"?.94:opts.mode==="air"?1.03:1;
+ const phrasing=C(Number.isFinite(opts.energy)?opts.energy:1,.45,1.4);
+ const inflect=C(Number.isFinite(opts.inflection)?opts.inflection:0,-.15,.15);
+ const breathiness=C(Number.isFinite(opts.breathiness)?opts.breathiness:.075,.01,.20);
+ const grain=C(Number.isFinite(opts.grain)?opts.grain:0,0,.3);
+ const phaseVoice=rng()*TAU;
+ const wordAttack=opts.accent?1.14:1;
  const state=[filter(),filter(),filter()];
  let phase=rng(),prevNoise=0,prevSaw=0,low=0,dcPrevX=0,dcPrevY=0,at=0;
  for(let k=0;k<phones.length;k++){
@@ -77,14 +83,18 @@ export function synthesizeWord(text,opts,rng){
     const hz=formants(p,previous,next,u).map(f=>f*formantShift);
     co=[coeff(hz[0],4.6,sr),coeff(hz[1],5.6,sr),coeff(hz[2],7.2,sr)];
    }
-   const goal=base*Math.pow(C(melodyTarget(p),65,390)/base,tune);
+   const accent=(p.stressed?.020:0)+inflect*(.5-u);
+    const phrasePitch=1+accent+(opts.rap?.006:.012)*Math.sin(TAU*1.4*sample/sr+phaseVoice);
+    const goal=base*Math.pow(C(melodyTarget(p),65,390)/base,tune)*phrasePitch;
    // A 15-ms portamento between syllables, but no formant transposition.
    smoothHz+=(goal-smoothHz)*C(1/(sr*.015),.00001,.30);
    const rate=C(smoothHz*(1+(p.stressed?.019:0) + (u-.5)*.013+
     (opts.vibrato||0)*Math.sin(TAU*4.6*sample/sr)),55,420)/sr;
    phase+=rate;if(phase>=1)phase-=Math.floor(phase);
    const saw=2*phase-1-blep(phase,rate);
-   const excitation=(saw-prevSaw*.65)*.83;
+   // Rounded glottal wave and a little periodic irregularity prevent rigid buzz.
+   const glottal=Math.sin(Math.PI*phase)**2*(phase<.66?1:.33);
+   const excitation=(.49*(saw-prevSaw*.65)+.64*(glottal-.31))*.83;
    prevSaw=saw;
    const rawNoise=rng()*2-1;
    prevNoise=prevNoise*.72+rawNoise*.28;
@@ -92,7 +102,8 @@ export function synthesizeWord(text,opts,rng){
    const y1=bandpass(excitation,state[0],co[0]),
     y2=bandpass(excitation,state[1],co[1]),
     y3=bandpass(excitation,state[2],co[2]);
-   let vocal=(1.4*y1+.96*y2+.54*y3+excitation*.055)*spectral;
+   let vocal=(1.4*y1+.96*y2+.54*y3+excitation*.055)*spectral+
+    hiss*breathiness*(p.kind==="vowel"?1:.45);
    if(p.kind==="nasal")vocal=(1.1*y1+.32*y2+.08*y3)*.78;
    if(p.sym==="r")vocal*=.67+.33*Math.sin(TAU*24*sample/sr)**2;
    if(p.sym==="l"||p.sym==="ly")vocal*=.87;
@@ -106,11 +117,13 @@ export function synthesizeWord(text,opts,rng){
    }
    if(p.sym==="h")signal+=hiss*.13;
    const edge=C(i/(sr*.0025),0,1)*C((count-i-1)/(sr*.003),0,1);
-   const stressedGain=p.stressed?1.08:1;
+   const stressedGain=(p.stressed?1.15:.96)*phrasing*wordAttack;
+   const contourEnv=(.88+.12*Math.sin(Math.PI*u))*(1-.10*u);
+   signal+=grain*(rng()*2-1)*.025;
    low=low*.16+signal*.84;
    // DC-block and soft headroom: preserve transients and consonant contrast.
    const high=low-dcPrevX+.995*dcPrevY;dcPrevX=low;dcPrevY=high;
-   out[sample]=Math.tanh(high*1.30)*edge*stressedGain*.85;
+   out[sample]=Math.tanh(high*1.13)*edge*stressedGain*contourEnv*.81;
   }
   at+=count;
  }

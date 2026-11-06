@@ -111,10 +111,11 @@ export function makePlan(options={}){
  const {events,sections,breaks}=organizeArrangement({seed,style,bpm,duration,form},
   arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity,form},tuning,root,rngFor,pitch));
  const vocalGuide=createVocalGuide({seed,style,bpm,duration,events},rngFor);
- const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,form,withVox,breaks,sections,vocalGuide,context:String(options.extraText||"").slice(0,3200),lyricsText:String(options.lyricsText||"").slice(0,3200)},
+ const lyricsVariant=Math.max(0,Math.min(9999,Math.floor(Number(options.lyricsVariant)||0)));
+ const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,form,withVox,breaks,sections,vocalGuide,lyricsVariant,context:String(options.extraText||"").slice(0,3200),lyricsText:String(options.lyricsText||"").slice(0,3200)},
    LANGUAGE_PACKS,CONCEPT_TERMS,CONCEPTS,rngFor,voiceIdentity);
  return {version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,
-  artist,title,tuning:tuning.name,form,events,sections,breaks,vocalGuide,voices};
+  artist,title,tuning:tuning.name,form,events,sections,breaks,vocalGuide,lyricsVariant,voices};
 }
 function renderEvent(channels,event,sr,seed){
  const L=channels[0],R=channels[1],from=Math.max(0,Math.floor(event.time*sr)),count=Math.min(Math.ceil(event.length*sr),L.length-from),f=event.freq,amp=event.amp;

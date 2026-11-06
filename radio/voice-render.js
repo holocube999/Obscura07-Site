@@ -47,12 +47,17 @@ function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=f
   Math.max(1,Math.min(Math.round(sr*8),Math.round((plan.duration-entry.time)*sr)));
  const section=plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end);
  const hook=["hook","chorus"].includes(section?.name);
- const tuneStrength=harmonize?.96:rap?(hook?.70:.16):.61;
+ const tuneStrength=harmonize?.90:rap?(hook?.60:.12):.52;
  const out=new Float32Array(cap);
  for(let i=0;i<slots.length;i++){
-  const slot=slots[i],opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
+  const slot=slots[i],accent=entry.emphasis??.5;
+  const expressive=Math.sin((i+1)*1.33+index*.83);
+  const opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
+   energy:clamp(.82+accent*.22+expressive*.075,.65,1.22),
+   inflection:clamp((i===0?.025:0)+(slot.accent?-.023:0)+expressive*.016,-.065,.065),
+   breathiness:rap?.055:.095,grain:rap?.03:.06,
    pitch:identity.base,rate:identity.rate,formantShift:identity.formant,
-   vibrato:rap?.0015:.004,mode,referenceHz:55,tuning:plan.tuning,
+   vibrato:rap?.0010:.0035,mode,referenceHz:55,tuning:plan.tuning,
    melody:slot.pitches.map(p=>p?(harmonize?p.harmonyHz:p.hz):null),
    guideHz:slot.pitches.find(Boolean)?.[harmonize?"harmonyHz":"hz"],
    tuneStrength,targetSamples:slot.length,rap,accent:slot.accent};
@@ -94,16 +99,16 @@ export function renderVocalBus(plan,{sampleRate=22050}={}){
   if(!phrase.length)continue;
   let energy=0;for(let i=0;i<phrase.length;i++)energy+=phrase[i]*phrase[i];
   const rms=Math.sqrt(energy/phrase.length);
-  const gain=Math.min(1.25,.18/Math.max(.008,rms));
+  const gain=Math.min(1.25,.18/Math.max(.008,rms))*(entry.section==="hook"?1.08:entry.restBefore?1.06:.95);
   const beat=60/clamp(plan.sections?.find(s=>position>=s.start&&position<s.end)?.bpm||plan.bpm||100,35,230);
   writeDelay(bus,position,phrase,gain*.92,0,sr,0); // intelligible mono center
   if(isRap){
    // Quiet double-track and tasteful 1/8 note/slap echoes; consonants retain
    // their original pitch/speed (unlike old resampling-based chorusing).
-   writeDelay(bus,position,phrase,gain*.115,-.42,sr,.014);
-   writeDelay(bus,position,phrase,gain*.115,.42,sr,.021);
-   writeDelay(bus,position,phrase,gain*.09,-.34,sr,beat*.5);
-   writeDelay(bus,position,phrase,gain*.053,.34,sr,beat);
+   writeDelay(bus,position,phrase,gain*.085,-.42,sr,.014);
+   writeDelay(bus,position,phrase,gain*.085,.42,sr,.021);
+   writeDelay(bus,position,phrase,gain*.063,-.34,sr,beat*.5);
+   writeDelay(bus,position,phrase,gain*.034,.34,sr,beat);
   }else{
    writeDelay(bus,position,phrase,gain*.13,-.5,sr,.017);
    writeDelay(bus,position,phrase,gain*.13,.5,sr,.025);

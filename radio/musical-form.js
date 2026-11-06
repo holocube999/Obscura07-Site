@@ -28,6 +28,7 @@ export function organizeArrangement(plan,arranged){
  const template=templates[style]||templates.default;
  for(const section of sections){
   const p=clamp(section.start/duration,0,.999);
+  if(style==="hiphop")continue; // Keep explicit score sections and vocal rests.
   section.name=form==="drone"?(p<.12?"rise":p>.86?"dissolve":"evolve"):
    form==="loop"?"cycle":form==="loopable"?(p<.2?"groove":p>.8?"return":"variation"):
    form==="abstract"?(p>.9?"decay":"fragment"):
