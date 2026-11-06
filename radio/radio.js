@@ -2,7 +2,8 @@
    Browser ES module. No server, telemetry, samples, npm or CDN. */
 import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
 import {composeVoices} from "./lyrics.js";
-export const VERSION="0.2.0";
+import {chooseMusicalForm,organizeArrangement,createVocalGuide,applyMusicalEnding} from "./musical-form.js";
+export const VERSION="0.3.0";
 export const SAMPLE_RATE=22050;
 export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse",...EXTRA_STYLES];
 export const MOODS=["liminal","euphoric","melancholic","nocturnal","hypnotic","curious","serene","alien","nostalgic","ominous","weightless","electric"];
@@ -105,11 +106,14 @@ export function makePlan(options={}){
  const title=select(r,TITLES_A)+" "+select(r,TITLES_B);
  const root=[41.2,43.65,48.999,55,61.735,65.406,73.416,82.407,98][Math.floor(r()*9)];
  // Arrangement is deterministic for a given recipe; style indices 0–8 remain compatible.
- const {events,sections,breaks}=arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity},tuning,root,rngFor,pitch);
- const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,withVox,breaks,sections,context:String(options.extraText||"").slice(0,3200)},
+ const form=chooseMusicalForm(seed,style,rngFor);
+ const {events,sections,breaks}=organizeArrangement({seed,style,bpm,duration,form},
+  arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity,form},tuning,root,rngFor,pitch));
+ const vocalGuide=createVocalGuide({seed,style,bpm,duration,events},rngFor);
+ const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,form,withVox,breaks,sections,vocalGuide,context:String(options.extraText||"").slice(0,3200),lyricsText:String(options.lyricsText||"").slice(0,3200)},
    LANGUAGE_PACKS,CONCEPT_TERMS,CONCEPTS,rngFor,voiceIdentity);
  return {version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,
-  artist,title,tuning:tuning.name,events,sections,breaks,voices};
+  artist,title,tuning:tuning.name,form,events,sections,breaks,vocalGuide,voices};
 }
 function renderEvent(channels,event,sr,seed){
  const L=channels[0],R=channels[1],from=Math.max(0,Math.floor(event.time*sr)),count=Math.min(Math.ceil(event.length*sr),L.length-from),f=event.freq,amp=event.amp;
@@ -199,7 +203,7 @@ export function renderPCM(plan,sampleRate=SAMPLE_RATE){
  const sr=whole(sampleRate,16000,48000,SAMPLE_RATE),n=Math.ceil(plan.duration*sr);
  const channels=[new Float32Array(n),new Float32Array(n)];
  for(const ev of plan.events)renderEvent(channels,ev,sr,plan.seed);
- if(plan.withVox)for(const v of plan.voices)renderVox(channels,v,sr);
+ // Vocal audio is rendered exclusively in voice-render.js, not doubled in the music bus.
  const dl=Math.max(1,Math.floor(sr*.18)),dr=Math.max(1,Math.floor(sr*.263));
  const L=channels[0],R=channels[1];let m=0;
  for(let i=0;i<n;i++){
@@ -211,6 +215,7 @@ export function renderPCM(plan,sampleRate=SAMPLE_RATE){
  for(let i=0;i<n;i++){L[i]=Math.tanh(L[i]*gain*.91);R[i]=Math.tanh(R[i]*gain*.91);}
  applyArrangementBreaks(channels,plan.breaks,sr);
  watermark(channels,plan.seed,sr);
+ applyMusicalEnding(channels,plan,sr);
  return {channels,sampleRate:sr,plan};
 }
 export function pcmToWav(audio){

@@ -96,8 +96,9 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
    if(length>.09){breaks.push({start:+time.toFixed(4),end:+(time+length).toFixed(4)});time+=length;}
   }
   if(time>=plan.duration-.05)break;
-  const meter=choose(r,plan.style==="techno"||plan.style==="punk"?[4,4,4,4,3,5]:[3,4,4,4,5,7]);
-  const tempo=Math.round(clip(plan.bpm*(.79+r()*.4)*(label==="drop"?1.11:label==="breakdown"?.87:1),35,230));
+  const loose=["glitch","ritual","xenodrone","darkambient"].includes(plan.style);
+  const meter=loose?choose(r,[3,4,4,4,5,7]):["medieval","harpsichord"].includes(plan.style)?choose(r,[3,4,4,4]):4;
+  const tempo=loose?Math.round(clip(plan.bpm*(.91+r()*.18),35,230)):plan.bpm;
   const beat=60/tempo,bar=barsize(meter,tempo);
   const bars=s===0?1:1+Math.floor(r()*3);
   const end=Math.min(plan.duration,time+bar*bars);
