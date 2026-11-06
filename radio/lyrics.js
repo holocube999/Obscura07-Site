@@ -67,12 +67,24 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   const bpm=plan.bpm||94,beat=60/bpm,bar=4*beat;
   const starts=bar; // instrumental count-in
   const count=Math.max(1,Math.min(22,Math.floor((plan.duration-starts-.08)/bar)));
-  const voices=[];let stanza=[];
+  const voices=[];let stanza=[];const usedRap=new Set();
   for(let i=0;i<count;i++){
    if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4),plan.concept);
    const phrase=stanza[i%4];
    const custom=provided.length?provided[i%provided.length]:null;
-   const finalText=custom||phrase.text;
+   let finalText=custom||phrase.text;
+   // Avoid accidental full-line duplicates in procedural verses, while
+   // permitting intentional repetition when the author supplied lyrics.
+   if(!custom&&usedRap.has(finalText)){
+    const lead=lang==="it"?["Adesso","Ancora","Da lontano","Stavolta","Senza tregua"]:
+     ["Now","Again","From afar","Tonight","This time"];
+    const base=phrase.text.charAt(0).toLowerCase()+phrase.text.slice(1);
+    let variant=0;
+    do{finalText=lead[(i+variant)%lead.length]+", "+base;variant++;}
+    while(usedRap.has(finalText)&&variant<lead.length);
+    if(usedRap.has(finalText))finalText="Ancora "+(i+1)+", "+base;
+   }
+   usedRap.add(finalText);
    const endWord=custom?(custom.match(/[\p{L}\p{N}]+(?=[^\p{L}\p{N}]*$)/u)||[])[0]||phrase.rhymeWord:phrase.rhymeWord;
    const time=starts+i*bar;
    const voice=voiceIdentity(r,plan.mood,plan.concept);
