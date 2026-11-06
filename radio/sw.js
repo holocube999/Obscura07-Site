@@ -35,7 +35,7 @@ self.addEventListener("fetch",event=>{
  if(url.origin!==self.location.origin||
     !url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
  const isCode=["script","worker","style"].includes(request.destination||"")||
-  /\\.(?:js|css)$/.test(url.pathname);
+  /\.(?:js|css)$/.test(url.pathname);
  const network=()=>fetch(request).then(response=>{
   if(response.ok&&["script","style","document","worker",""].includes(request.destination||"")){
    const copy=response.clone();
