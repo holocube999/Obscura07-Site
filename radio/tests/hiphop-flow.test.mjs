@@ -4,6 +4,7 @@ import fs from "node:fs";
 import {makePlan,renderPCM} from "../radio.js";
 import {createSongLink,shareTargets} from "../share.js";
 import {renderVocalBus} from "../voice-render.js";
+import {mount} from "../widget.js";
 const RECIPE="R1.xuoa5r-u6wejo.i.7.a.1.1.30.1b.ef.1";
 test("47-second uploaded hip-hop recipe has multiple consecutive silent-vocal bars and stops",()=>{
  const p=makePlan({seed:RECIPE});
@@ -18,8 +19,8 @@ test("47-second uploaded hip-hop recipe has multiple consecutive silent-vocal ba
 });
 test("pre-drop break is physically silent, and mid interlude has no vocal samples",()=>{
  const p=makePlan({seed:RECIPE});
- const audio=renderPCM(p,8000),br=p.breaks.find(b=>b.kind==="pre-drop");
- const from=Math.ceil((br.start+.035)*8000),to=Math.floor((br.end-.035)*8000);
+ const audio=renderPCM(p,16000),br=p.breaks.find(b=>b.kind==="pre-drop");
+ const from=Math.ceil((br.start+.035)*audio.sampleRate),to=Math.floor((br.end-.035)*audio.sampleRate);
  for(const channel of audio.channels){
   let max=0;for(let i=from;i<to;i++)max=Math.max(max,Math.abs(channel[i]));
   assert.ok(max<.001,"stop "+max);
@@ -52,4 +53,8 @@ test("replay link preserves Unicode verses and social targets",()=>{
  assert.match(ui,/rnr-generate-lyrics/);
  const sw=fs.readFileSync(new URL("../sw.js",import.meta.url),"utf8");
  assert.match(sw,/isCode/);
+});
+
+test("widget module parses and exposes the mounted browser API",()=>{
+ assert.equal(typeof mount,"function");
 });
