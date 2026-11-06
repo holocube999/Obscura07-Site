@@ -10,6 +10,7 @@ import {applyMusicalEnding} from "./musical-form.js";
 import {phonemesFromText} from "./phonology.js";
 import {synthesizeWord} from "./articulatory-dsp.js";
 import {planDelivery} from "./vocal-director.js";
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 function hash(seed){
  let h=2166136261;
  for(const ch of String(seed)){h=Math.imul(h^ch.charCodeAt(0),16777619)}
