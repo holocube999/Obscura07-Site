@@ -322,11 +322,11 @@ function showDetail(repo,explicit=null){
   publicLink.target='_blank';publicLink.rel='noopener noreferrer';
  }
  for(const b of $('viewModes').querySelectorAll('[data-view]')){
-  const available=item.viewer_type==='web_js'||item.viewer_type==='amiga_media'||b.dataset.view==='source';
+  const available=item.viewer_type==='web_js'||item.viewer_type==='amiga_media'||item.repo==='PocketJS-NativeServer'||b.dataset.view==='source';
   b.disabled=!available;
  }
  presentMode(explicit?.mode==='source'?'source':item.viewer_type==='amiga_media'?'original':
-  ['archive','native'].includes(item.viewer_type)?'source':'js');
+  (item.viewer_type==='archive'||(item.viewer_type==='native'&&item.repo!=='PocketJS-NativeServer'))?'source':'js');
  emptyFrame();showFrame();updateSync();
  if(view==='source')githubSource();
  else if(view==='js'){
