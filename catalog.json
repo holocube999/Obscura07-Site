@@ -446,12 +446,12 @@
       "repo": "OBSCURA-TUNNEL",
       "title": "OBSCURA/TUNNEL · Trasferimento P2P",
       "kind": "Utility",
-      "description": "Trasferimento WebRTC diretto con segnalazione manuale e verifica SHA-256. Client HTTPS verificato: QR, presenza, file e cartelle.",
-      "published": true,
-      "url": "transfer/index.html",
+      "description": "Trasferimento WebRTC diretto con segnalazione manuale e verifica SHA-256. Build privata GitHub caricata nel WebPlayer con bridge QR/camera e verifica SHA-256.",
+      "published": false,
+      "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "visibility": "public-client"
+      "visibility": "private"
     },
     {
       "id": "VIC20-Bible",
