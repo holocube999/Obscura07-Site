@@ -63,9 +63,33 @@ function bandProfile(band,lang,pack){
  year:1980+Math.floor(r()*46)};
 }
 const FOREIGN={
- fr:{intro:["Vous écoutez Random Null Radio","Un nouveau morceau arrive"],bio:["Un groupe venu de","Ils créent de la musique pour"],joke:["Notre technicien a encore perdu la fréquence."],ad:"Publicité fictive",call:"Appel fictif",news:"Selon"},
- es:{intro:["Escuchas Random Null Radio","Llega otra canción"],bio:["Un grupo nacido en","Hacen música para"],joke:["El técnico dice que todo funciona. Qué sospechoso."],ad:"Anuncio ficticio",call:"Llamada ficticia",news:"Según"},
- de:{intro:["Hier ist Random Null Radio","Gleich kommt ein neuer Titel"],bio:["Eine Band aus","Sie machen Musik, um"],joke:["Unser Techniker sagt, alles funktioniert. Verdächtig."],ad:"Erfundene Werbung",call:"Erfundener Anruf",news:"Laut"}
+ fr:{
+  intro:["Vous écoutez Random Null Radio","Un nouveau morceau arrive","Gardons la fréquence ouverte"],
+  bio:["Un groupe venu de","Ils enregistrent près de","Ils se sont rencontrés dans"],
+  origin:["une ancienne station de radio","une ville au bord de la mer","un laboratoire souterrain","un quartier industriel","un observatoire isolé"],
+  reason:["transformer le bruit en mélodie","explorer des fréquences impossibles","faire danser les ombres"],
+  joke:["Notre technicien a encore perdu la fréquence.","La radio fonctionne. C'est presque inquiétant."],
+  ads:["Antennes Lunaires, même les fantômes vous captent.","Café Nébuleuse, une tasse pour les nuits étranges."],
+  calls:["J'adore cette musique, mes voisins aussi maintenant.","Votre émission vient de sauver ma soirée."],
+  ad:"Publicité fictive",call:"Appel fictif",news:"Selon"},
+ es:{
+  intro:["Escuchas Random Null Radio","Llega otra canción","Seguimos en una frecuencia imposible"],
+  bio:["Un grupo nacido en","Se conocieron cerca de","Graban sus canciones en"],
+  origin:["una radio abandonada","un pueblo junto al mar","un laboratorio subterráneo","un barrio industrial","un observatorio de montaña"],
+  reason:["convertir ruido en melodía","explorar frecuencias imposibles","hacer bailar a las sombras"],
+  joke:["El técnico dice que todo funciona. Qué sospechoso.","No sabemos adónde va la señal, pero suena bien."],
+  ads:["Antenas Lunares, para señales imposibles.","Café Nebulosa, para noches sin reloj."],
+  calls:["Me encanta esta canción, ¡subid el volumen!","Este grupo me ha alegrado la noche."],
+  ad:"Anuncio ficticio",call:"Llamada ficticia",news:"Según"},
+ de:{
+  intro:["Hier ist Random Null Radio","Gleich kommt ein neuer Titel","Wir bleiben auf dieser seltsamen Frequenz"],
+  bio:["Eine Band aus","Sie trafen sich in","Ihre Aufnahmen stammen aus"],
+  origin:["einem verlassenen Radiosender","einer kleinen Küstenstadt","einem unterirdischen Labor","einem Industrieviertel","einer abgelegenen Sternwarte"],
+  reason:["Lärm in Melodien verwandeln","unmögliche Frequenzen erforschen","die Schatten tanzen lassen"],
+  joke:["Unser Techniker sagt, alles funktioniert. Verdächtig.","Das Signal ist klar, unser Plan nicht."],
+  ads:["Mondantennen, für unmögliche Signale.","Nebelkaffee, für die ganz langen Nächte."],
+  calls:["Großartige Musik, meine Nachbarn hören jetzt mit.","Diese Band hat meinen Abend gerettet."],
+  ad:"Erfundene Werbung",call:"Erfundener Anruf",news:"Laut"}
 };
 export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[],forcedType=null}={}){
  const r=randomFor(seed+"|"+(previous?.seed||"")+"|"+(next?.seed||"")+"|DJ07");
@@ -82,7 +106,7 @@ export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[]
  if(type==="news"&&!news.length)return null;
  const band=String(next?.artist||"Random Null").slice(0,100),
   title=String(next?.title||"Unknown Transmission").slice(0,100);
- const profile=bandProfile(band,language,pack),pick=a=>choose(r,a);
+ const profile=bandProfile(band,language,foreign?{...pack,origin:foreign.origin,reason:foreign.reason}:pack),pick=a=>choose(r,a);
  let text="",persona={...host,emotion:"warm",stumble:0},segments=null,article=null;
  if(type==="intro"){
   if(foreign)text=pick(foreign.intro)+". "+band+", "+title+".";
@@ -100,7 +124,8 @@ export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[]
    text=pick(variants)();
   }
  }else if(type==="bio"){
-  if(foreign)text=band+". "+pick(foreign.bio)+" "+profile.origin+".";
+  if(foreign)text=band+". "+pick(foreign.bio)+" "+profile.origin+". "+
+  pick(foreign.intro)+".";
   else if(language==="it")text=pick(BIO_QUESTIONS)(band,profile);
   else {
    const choices=[
@@ -116,15 +141,22 @@ export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[]
   text=foreign?pick(foreign.joke):pick(pack.jokes);
   persona={...persona,emotion:r()>.5?"sarcastic":"grumpy"};
  }else if(type==="advertisement"){
-  text=foreign?foreign.ad+". "+pick(WORDS.en.ads):pick(pack.ads);
+  text=foreign?foreign.ad+": "+pick(foreign.ads):pick(pack.ads);
  }else if(type==="caller"){
-  const fan=foreign?foreign.call+". "+pick(WORDS.en.calls):pack.fanLabel+". "+pick(pack.calls);
+  const fan=foreign?foreign.call+": "+pick(foreign.calls):pack.fanLabel+". "+pick(pack.calls);
   const intro=language==="it"?"C'è una telefonata immaginaria in linea. Pronto?":
+   language==="fr"?"Un appel fictif à l'antenne. Allô?":
+   language==="es"?"Tenemos una llamada ficticia. ¿Hola?":
+   language==="de"?"Ein erfundener Anruf. Hallo?":
    "We have a fictional caller on the line. Hello?";
   segments=[
    {text:intro,persona:{...host,emotion:"curious",stumble:0}},
    {text:fan,persona:{...caller,emotion:"excited"}},
-   {text:language==="it"?"Grazie per la chiamata, torniamo alla musica.":"Thanks for calling. Back to the music.",persona:{...host,emotion:"warm",stumble:0}}
+   {text:language==="it"?"Grazie per la chiamata, torniamo alla musica.":
+    language==="fr"?"Merci pour cet appel, place à la musique.":
+    language==="es"?"Gracias por llamar, volvemos a la música.":
+    language==="de"?"Danke für den Anruf, zurück zur Musik.":
+    "Thanks for calling. Back to the music.",persona:{...host,emotion:"warm",stumble:0}}
   ];
   text=segments.map(x=>x.text).join(" ");
   persona=caller;
