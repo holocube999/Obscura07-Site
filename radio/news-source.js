@@ -44,7 +44,7 @@ export async function fetchVerifiedNews(language='it',{timeoutMs=4500,fetchImpl=
   // but this client cannot independently fact-check the article's claims.
   const seen=new Set(),perHost=new Map(),out=[];
   for(const item of results){
-   const key=item.title.toLocaleLowerCase().replace(/[^\\p{L}\\p{N}]/gu,"").slice(0,100);
+   const key=item.title.toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu,"").slice(0,100);
    if(seen.has(key)||(perHost.get(item.source)||0)>=3)continue;
    seen.add(key);perHost.set(item.source,(perHost.get(item.source)||0)+1);
    out.push(item);if(out.length>=12)break;
