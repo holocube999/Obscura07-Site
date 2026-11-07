@@ -178,6 +178,28 @@ async function githubHTML(opts={}){
   showJS(result);
   $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
   showStatus('HTML verificato: '+result.path+' · '+result.moduleCount+' moduli JS · '+result.assetCount+' dipendenze.');
+  // Private apps needing secure-context browser APIs cannot run inside an
+  // opaque-origin sandbox. Export the already SHA-verified, self-contained HTML.
+  const oldStandalone=$('standaloneAction');
+  if(oldStandalone)oldStandalone.remove();
+  if(/(?:^|\/)OBSCURA-TUNNEL$/i.test(result.repo)){
+   const standalone=document.createElement('button');
+   standalone.id='standaloneAction';
+   standalone.className='action secondary';
+   standalone.type='button';
+   standalone.textContent='↓ Scarica app autonoma';
+   standalone.title='Un HTML completo, senza token GitHub; aprilo in un browser come file locale o su localhost';
+   standalone.addEventListener('click',()=>{
+    const file=new Blob([result.html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(file);
+    const link=document.createElement('a');
+    link.href=url;link.download='OBSCURA-TUNNEL-standalone.html';link.rel='noopener';
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),60000);
+   });
+   $('detailActions').append(standalone);
+   showStatus('WebPlayer isolato: Web Crypto non disponibile nell’iframe. Usa “Scarica app autonoma” e apri l’HTML nel browser (oppure via localhost).');
+  }
   const existing=$('commitAction');
   if(existing)existing.remove();
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
