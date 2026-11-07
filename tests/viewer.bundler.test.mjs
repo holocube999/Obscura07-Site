@@ -97,3 +97,50 @@ test('rejects missing or nonlocal classic scripts instead of silently loading th
  const local={...input,html:'<script src="./src/missing.js"></script>'};
  await assert.rejects(engine().prepare(local,{loadText:async()=>{throw Error('GitHub 404')}}),/GitHub 404/);
 });
+
+test('64zr next/index.html: bundles bare relative CSS, scripts and parent-relative QR library',async()=>{
+ const assets={
+  'next/theme.css':'body{color:#8a6db0}',
+  'next/core.js':'window.Core64ZR={ready:true};',
+  'history/legacy-2021/qrjs2.min.js':'window.QRCode={};',
+  'next/url-policy.js':'window.URLPolicy64ZR=true;',
+  'next/expiry-policy.js':'window.Expiry64ZR=true;',
+  'next/time-key.js':'window.Time64ZR=true;',
+  'next/ui.js':'if(!window.Core64ZR?.ready)throw Error("core order");',
+  'next/void.js':'window.Void64ZR=true;'
+ };
+ const page={...input,repo:'holocube999/64zr',path:'next/index.html',html:[
+  '<!doctype html><html><head><link rel="stylesheet" href="theme.css"></head><body>',
+  '<script src="core.js"></script>',
+  '<script src="../history/legacy-2021/qrjs2.min.js"></script>',
+  '<script src="url-policy.js"></script>',
+  '<script src="expiry-policy.js"></script>',
+  '<script src="time-key.js"></script>',
+  '<script src="ui.js"></script>',
+  '<script src="void.js"></script></body></html>'
+ ].join('')};
+ const loaded=[];
+ const output=await engine().prepare(page,{loadText:async ({repo,ref,path})=>{
+  assert.equal(repo,'holocube999/64zr');assert.equal(ref,SHA);
+  assert.ok(Object.hasOwn(assets,path),'unknown asset '+path);
+  loaded.push(path);
+  return {repo,ref,path,content:assets[path],bytes:Buffer.byteLength(assets[path])};
+ }});
+ assert.equal(output.packaged,true);
+ assert.equal(output.assetCount,8);
+ assert.equal(output.moduleCount,0);
+ assert.equal(loaded.length,8);
+ assert.match(output.html,/body\{color:#8a6db0\}/);
+ assert.ok(!output.html.includes('src="core.js"'));
+ assert.ok(!output.html.includes('href="theme.css"'));
+ assert.match(output.html,/data-sellone-entry="next\/core.js"/);
+ assert.match(output.html,/data-sellone-entry="history\/legacy-2021\/qrjs2.min.js"/);
+ assert.ok(output.html.indexOf('window.Core64ZR={ready:true};')<output.html.indexOf('if(!window.Core64ZR?.ready)'));
+});
+test('rejects remote-only script, absolute URL and query/path escapes instead of bypassing asset checks',async()=>{
+ for(const src of ['https://cdn.example/core.js','//cdn.example/core.js','/core.js','core.js?v=1','../outside.js']){
+  const page={...input,path:'index.html',html:'<!doctype html><html><head><script src="'+src+'"></script></head></html>'};
+  await assert.rejects(engine().prepare(page,{loadText:async()=>{throw Error('unexpected loader call')}}),
+   /Script remoto|Risorsa non locale|Import fuori repository/,'should reject '+src);
+ }
+});
