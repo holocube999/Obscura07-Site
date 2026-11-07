@@ -40,6 +40,73 @@ function compare(a,b){
  for(let i=0;i<Math.max(a.nums.length,b.nums.length);i++){const n=(b.nums[i]||0)-(a.nums[i]||0);if(n)return n}
  return a.path.localeCompare(b.path);
 }
+const POCKETJS_REPO=OWNER+'/PocketJS-NativeServer';
+const POCKETJS_BOOTSTRAP='bootstrap/pocketjs-native-core.zip';
+const POCKETJS_ENTRY='app/src/main/assets/app/index.html';
+
+async function unzipPocketJS(bytes){
+ // Read ZIP central directory, not local sizes (which may use data descriptors).
+ const view=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ let eocd=-1;
+ for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--){
+  if(view.getUint32(i,true)===0x06054b50){eocd=i;break}
+ }
+ if(eocd<0)throw Error('Archivio PocketJS: directory ZIP mancante');
+ const count=view.getUint16(eocd+10,true);
+ const start=view.getUint32(eocd+16,true);
+ if(count>10000||start>=bytes.length)throw Error('Archivio PocketJS non valido');
+ let cursor=start,found=null;
+ const decoder=new TextDecoder('utf-8',{fatal:true});
+ for(let i=0;i<count;i++){
+  if(cursor+46>bytes.length||view.getUint32(cursor,true)!==0x02014b50)throw Error('Directory ZIP corrotta');
+  const flags=view.getUint16(cursor+8,true),method=view.getUint16(cursor+10,true);
+  const compressed=view.getUint32(cursor+20,true),uncompressed=view.getUint32(cursor+24,true);
+  const nameLength=view.getUint16(cursor+28,true),extra=view.getUint16(cursor+30,true),comment=view.getUint16(cursor+32,true);
+  const local=view.getUint32(cursor+42,true);
+  if(cursor+46+nameLength+extra+comment>bytes.length)throw Error('Directory ZIP fuori archivio');
+  const name=decoder.decode(bytes.subarray(cursor+46,cursor+46+nameLength));
+  if(name===POCKETJS_ENTRY){found={flags,method,compressed,uncompressed,local};break}
+  cursor+=46+nameLength+extra+comment;
+ }
+ if(!found)throw Error('PocketJS: index.html originale assente nell’archivio');
+ if(found.flags&1||![0,8].includes(found.method))throw Error('ZIP PocketJS cifrato o compressione non supportata');
+ if(found.uncompressed<2*1024*1024||found.uncompressed>12*1024*1024||found.compressed>16*1024*1024)throw Error('Dimensione HTML PocketJS inattesa');
+ const offset=found.local;
+ if(offset+30>bytes.length||view.getUint32(offset,true)!==0x04034b50)throw Error('Header ZIP non valido');
+ const startData=offset+30+view.getUint16(offset+26,true)+view.getUint16(offset+28,true);
+ if(startData+found.compressed>bytes.length)throw Error('HTML ZIP troncato');
+ const payload=bytes.subarray(startData,startData+found.compressed);
+ let extracted;
+ if(found.method===0)extracted=payload;
+ else{
+  if(typeof DecompressionStream==='undefined')throw Error('Browser senza decompressione ZIP deflate-raw');
+  try{
+   const stream=new Blob([payload]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+   extracted=new Uint8Array(await new Response(stream).arrayBuffer());
+  }catch(_){throw Error('Impossibile decomprimere l’HTML originale PocketJS')}
+ }
+ if(extracted.length!==found.uncompressed)throw Error('Dimensione HTML estratto non corrispondente');
+ const html=decoder.decode(extracted);
+ if(!/^\\s*(?:<!doctype\\s+html|<html\\b)/i.test(html))throw Error('PocketJS: documento HTML originale non valido');
+ return html;
+}
+async function pocketJSArchive(repo,ref,files){
+ const base='https://api.github.com/repos/'+repo;
+ const entry=await api(base+'/contents/'+POCKETJS_BOOTSTRAP+'?ref='+ref);
+ if(entry.type!=='file'||!shaPattern.test(entry.sha||'')||!Number.isSafeInteger(entry.size)||entry.size<1024||entry.size>32*1024*1024)throw Error('Archivio PocketJS mancante o troppo grande');
+ let bytes;
+ if(entry.encoding==='base64'&&entry.content)bytes=bytesFromBase64(entry.content);
+ else{
+  const blob=await api(base+'/git/blobs/'+entry.sha);
+  if(blob.encoding!=='base64'||!blob.content)throw Error('Archivio PocketJS non leggibile via GitHub');
+  bytes=bytesFromBase64(blob.content);
+ }
+ if(bytes.length!==entry.size)throw Error('Dimensione archivio PocketJS incoerente');
+ await checkBlob(bytes,entry.sha);
+ return {repo,ref,path:POCKETJS_BOOTSTRAP,files:files||[POCKETJS_BOOTSTRAP],
+  html:await unzipPocketJS(bytes),bytes:bytes.length,blob:entry.sha};
+}
+
 async function discover(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
  const meta=await api(base);
@@ -47,6 +114,11 @@ async function discover(input){
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const result=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(result.truncated)throw Error('Albero GitHub troppo grande: selezione automatica sospesa');
+ if(repo===POCKETJS_REPO){
+  const zip=(result.tree||[]).find(x=>x.type==='blob'&&x.path===POCKETJS_BOOTSTRAP&&x.size>1024);
+  if(!zip)throw Error('PocketJS: archivio bootstrap non presente');
+  return {repo,ref:commit.sha,files:[POCKETJS_BOOTSTRAP],path:POCKETJS_BOOTSTRAP};
+ }
  const files=(result.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
   !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
   .map(x=>rank(x.path,repo)).sort(compare).map(x=>x.path);
@@ -101,6 +173,7 @@ async function load(input){
  let files;
  if(!ref){const newest=await discover(repo);ref=newest.ref;files=newest.files;path=path||newest.path}
  if(!shaPattern.test(ref||''))throw Error('SHA GitHub completo richiesto');
+ if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP)return pocketJSArchive(repo,ref,files);
  safePath(path);
  const url='https://api.github.com/repos/'+repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref;
  const entry=await api(url);
