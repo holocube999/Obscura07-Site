@@ -2,7 +2,15 @@
    buffers in history: replay deterministically renders an existing recipe. */
 export const PLAY_MODES=["radio","all","single","random"];
 export function makeQueue({mode="radio",maxHistory=600}={}){
- const items=[];let index=-1;const seen=new Set();
+ // A bounded recent-seed window prevents unbounded growth during an always-on station.
+ // New crypto-generated seeds are 128-bit; old recipes remain replayable.
+ maxHistory=Math.max(1,Math.min(10000,Math.floor(maxHistory)||600));
+ const items=[];let index=-1;const seen=new Set(),recent=[];
+ function remember(seed){
+  if(seen.has(seed))return;
+  seen.add(seed);recent.push(seed);
+  if(recent.length>16384)seen.delete(recent.shift());
+ }
  function insert(item){
   if(!item||typeof item.seed!=="string")throw TypeError("Missing track recipe");
   const copy={seed:item.seed,lyricsVariant:Number(item.lyricsVariant)||0,
@@ -10,7 +18,7 @@ export function makeQueue({mode="radio",maxHistory=600}={}){
    artist:String(item.artist||""),style:String(item.style||""),
    voiceMix:Number.isFinite(item.voiceMix)?Math.max(0,Math.min(1,item.voiceMix)):.22,
    speaker:Boolean(item.speaker)};
-  items.push(copy);index=items.length-1;seen.add(copy.seed);
+  items.push(copy);index=items.length-1;remember(copy.seed);
   if(items.length>maxHistory){items.shift();index=Math.max(0,index-1);}
   return copy;
  }
@@ -20,7 +28,7 @@ export function makeQueue({mode="radio",maxHistory=600}={}){
   setMode(next){if(!PLAY_MODES.includes(next))throw RangeError("Unknown queue mode");mode=next;},
   insert,replaceSelected(item){
    if(index<0)return insert(item);
-   items[index]={...items[index],...item};seen.add(items[index].seed);return {...items[index]};
+   items[index]={...items[index],...item};remember(items[index].seed);return {...items[index]};
   },select(i){if(!Number.isInteger(i)||i<0||i>=items.length)return null;index=i;return {...items[i]};},
   next({repeat=false,random=Math.random}={}){
    if(repeat)return index>=0?{...items[index]}:null;
