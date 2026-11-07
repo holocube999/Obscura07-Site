@@ -6,11 +6,15 @@ const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999
 const initialRef=q.get('ref'),initialPath=q.get('path'),initialView=q.get('view');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
-// This vetted file-transfer client needs a first-party secure top-level origin
-// for camera and WebCrypto. Do not run arbitrary GitHub source in that origin.
-if(initial.toLowerCase()==='obscura-tunnel'&&initialView!=='source'){
- location.replace(new URL('transfer/index.html',root).href);
- return;
+// The audited, published Tunnel build has a dedicated same-origin iframe.
+// Other repository code continues to use the opaque sandbox.
+const tunnelUrl=new URL('transfer/index.html',root).href;
+function isTunnel(item){return String(item?.repo||'').toLowerCase()==='obscura-tunnel'}
+function hideTunnel(){
+ const frame=$('tunnelFrame');
+ if(!frame)return;
+ frame.classList.add('hidden');
+ frame.removeAttribute('src');
 }
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
@@ -60,6 +64,7 @@ function listing(value=''){
  $('message').textContent=count?'':'Nessun progetto corrispondente';
 }
 function emptyFrame(){
+ hideTunnel();
  const trusted=$('localAppFrame');trusted.removeAttribute('src');trusted.classList.add('hidden');
  const frame=$('playframe');frame.classList.remove('hidden');frame.removeAttribute('src');
  frame.srcdoc='<!doctype html><title>Sellone WebPlayer</title><body style="background:#090b14;color:#b9c3d2;font:15px system-ui;padding:24px">Seleziona una build o un supporto da avviare.</body>';
@@ -113,6 +118,7 @@ function bridgeHtml(html){
  return idx>=0?html.slice(0,idx)+tag+html.slice(idx):html+tag;
 }
 function showJS(result){
+ hideTunnel();
  $('localAppFrame').removeAttribute('src');$('localAppFrame').classList.add('hidden');
  $('playframe').classList.remove('hidden');$('playframe').removeAttribute('src');
  $('playframe').srcdoc=bridgeHtml(result.html);
@@ -169,6 +175,7 @@ function enableUI(active){busy=active;
 }
 async function githubHTML(opts={}){
  if(!selected)return;
+ if(isTunnel(selected)&&view!=='source'){localBuild(selected);return}
  enableUI(true);showFrame();showStatus('Lettura da GitHub e verifica SHA…');
  try{
   // In split mode the emulator must remain running while the JS build reloads.
@@ -270,6 +277,20 @@ async function boot(){
  finally{enableUI(false)}
 }
 function localBuild(item){
+ if(isTunnel(item)){
+  showFrame();
+  $('playframe').classList.add('hidden');
+  $('playframe').removeAttribute('src');
+  $('localAppFrame').classList.add('hidden');
+  $('localAppFrame').removeAttribute('src');
+  const frame=$('tunnelFrame');
+  frame.classList.remove('hidden');
+  if(frame.src!==tunnelUrl)frame.src=tunnelUrl;
+  $('detailStatus').textContent='OBSCURA/TUNNEL · HTTPS · WebRTC e fotocamera';
+  showStatus('App P2P verificata incorporata: fotocamera autorizzabile in HTTPS, senza download.');
+  return true;
+ }
+ hideTunnel();
  const url=item.published?approvedBuild(item.url):'';
  if(!url)return false;
  showFrame();
