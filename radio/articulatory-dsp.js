@@ -66,6 +66,13 @@ export function synthesizeWord(text,opts,rng){
  const inflect=C(Number.isFinite(opts.inflection)?opts.inflection:0,-.15,.15);
  const breathiness=C(Number.isFinite(opts.breathiness)?opts.breathiness:.075,.01,.20);
  const grain=C(Number.isFinite(opts.grain)?opts.grain:0,0,.3);
+ const tilt=C(Number.isFinite(opts.spectralTilt)?opts.spectralTilt:0,-.4,.4);
+ const nasal=C(Number.isFinite(opts.nasality)?opts.nasality:0,0,.45);
+ const rasp=C(Number.isFinite(opts.rasp)?opts.rasp:0,0,.25);
+ const jitter=C(Number.isFinite(opts.jitter)?opts.jitter:0,0,.10);
+ const shimmer=C(Number.isFinite(opts.shimmer)?opts.shimmer:0,0,.10);
+ const voiceAttack=C(Number.isFinite(opts.attack)?opts.attack:1,.62,1.35);
+ let jitterState=0,shimmerState=0;
  const phaseVoice=rng()*TAU;
  const wordAttack=opts.accent?1.14:1;
  const state=[filter(),filter(),filter()];
@@ -85,7 +92,10 @@ export function synthesizeWord(text,opts,rng){
    }
    const accent=(p.stressed?.020:0)+inflect*(.5-u);
     const phrasePitch=1+accent+(opts.rap?.006:.012)*Math.sin(TAU*1.4*sample/sr+phaseVoice);
-    const goal=base*Math.pow(C(melodyTarget(p),65,390)/base,tune)*phrasePitch;
+    jitterState=jitterState*.997+(rng()*2-1)*.003;
+    shimmerState=shimmerState*.996+(rng()*2-1)*.004;
+    const goal=base*Math.pow(C(melodyTarget(p),65,390)/base,tune)*phrasePitch*
+     (1+jitter*jitterState*3);
    // A 15-ms portamento between syllables, but no formant transposition.
    smoothHz+=(goal-smoothHz)*C(1/(sr*.015),.00001,.30);
    const rate=C(smoothHz*(1+(p.stressed?.019:0) + (u-.5)*.013+
@@ -102,8 +112,13 @@ export function synthesizeWord(text,opts,rng){
    const y1=bandpass(excitation,state[0],co[0]),
     y2=bandpass(excitation,state[1],co[1]),
     y3=bandpass(excitation,state[2],co[2]);
-   let vocal=(1.4*y1+.96*y2+.54*y3+excitation*.055)*spectral+
+   let vocal=(1.4*y1+(.96+tilt*.55)*y2+(.54+tilt*.44)*y3+excitation*.055)*spectral+
     hiss*breathiness*(p.kind==="vowel"?1:.45);
+   // Different virtual tracts share articulatory structure, never a global
+   // post-process pitch shift that would transpose consonants or vowel colors.
+   vocal+=(y1*.92-y3*.31)*nasal*.24;
+   vocal+=rasp*Math.tanh(excitation*5)*.18;
+   vocal*=1+shimmer*shimmerState*4;
    if(p.kind==="nasal")vocal=(1.1*y1+.32*y2+.08*y3)*.78;
    if(p.sym==="r")vocal*=.67+.33*Math.sin(TAU*24*sample/sr)**2;
    if(p.sym==="l"||p.sym==="ly")vocal*=.87;
@@ -117,7 +132,7 @@ export function synthesizeWord(text,opts,rng){
    }
    if(p.sym==="h")signal+=hiss*.13;
    const edge=C(i/(sr*.0025),0,1)*C((count-i-1)/(sr*.003),0,1);
-   const stressedGain=(p.stressed?1.15:.96)*phrasing*wordAttack;
+   const stressedGain=(p.stressed?1.15:.96)*phrasing*wordAttack*voiceAttack;
    const contourEnv=(.88+.12*Math.sin(Math.PI*u))*(1-.10*u);
    signal+=grain*(rng()*2-1)*.025;
    low=low*.16+signal*.84;

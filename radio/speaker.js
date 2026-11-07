@@ -1,5 +1,6 @@
 /* Fictional offline radio DJ and call-ins. External news optional, never invented as real. */
 import {synthesizeWord} from "./articulatory-dsp.js";
+import {createVoicePersona} from "./voice-genome.js";
 const C=(v,a,b)=>Math.max(a,Math.min(b,v));
 function randomFor(seed){let h=2166136261;for(const c of String(seed))h=Math.imul(h^c.charCodeAt(0),16777619);return ()=>{h|=0;h=(h+0x6D2B79F5)|0;let t=Math.imul(h^(h>>>15),1|h);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
 const choose=(r,a)=>a[Math.floor(r()*a.length)];
@@ -31,13 +32,13 @@ const WORDS={
 };
 export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[]}={}){
  const r=randomFor(seed+"|"+(previous?.seed||"")+"|"+(next?.seed||"")+"|DJ06");
- const personaRandom=randomFor("RNR|station-dj|"+(seed||"default"));
+ // One consistent presenter, independently cast callers for every appearance.
+ const host=createVoicePersona("RNR/station/"+(seed||"default"),{role:"host",style:"radio"});
+ const caller=createVoicePersona(next?.seed||seed||"guest",{role:"caller",style:"radio",excludeId:host.id});
  const pack=WORDS[language]||WORDS.en;
  const roll=r();if(roll<.52)return null;
- const voices=[{id:"host",pitch:129+personaRandom()*49,formant:.93+personaRandom()*.16,
- pace:.85+personaRandom()*.25,breath:.05,emotion:"warm",stumble:0},
- {id:"caller",pitch:175+r()*56,formant:1.11+r()*.12,
- pace:.75+r()*.27,breath:.13,emotion:"excited",stumble:r()*.12}];
+ const voices=[{...host,emotion:"warm",stumble:0},
+ {...caller,emotion:"excited"}];
  const band=next?.artist||"Random Null",title=next?.title||"Unknown Transmission";
  const pick=(a)=>choose(r,a);
  const news=Array.isArray(verifiedNews)?verifiedNews.filter(v=>v&&typeof v.title==="string"&&/^https:\/\//.test(v.url||"")&&v.verified===true):[];
@@ -69,7 +70,11 @@ export function renderSpeakerPCM(cue,{sampleRate=22050}={}){
   const hz=cue.persona.pitch*attitude*(1+.065*Math.sin(i*.7)+(/\?$/.test(word)?.09:0));
   const pcm=synthesizeWord(word,{sampleRate:sr,targetSamples:Math.floor(duration*sr),pitch:hz,
    formantShift:cue.persona.formant,tuneStrength:0,language:cue.language,
-   breathiness:cue.persona.breath,mode:"warm",inflection:(mood==="excited"?.09:.06)*Math.sin(i*.5)},rnd);
+   breathiness:cue.persona.breath,mode:cue.persona.mode,
+   spectralTilt:cue.persona.spectralTilt,nasality:cue.persona.nasality,
+   rasp:cue.persona.rasp,jitter:cue.persona.jitter,shimmer:cue.persona.shimmer,
+   attack:cue.persona.attack,
+   inflection:(mood==="excited"?.09:.06)*Math.sin(i*.5)},rnd);
   samples.push({pcm,pause:Math.round(pause*sr)});total+=pcm.length+Math.round(pause*sr);
  }
  const left=new Float32Array(total+Math.round(sr*.24)),right=new Float32Array(left.length);

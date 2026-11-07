@@ -10,6 +10,7 @@ import {applyMusicalEnding} from "./musical-form.js";
 import {phonemesFromText} from "./phonology.js";
 import {synthesizeWord} from "./articulatory-dsp.js";
 import {planDelivery} from "./vocal-director.js";
+import {createVoicePersona} from "./voice-genome.js";
 const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 function hash(seed){
  let h=2166136261;
@@ -53,11 +54,13 @@ function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=f
   const slot=slots[i],accent=entry.emphasis??.5;
   const expressive=Math.sin((i+1)*1.33+index*.83);
   const opts={sampleRate:sr,language:entry.language||plan.language,bpm:60/beat,
-   energy:clamp(.82+accent*.22+expressive*.075,.65,1.22),
-   inflection:clamp((i===0?.025:0)+(slot.accent?-.023:0)+expressive*.016,-.065,.065),
-   breathiness:rap?.055:.095,grain:rap?.03:.06,
+   energy:clamp((.82+accent*.22+expressive*.075)*identity.attack,.60,1.35),
+   inflection:clamp((i===0?.025:0)+(slot.accent?-.023:0)+expressive*identity.inflection,-.105,.105),
+   breathiness:identity.breath,grain:Math.min(.16,identity.rasp*.55),
+   spectralTilt:identity.spectralTilt,nasality:identity.nasality,rasp:identity.rasp,
+   jitter:identity.jitter,shimmer:identity.shimmer,attack:identity.attack,
    pitch:identity.base,rate:identity.rate,formantShift:identity.formant,
-   vibrato:rap?(hook?.0038:.0018):.0035,mode,referenceHz:55,tuning:plan.tuning,
+   vibrato:identity.vibrato*(rap&&!hook?.57:1),mode,referenceHz:55,tuning:plan.tuning,
    melody:slot.pitches.map(p=>p?(harmonize?p.harmonyHz:p.hz):null),
    guideHz:slot.pitches.find(Boolean)?.[harmonize?"harmonyHz":"hz"],
    tuneStrength,targetSamples:slot.length,rap,accent:slot.accent};
@@ -80,17 +83,14 @@ function writeDelay(bus,start,segment,amplitude,pan,sr,delay){
 export function renderVocalBus(plan,{sampleRate=22050}={}){
  const sr=Math.max(8000,Math.min(48000,Math.floor(sampleRate)));
  if(!plan?.withVox||!Array.isArray(plan.voices)||!plan.voices.length)return null;
- const duration=clamp(plan.duration||60,1,130),length=Math.ceil(duration*sr);
+ const duration=clamp(plan.duration||60,1,360),length=Math.ceil(duration*sr);
  const bus=[new Float32Array(length),new Float32Array(length)];
  const r=random(plan.seed+"|voice-render-v3");
  const isRap=plan.style==="hiphop";
  // A single timbre/persona per song: FX are genre-oriented, not randomly
  // changed for every bar. Rap emphasizes articulation and a centered dry lead.
- const modes=isRap?["clean","warm","radio"]:["warm","air","chorus","robot"];
- const mode=modes[Math.floor(r()*modes.length)];
- const identity={base:isRap?112+r()*34:109+r()*57,
-  formant:mode==="air"?1.07:mode==="radio"?.97:mode==="robot"?.94:1,
-  rate:.96+r()*.08};
+ const identity=createVoicePersona(plan.seed,{role:"singer",style:plan.style});
+ const mode=identity.mode;
  for(let index=0;index<plan.voices.length;index++){
   const entry=plan.voices[index];
   if(!entry||!Number.isFinite(entry.time)||typeof entry.text!=="string")continue;
@@ -129,7 +129,7 @@ export function renderVocalBus(plan,{sampleRate=22050}={}){
   for(let i=0;i<channel.length;i++)channel[i]=Math.tanh(channel[i]*1.08)*.94;
  applyMusicalEnding(bus,plan,sr);
  return {sampleRate:sr,channels:bus,preRendered:true,engine:"offline-formant-dsp",
-  profile:mode,identity:{...identity},guideUsed:Boolean(plan.vocalGuide?.length)};
+  profile:mode,personaId:identity.id,identity:{...identity},guideUsed:Boolean(plan.vocalGuide?.length)};
 }
 export function mixVocalBus(music,voice,level=.18){
  if(!voice||!music||!music.channels)return music;

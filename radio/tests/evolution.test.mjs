@@ -30,7 +30,8 @@ test("rap uses a stable clean identity and a harmonic guide",()=>{
  const a=renderVocalBus(p,{sampleRate:8000});
  assert.ok(["clean","warm","radio"].includes(a.profile));
  assert.equal(a.guideUsed,true);
- assert.ok(a.identity.base>=100&&a.identity.base<=155);
+ assert.ok(a.identity.base>=72&&a.identity.base<=260);
+ assert.equal(typeof a.personaId,"string");
  assert.deepEqual(a.channels[0],renderVocalBus(p,{sampleRate:8000}).channels[0]);
  assert.ok(Math.abs(a.channels[0].at(-1))<1e-7);
 });
