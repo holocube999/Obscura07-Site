@@ -61,7 +61,7 @@ window.__PJS_STORAGE_FLUSH__=async function(){
   x.reject=e=>{oldReject(e);reject(e)};
  })))}
 };
-const localStorage={
+const __pjsStore={
  get length(){return __pjsCache.size},
  key(i){return [...__pjsCache.keys()][i]??null},
  getItem(k){k=String(k);return __pjsCache.has(k)?__pjsCache.get(k):null},
@@ -70,8 +70,13 @@ const localStorage={
   __pjsCache.set(k,v);__pjsPost('set',k,v).catch(e=>{window.__PJS_STORAGE_WRITE_ERROR__=e.message})},
  removeItem(k){k=String(k);if(!k.startsWith('pjs.'))return;__pjsCache.delete(k);
   __pjsPost('delete',k,'').catch(e=>{window.__PJS_STORAGE_WRITE_ERROR__=e.message})},
- clear(){for(const k of [...__pjsCache.keys()])this.removeItem(k)}
+ clear(){for(const k of [...__pjsCache.keys()])this.removeItem(k)},
+ flush(){return window.__PJS_STORAGE_FLUSH__()}
 };
+window.PocketJSHost=Object.freeze({
+ version:1,kind:'isolated-viewer',
+ storage:Object.freeze(__pjsStore)
+});
 `;
  return js.replace('SEED',safeJSON(seed)).replaceAll('CHANNEL',safeJSON(channel));
 }
@@ -97,11 +102,10 @@ async function prepare(html,frame,channel){
  const source=guestSource(seed,channel);
  const injected=html.replace(/<script\b[^>]*>/i,tag=>tag+'\n'+source+'\n');
  if(injected===html)throw Error('PocketJS: script principale assente');
- // The fallback must never touch the sandbox-prohibited native indexedDB.
- const fixed=injected.replace("if(!('indexedDB' in window))","if(window.__PJS_VIRTUAL_STORAGE__||!('indexedDB' in window))")
-  .replace('async function storageFlush(){','async function storageFlush(){if(window.__PJS_VIRTUAL_STORAGE__){try{await window.__PJS_STORAGE_FLUSH__()}catch(e){PJS_LAST_STORAGE_ERROR=e.message;return false}if(window.__PJS_STORAGE_WRITE_ERROR__){PJS_LAST_STORAGE_ERROR=window.__PJS_STORAGE_WRITE_ERROR__;return false}return true;}');
+ // The embedded PocketJS runtime selects this optional host port itself.
+ // Do not rewrite storage functions or override browser globals in guest HTML.
  active={db,frame,channel,pending:Promise.resolve()};
- return fixed;
+ return injected;
 }
 window.SellonePocketStorage=Object.freeze({prepare});
 })();

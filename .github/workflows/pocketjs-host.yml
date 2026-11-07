@@ -1,0 +1,30 @@
+name: Viewer PocketJS host contract
+on:
+  pull_request:
+    paths:
+      - viewer/pocketjs-storage.js
+      - viewer/catalog.js
+      - viewer/index.html
+      - viewer/tests/pocketjs-host.test.cjs
+      - .github/workflows/pocketjs-host.yml
+  push:
+    branches: [main]
+    paths:
+      - viewer/pocketjs-storage.js
+      - viewer/catalog.js
+      - viewer/index.html
+      - viewer/tests/pocketjs-host.test.cjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  portable-host:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test isolated host and persistent storage
+        run: node --test viewer/tests/pocketjs-host.test.cjs
