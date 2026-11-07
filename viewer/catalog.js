@@ -185,6 +185,11 @@ async function githubHTML(opts={}){
   if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
   showStatus('Verifica CSS e moduli JavaScript del repository…');
   const result=await Bundle.prepare(verified,GH);
+  if(selected?.repo==='PocketJS-NativeServer'){
+   if(!window.SellonePocketStorage)throw Error('Storage PocketJS non disponibile nel WebPlayer');
+   showStatus('Preparazione memoria persistente PocketJS…');
+   result.html=await window.SellonePocketStorage.prepare(result.html,$('playframe'),syncChannel);
+  }
   const oldFiles=loaded?.files;
   loaded={...result,files:result.files||oldFiles||[]};
   fillPaths($('htmlCandidates'),loaded.files,result.path);
