@@ -1,5 +1,5 @@
 /* RΛNDØM[NULL] RADIO • reusable static UI and JS API */
-import {makePlan,pcmToWav,pcmToMP3,randomSeed,filename,STYLES,MOODS,CONCEPTS,LANGUAGE_PACKS} from "./radio.js";
+import {makePlan,pcmToWav,pcmToMP3,randomSeed,filename,STYLES,MOODS,CONCEPTS,LANGUAGE_PACKS,VERSION} from "./radio.js";
 import {renderAsync} from "./async.js";
 import {encodeMP3Async} from "./encode.js";
 import {spliceTrack,haltTrack} from "./transition.js";
@@ -342,9 +342,18 @@ export function mount(root,settings={}){
   }catch(e){message("Export error: "+e.message);console.error("[RNR]",e);}finally{state.busy=false;root.classList.remove("rnr-busy");}
  }
  play.addEventListener("click",()=>state.playing?stop():start());
- qs(root,".rnr-next").addEventListener("click",()=>{
-  const wasPlaying=state.playing;reset();if(!wasPlaying)void start();
- });
+ async function skip(){
+  if(state.speakerActive&&state.pendingEntry){
+   const {entry,ready}=state.pendingEntry;state.pendingEntry=null;
+   clearTimeout(state.nextTimer);state.nextTimer=null;
+   haltTrack(state.active);state.active=null;state.speakerActive=false;
+   await goToEntry(entry,ready);return;
+  }
+  const ready=state.prefetched,entry=ready?.entry||candidateNext();
+  if(!entry){if(state.playing)stop();else {reset();await start();}return;}
+  state.prefetched=null;await goToEntry(entry,ready);
+ }
+ qs(root,".rnr-next").addEventListener("click",()=>{void skip();});
  qs(root,".rnr-repeat").addEventListener("click",()=>{
   state.repeat=!state.repeat;
   qs(root,".rnr-repeat").setAttribute("aria-pressed",String(state.repeat));
@@ -410,7 +419,17 @@ export function mount(root,settings={}){
  });
  root.querySelectorAll("[data-param]").forEach(input=>{
   const key=input.dataset.param;if(state.settings[key]!==undefined)input.type==="checkbox"?input.checked=state.settings[key]:input.value=state.settings[key];
-  input.addEventListener("change",()=>{if(key==="speaker"){state.settings.speaker=input.checked;state.queue.replaceSelected({speaker:input.checked});return;}if(state.settings.seed.startsWith("R1."))state.settings.seed=state.settings.seed.split(".")[1];state.settings[key]=input.type==="checkbox"?input.checked:input.value;
+  input.addEventListener("change",()=>{if(key==="speaker"){
+    state.settings.speaker=input.checked;
+    state.queue.replaceSelected({speaker:input.checked});
+    if(!input.checked&&state.speakerActive&&state.pendingEntry){void skip();}
+    if(input.checked&&state.playing&&!state.loadingNews&&Date.now()-state.lastNewsFetch>12*60*1000){
+     state.loadingNews=true;state.lastNewsFetch=Date.now();
+     fetchVerifiedNews(stationLanguage()).then(x=>{state.newsCache=x;})
+       .finally(()=>{state.loadingNews=false;});
+    }
+    return;
+   }if(state.settings.seed.startsWith("R1."))state.settings.seed=state.settings.seed.split(".")[1];state.settings[key]=input.type==="checkbox"?input.checked:input.value;
    if(key==="style"&&state.settings.style==="hiphop")state.settings.withVox=true;
    reset(state.settings.seed||randomSeed());});
  });
@@ -422,7 +441,7 @@ export function mount(root,settings={}){
   if(Number.isFinite(vm))state.voiceMix=Math.max(0,Math.min(1,vm/100));
  }
  state.settings.speaker=query.get("sp")==="1";
- if(query.has("engine")&&query.get("engine")!==makePlan({seed:state.settings.seed||"VERSION"}).version)
+ if(query.has("engine")&&query.get("engine")!==VERSION)
   message("Versione non corrispondente: riproduzione diversa");
  if(query.has("lyrics")){
   state.settings.extraText=String(query.get("lyrics")||"").slice(0,3200);
@@ -434,7 +453,7 @@ export function mount(root,settings={}){
  qs(root,'[data-param="withVox"]').checked=state.settings.withVox;
   qs(root,'[data-param="speaker"]').checked=state.settings.speaker;}
  ensurePlan();updateLevels();updatePlaylist();paint();
- root.__rnr={start,stop,next:()=>reset(),download,get plan(){return state.plan;},get audio(){return state.audio;},regenerate:(options={})=>{Object.assign(state.settings,options);return reset(options.seed??state.settings.seed??randomSeed());},setMuted,setVolume,setVoiceMix,showCover,
+ root.__rnr={start,stop,next:skip,download,get plan(){return state.plan;},get audio(){return state.audio;},regenerate:(options={})=>{Object.assign(state.settings,options);return reset(options.seed??state.settings.seed??randomSeed());},setMuted,setVolume,setVoiceMix,showCover,
  get volume(){return state.volume;},get voiceMix(){return state.voiceMix;},
  get playing(){return state.playing;},get playlist(){return state.queue.items;},
   get mode(){return state.queue.mode;},setMode(mode){state.queue.setMode(mode);updatePlaylist();},
