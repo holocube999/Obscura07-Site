@@ -458,10 +458,10 @@
       "repo": "VIC20-Bible",
       "title": "VIC-20 Bible",
       "kind": "Archivio",
-      "description": "Portale Commodore VIC-20 con monitor CRT e catalogo di giochi/programmi; porting attualmente bloccati finché non validati.",
-      "published": false,
-      "url": null,
-      "advanced_url": null,
+      "description": "Portale VIC-20: anteprima CRT autonoma, selezione titoli; giochi bloccati fino a verifica.",
+      "published": true,
+      "url": "viewer/vic20/index.html",
+      "advanced_url": "viewer/vic20/index.html",
       "viewer_type": "web_js",
       "visibility": "private"
     }
