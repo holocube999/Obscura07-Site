@@ -50,6 +50,7 @@ test("lyric draft and custom lyrics keep their score timing",()=>{
 test("one-shot songs do not loop in the AudioBufferSource graph",()=>{
  const code=fs.readFileSync(new URL("../widget.js",import.meta.url),"utf8");
  const transition=fs.readFileSync(new URL("../transition.js",import.meta.url),"utf8");
- assert.match(code,/continuous=\["loop","loopable"\]\.includes\(plan\.form\)/);
+ assert.match(code,/continuous=state\.repeat/);
+ assert.match(code,/if\(state\.repeat\)/);
  assert.match(transition,/source\.loop=Boolean\(loop\)/);
 });
