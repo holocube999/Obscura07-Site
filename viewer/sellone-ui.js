@@ -18,10 +18,22 @@ const glyphs={
  shrink:svg('<path d="M3 9h6V3m6 0v6h6M3 15h6v6m6 0v-6h6"/>'),
  history:svg('<path d="M3 12a9 9 0 1 0 3-6.7M3 3v6h6m3-2v5l3 2"/>')
 };
-function putIcon(el,icon){if(!el||el.querySelector('.sellone-icon'))return;const span=document.createElement('span');span.className='sellone-icon';span.innerHTML=glyphs[icon]||glyphs.disk;el.prepend(span)}
+function putIcon(el,icon){if(!el||el.querySelector('.sellone-icon'))return;const first=el.firstChild;if(first?.nodeType===3)first.textContent=first.textContent.replace(/^\s*[▶↻■⟳⏵▸]\s*/u,'');const span=document.createElement('span');span.className='sellone-icon';span.innerHTML=glyphs[icon]||glyphs.disk;el.prepend(span)}
 const modes={js:'js',original:'original',both:'both',source:'source'};
 for(const b of document.querySelectorAll('#viewModes [data-view]'))putIcon(b,modes[b.dataset.view]);
 for(const [id,key] of Object.entries({loadLatest:'play',reloadSelected:'reload',bootRetro:'play',stopRetro:'stop',loadGitMedia:'disk',openSource:'source',reloadSource:'reload',restartPair:'reload'}))putIcon($(id),key);
+/* Keep the game visible by default. Original media and source views expose their required controls. */
+const optionsPanel=$('playerOptions'),optionsToggle=$('playerOptionsToggle'),modeBar=$('viewModes');
+if(optionsPanel&&optionsToggle&&modeBar){
+ const expandOptions=open=>{optionsPanel.classList.toggle('hidden',!open);optionsToggle.setAttribute('aria-expanded',String(open))};
+ optionsToggle.addEventListener('click',()=>expandOptions(optionsPanel.classList.contains('hidden')));
+ const syncModeOptions=()=>{
+  const active=modeBar.querySelector('[data-view][aria-pressed="true"]')?.dataset.view;
+  if(active&&active!=='js')expandOptions(true);
+ };
+ new MutationObserver(syncModeOptions).observe(modeBar,{subtree:true,attributes:true,attributeFilter:['aria-pressed']});
+ syncModeOptions();
+}
 const mediaLabel=document.querySelector('label[for=mediaInput]'),kickLabel=document.querySelector('label[for=kickInput]');
 if(mediaLabel)putIcon(mediaLabel,'disk');if(kickLabel)putIcon(kickLabel,'chip');
 const indicator=document.createElement('span');indicator.className='sellone-platform';indicator.setAttribute('aria-label','Sistema originale');$('gameHeader')?.append(indicator);
