@@ -126,38 +126,40 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <div class="actions" id="detailActions"></div>
 </div>
 <section class="panel player-controls" id="playerControls" aria-label="Controlli Sellone WebPlayer">
-<div id="gameHeader" class="eyebrow">SELLONE WEBPLAYER · GITHUB</div>
+<div class="player-heading"><div id="gameHeader" class="eyebrow">SELLONE WEBPLAYER · GITHUB</div><button id="playerOptionsToggle" type="button" aria-expanded="false" aria-controls="playerOptions">Opzioni</button></div>
 <div id="viewModes" role="group" aria-label="Modalità di visualizzazione">
-<button type="button" data-view="js" aria-pressed="true">Solo JavaScript</button>
-<button type="button" data-view="original" aria-pressed="false">Solo originale</button>
-<button type="button" data-view="both" aria-pressed="false">JS + Originale</button>
-<button type="button" data-view="source" aria-pressed="false">Sorgenti</button>
+<button type="button" data-view="js" aria-label="Solo JavaScript" aria-pressed="true"><span class="mode-label">JavaScript</span></button>
+<button type="button" data-view="original" aria-label="Solo originale" aria-pressed="false"><span class="mode-label">Originale</span></button>
+<button type="button" data-view="both" aria-label="JS + Originale" aria-pressed="false"><span class="mode-label">Confronto</span></button>
+<button type="button" data-view="source" aria-label="Sorgenti" aria-pressed="false"><span class="mode-label">Sorgenti</span></button>
 </div>
+<div id="playerOptions" class="hidden">
 <div class="tools" id="webControls">
-<button class="action" type="button" id="loadLatest">▶ Ultima build GitHub</button>
+<button class="action" type="button" id="loadLatest">Ultima build</button>
 <label for="htmlCandidates">HTML</label><select id="htmlCandidates" aria-label="Build HTML"><option value="">Automatico</option></select>
-<button class="action secondary" type="button" id="reloadSelected">↻ Ricarica</button>
+<button class="action secondary" type="button" id="reloadSelected">Ricarica</button>
 </div>
 <div class="tools" id="retroControls">
 <label for="mediaInput">ADF / D64 / T64 / PRG</label>
 <input id="mediaInput" type="file" accept=".adf,.d64,.t64,.prg">
 <label for="kickInput">Kickstart (Amiga)</label>
 <input id="kickInput" type="file" accept=".rom,.bin,.kick,.a500,.a1200">
-<button class="action" type="button" id="bootRetro">▶ Avvia supporto</button>
+<button class="action" type="button" id="bootRetro">Avvia supporto</button>
 <button class="action secondary" type="button" id="loadGitMedia">GitHub media</button>
 <select id="mediaCandidates" aria-label="Media GitHub disponibili" class="hidden"></select>
-<button class="action secondary" type="button" id="stopRetro">■ Ferma</button>
+<button class="action secondary" type="button" id="stopRetro">Ferma</button>
 </div>
 <div class="tools hidden" id="sourceControls">
 <label for="sourceFiles">File repository</label>
 <select id="sourceFiles" aria-label="Sorgenti disponibili"><option value="">Seleziona file</option></select>
 <button class="action" type="button" id="openSource">Apri file</button>
-<button class="action secondary" type="button" id="reloadSource">↻ Ultima revisione</button>
+<button class="action secondary" type="button" id="reloadSource">Ultima revisione</button>
 </div>
 <div id="compareTools" class="tools hidden">
 <label><input id="linkedInput" type="checkbox" checked> Collega comandi</label>
-<button id="restartPair" class="action secondary" type="button">↻ Riavvia entrambi</button>
+<button id="restartPair" class="action secondary" type="button">Riavvia entrambi</button>
 <span id="syncFeedback" class="stat" aria-live="polite">Confronto sincronizzato sugli input, non sui cicli macchina.</span>
+</div>
 </div>
 <div id="playerStatus" role="status" aria-live="polite"></div>
 <div id="authBox" class="hidden">
