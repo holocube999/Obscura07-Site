@@ -7,6 +7,7 @@ import {createStationDirector} from "../station-director.js";
 import {planSpeaker,renderSpeakerPCM} from "../speaker.js";
 import {verifiedHeadline,fetchVerifiedNews} from "../news-source.js";
 import {makeQueue} from "../playlist-core.js";
+import {createNativeAnnouncer} from "../native-announcer.js";
 
 test("repeated microtonal motifs use only notes already present in each section",()=>{
  const sections=[
@@ -105,4 +106,26 @@ test("bounded 600-track radio history remains playable without audio buffers",()
  assert.match(widget,/createStationDirector/);
  assert.match(widget,/pendingEntry/);
  assert.match(widget,/rnr-playlist-toggle/);
+});
+
+test("OS narrator uses different voices for host and caller; unsupported falls back",async()=>{
+ assert.equal(await createNativeAnnouncer({synth:null,Utterance:null}).speak({text:"Hello"}),false);
+ class FakeUtterance {constructor(text){this.text=text;}}
+ const spoken=[],voices=[
+  {lang:"it-IT",name:"Ada"},{lang:"it-IT",name:"Bruno"},{lang:"en-US",name:"John"}];
+ const synth={
+  getVoices(){return voices;},
+  speak(u){spoken.push(u);queueMicrotask(()=>{u.onstart?.();u.onend?.();});},
+  cancel(){}
+ };
+ const announcer=createNativeAnnouncer({synth,Utterance:FakeUtterance});
+ const cue={text:"Pronto",segments:[
+  {text:"Radio",persona:{id:"host-1",pitch:120,pace:.9}},
+  {text:"Mi piace",persona:{id:"caller-9",pitch:180,pace:1.2}}
+ ]};
+ assert.equal(await announcer.speak(cue,{language:"it"}),true);
+ assert.equal(spoken.length,2);
+ assert.ok(spoken.every(u=>u.lang==="it-IT"&&u.voice&&u.text));
+ assert.notEqual(spoken[0].pitch,spoken[1].pitch);
+ assert.ok(spoken.every(u=>u.rate>=.72&&u.rate<=1.35));
 });
