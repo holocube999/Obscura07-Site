@@ -452,6 +452,18 @@
       "advanced_url": null,
       "viewer_type": "web_js",
       "visibility": "private"
+    },
+    {
+      "id": "VIC20-Bible",
+      "repo": "VIC20-Bible",
+      "title": "VIC-20 Bible",
+      "kind": "Archivio",
+      "description": "Portale Commodore VIC-20 con monitor CRT e catalogo di giochi/programmi; porting attualmente bloccati finché non validati.",
+      "published": false,
+      "url": null,
+      "advanced_url": null,
+      "viewer_type": "web_js",
+      "visibility": "private"
     }
   ]
 }
