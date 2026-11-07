@@ -25,7 +25,7 @@ test('action buttons use vector icons, never both an SVG and a literal symbol',(
  for(const id of ['loadLatest','reloadSelected','bootRetro','stopRetro','reloadSource','restartPair']){
   const match=page.match(new RegExp('<button[^>]*id="'+id+'"[^>]*>(.*?)<\\/button>'));
   assert.ok(match,'Missing control '+id);
-  assert.doesNotMatch(match[1],/^[\\s]*(?:▶|↻|■|⟳|⏵|▸)/u,'Duplicate icon for '+id);
+  assert.doesNotMatch(match[1],/^\s*(?:▶|↻|■|⟳|⏵|▸)/u,'Duplicate icon for '+id);
  }
  for(const view of ['js','original','both','source']){
   assert.match(page,new RegExp('data-view="'+view+'"[^>]*aria-label="[^"]+"[^>]*aria-pressed="(?:true|false)"'));
