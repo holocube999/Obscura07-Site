@@ -12,8 +12,13 @@ function encode(bytes){
  let result='';for(let i=0;i<bytes.length;i+=8192)result+=String.fromCharCode(...bytes.subarray(i,i+8192));
  return btoa(result);
 }
+// Repository-relative asset references may omit "./" (e.g. "core.js" in 64zr).
+// Reject schemes, absolute URLs, query strings and backslashes before resolution.
+function localReference(reference){
+ return typeof reference==='string' && !/^(?:[a-z][a-z0-9+.-]*:|\/)/i.test(reference) && !/[?#\\]/.test(reference);
+}
 function normalize(reference,base,ext){
- if(!/^\.\.?\//.test(reference)||/[?#\\]/.test(reference))throw Error('Risorsa non locale: '+reference);
+ if(!localReference(reference))throw Error('Risorsa non locale: '+reference);
  const segments=base.split('/');segments.pop();
  for(const part of reference.split('/')){
   if(part==='.'||part==='')continue;
@@ -83,8 +88,9 @@ async function prepare(result,loader=window.SelloneGitHub){
   }
  }
  const scripts=extractScriptUrls(html);
- const hasLocal=links.some(x=>/^\.\.?\//.test(x.url))||scripts.some(x=>/^\.\.?\//.test(x.src));
- if(!hasLocal)return {...result,assetCount:0,moduleCount:0,packaged:false};
+ // Every declared script/stylesheet must be verified and embedded, even when
+ // the HTML uses bare relative references rather than "./" prefixes.
+ if(!links.length&&!scripts.length)return {...result,assetCount:0,moduleCount:0,packaged:false};
  const fetched=new Map();
  let total=0;
  async function get(path){
@@ -110,7 +116,7 @@ async function prepare(result,loader=window.SelloneGitHub){
  }
  const roots=[],classicRoots=[];
  for(const script of scripts){
-  if(!/^\.\.?\//.test(script.src))throw Error('Script remoto non incorporabile: '+script.src);
+  if(!localReference(script.src))throw Error('Script remoto non incorporabile: '+script.src);
   const path=normalize(script.src,result.path,moduleExt);
   if(script.kind==='module')roots.push(path);else classicRoots.push(path);
  }
@@ -119,7 +125,7 @@ async function prepare(result,loader=window.SelloneGitHub){
  await Promise.all(classicRoots.map(async path=>{classics.set(path,await get(path))}));
  let output=html;
  for(const link of links){
-  if(!/^\.\.?\//.test(link.url))throw Error('CSS remoto non incorporabile: '+link.url);
+  if(!localReference(link.url))throw Error('CSS remoto non incorporabile: '+link.url);
   const path=normalize(link.url,result.path,cssExt);
   const css=await get(path);
   if(/url\s*\(\s*(?!['"]?(?:data:|#))\S/i.test(css))
