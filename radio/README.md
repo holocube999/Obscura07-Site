@@ -97,3 +97,11 @@ Qualità: sintesi fonetica stilizzata e non voce umana registrata; le regole son
 ## v0.5 · Hip-hop groove and social sharing (2026-11-06)
 
 Longer tracks now include two-bar vocal-free instrumental interludes, end-of-phrase full-band breaks before drops, and accented hook returns. A symbolic performance engine adjusts breath noise, micro-inflection, energy and stress word by word. The ⟳ button beside TEXT INPUT regenerates distinct lyrics while keeping instrumental events unchanged, and edited lyrics are recorded in the shared link. SHARE uses native Web Share, or falls back to dedicated WhatsApp, Telegram, Email and Copy Link actions. Shared URLs regenerate the same seed/lyrics in the static player without uploading WAV/MP3. Scripts/styles use network-first service worker caching while retaining offline fallback.
+
+## v0.6 · Infinite radio, rap grammar, timeline and optional DJ
+
+In Radio mode, the queue generates new distinct seeds and pre-renders the next instrumental and vocal buses before the previous track ends. The optional Repeat Song toggles same-track replay. A compact foldable playlist supports Radio (infinite), All (stored history), Single (one shot), and Random (history). Select any recorded recipe to rerender it. The compact karaoke panel follows actual phoneme timings and remains hidden until enabled.
+
+For hip-hop, the offline symbolic authoring model evaluates rhyme families and syllable counts per bar using much larger semantic lexicons. The melody guide operates solely on the vocal synthesizer; it creates no audible backing instrument. Every lyric variant has its own deterministic counter without changing the accompaniment.
+
+SPEAKER is OFF by default. When enabled in Radio mode it may add short, probabilistic DJ introductions, fictional band biographies, imaginary adverts, fictional fan calls and jokes. Real headlines are optional: only recent, attributed, allowlisted HTTPS items from GDELT are eligible, and network failures produce silence rather than invented news. No ANSA content is republished. Shared links include engine version, recipe, text variant, optional edited lyrics, voice mix and speaker flag. The v0.6 static release snapshot freezes the code for those links, subject to normal browser/codec rounding differences. Git commit history retains prior versions.
