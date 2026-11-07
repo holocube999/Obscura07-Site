@@ -35,7 +35,24 @@ const server=http.createServer((req,res)=>{
   await guestFrame.locator('#scan').click();
   await page.locator('#selloneQrScannerOverlay video').waitFor({timeout:15000});
   await guestFrame.locator('#decoded').getByText('OT1|bridge-test',{exact:true}).waitFor({timeout:15000});
-  await page.locator('#selloneQrScannerOverlay button').click();
+  await page.locator('#selloneQrScannerOverlay button').last().click();
+  assert.equal(await page.locator('#selloneQrScannerOverlay').count(),0);
+  await page.evaluate(()=>{
+    const media=navigator.mediaDevices;
+    const original=media.getUserMedia.bind(media);
+    let first=true;
+    media.getUserMedia=async function(constraints){
+      if(first){first=false;throw new DOMException('User activation required','NotAllowedError')}
+      return original(constraints);
+    };
+  });
+  await guestFrame.locator('#scan').click();
+  await page.locator('#selloneQrScannerOverlay').waitFor({state:'visible',timeout:3000});
+  await page.locator('#selloneCameraActivate').waitFor({state:'visible',timeout:10000});
+  await page.locator('#selloneCameraActivate').click();
+  await page.locator('#selloneQrScannerOverlay video').waitFor({state:'visible',timeout:12000});
+  await page.waitForFunction(()=>document.querySelector('#selloneQrScannerOverlay video')?.readyState>=2,null,{timeout:12000});
+  await page.locator('#selloneQrScannerOverlay button').last().click();
   assert.equal(await page.locator('#selloneQrScannerOverlay').count(),0);
   assert.equal(await guestFrame.locator('#scan').evaluate(()=>location.origin),'null','Guest stays opaque');
   assert.deepEqual(errors,[]);
