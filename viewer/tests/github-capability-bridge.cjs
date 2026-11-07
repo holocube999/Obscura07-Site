@@ -28,6 +28,8 @@ const server=http.createServer((req,res)=>{
   await page.evaluate(({html,channel})=>{const frame=document.getElementById('playframe');window.SelloneBridgeHost.enable(frame,channel);frame.srcdoc=html},{html:guest,channel});
   const guestFrame=page.frameLocator('#playframe');
   await guestFrame.locator('#scan').waitFor();
+  const capability=await guestFrame.locator('#scan').evaluate(()=>({rtc:typeof RTCPeerConnection==='function',entropy:typeof crypto.getRandomValues==='function',opaque:location.origin==='null'}));
+  assert.deepEqual(capability,{rtc:true,entropy:true,opaque:true},'Sandbox must retain WebRTC and random entropy');
   const result=await guestFrame.locator('#scan').evaluate(async()=>window.SelloneHostBridge.digest(new TextEncoder().encode('abc').buffer));
   assert.equal(result,'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
   await guestFrame.locator('#scan').click();
