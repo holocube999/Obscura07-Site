@@ -68,7 +68,7 @@ h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4
 .detail-layout{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap}
 #detailStatus{padding:13px 17px;color:#c2ccd8;background:#1c2030;border-left:3px solid #9582cd;margin:18px 0}
 #playarea{margin:20px 0;padding:12px;border:1px solid #444761;border-radius:14px;background:#0b0d14}
-#playframe,#localAppFrame{display:block;width:100%;height:min(76svh,850px);min-height:420px;border:0;border-radius:9px;background:#08090e}
+#playframe,#localAppFrame,#tunnelFrame{display:block;width:100%;height:min(76svh,850px);min-height:420px;border:0;border-radius:9px;background:#08090e}
 #unavailable{padding:50px clamp(18px,4vw,60px);max-width:880px;margin:25px 0}
 #unavailable h2{margin-bottom:10px}
 #unavailable p{color:var(--muted)}
@@ -150,7 +150,7 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 </section>
 <div id="detailStatus" role="status"></div>
 <div id="playarea" class="hidden">
-<section class="player-pane" id="jsPane" aria-label="Versione JavaScript"><span class="pane-name">VERSIONE JAVASCRIPT</span><iframe id="playframe" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe><iframe id="localAppFrame" class="hidden" title="Applicazione pubblica verificata" loading="eager" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"></iframe></section>
+<section class="player-pane" id="jsPane" aria-label="Versione JavaScript"><span class="pane-name">VERSIONE JAVASCRIPT</span><iframe id="playframe" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"></iframe><iframe id="localAppFrame" class="hidden" title="Applicazione pubblica verificata" loading="eager" allowfullscreen sandbox="allow-scripts allow-same-origin allow-forms allow-downloads"></iframe><iframe id="tunnelFrame" class="hidden" title="OBSCURA/TUNNEL · P2P" loading="eager" allow="camera; clipboard-read; clipboard-write" allowfullscreen referrerpolicy="no-referrer"></iframe></section>
 <section class="player-pane hidden" id="originalPane" aria-label="Versione originale"><span class="pane-name">VERSIONE ORIGINALE · EMULATORE</span><div id="originalStage"></div></section>
 <section id="sourcePane" class="hidden" aria-label="Sorgenti GitHub"></section>
 </div>
