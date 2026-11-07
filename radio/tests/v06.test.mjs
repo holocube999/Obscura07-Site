@@ -108,7 +108,7 @@ test("share serializes recipe, lyrics, mix, speaker and engine",()=>{
  assert.equal(u.searchParams.get("lyrics"),lyrics);
  assert.equal(u.searchParams.get("vm"),"64");
  assert.equal(u.searchParams.get("sp"),"1");
- assert.equal(u.searchParams.get("engine"),"0.6.0");
+ assert.equal(u.searchParams.get("engine"),p.version);
 });
 test("widget has unobtrusive repeat, karaoke, queue and speaker controls",async()=>{
  const {mount}=await import("../widget.js");
