@@ -1,33 +1,29 @@
-name: Tunnel secure-origin check
+name: GitHub viewer capability bridge
 on:
   push:
     paths:
-      - 'transfer/**'
       - 'viewer/**'
       - 'catalog.json'
       - '.github/workflows/tunnel.yml'
   pull_request:
     paths:
-      - 'transfer/**'
-      - 'viewer/catalog.js'
+      - 'viewer/**'
+      - 'catalog.json'
       - '.github/workflows/tunnel.yml'
 jobs:
-  tunnel:
+  bridge:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Check site JavaScript
+      - name: Parse viewer scripts
         run: |
-          node --check transfer/app.js
           node --check viewer/catalog.js
-          node --check viewer/tests/embedded-tunnel.cjs
-          node --check transfer/tests/browser-smoke.cjs
-      - name: Install browser test driver
+          node --check viewer/host-bridge.js
+          node --check viewer/tests/github-capability-bridge.cjs
+      - name: Browser test dependencies
         run: npm install --no-save playwright-core@1.56.1
-      - name: Exercise top-level camera, QR, two WebRTC peers
-        run: |
-          node transfer/tests/browser-smoke.cjs
-          node viewer/tests/embedded-tunnel.cjs
+      - name: Real Chromium sandbox capability bridge
+        run: node viewer/tests/github-capability-bridge.cjs
