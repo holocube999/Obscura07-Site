@@ -6,16 +6,8 @@ const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999
 const initialRef=q.get('ref'),initialPath=q.get('path'),initialView=q.get('view');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
-// The audited, published Tunnel build has a dedicated same-origin iframe.
-// Other repository code continues to use the opaque sandbox.
-const tunnelUrl=new URL('transfer/index.html',root).href;
 function isTunnel(item){return String(item?.repo||'').toLowerCase()==='obscura-tunnel'}
-function hideTunnel(){
- const frame=$('tunnelFrame');
- if(!frame)return;
- frame.classList.add('hidden');
- frame.removeAttribute('src');
-}
+function hideTunnel(){window.SelloneBridgeHost?.disable()}
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO',utility:'UTILITY',audio:'AUDIO'};
@@ -92,7 +84,7 @@ function presentMode(next){
    ('Originale · '+(selected?.origin_system==='amiga'?'Amiga / ADF':
    ['c64','c128','vic20','c16'].includes(selected?.origin_system)?selected.origin_system.toUpperCase():'seleziona supporto')):'Sorgenti GitHub';
 }
-function bridgeHtml(html){
+function bridgeHtml(html,capabilities=false){
  // The sandboxed JS game has an opaque origin; this short bridge contains
  // only a per-session channel, never GitHub credentials or private media.
  const bridge=String.raw`(function(){
@@ -113,6 +105,12 @@ function bridgeHtml(html){
  });
  parent.postMessage({type:'SELLONE_SYNC_READY_V1',channel:channel,side:'js'},'*');
 })()`.replace('CHANNEL',JSON.stringify(syncChannel));
+ if(capabilities){
+  const capabilitySource="(function(){\n 'use strict';\n var channel=CHANNEL,next=0,pending=new Map(),onQr=null,opened=null;\n function post(type,data){parent.postMessage(Object.assign({type:type,channel:channel},data||{}),'*')}\n window.SelloneHostBridge=Object.freeze({\n  available:true,\n  digest:function(bytes){if(!(bytes instanceof ArrayBuffer))return Promise.reject(Error('Buffer SHA-256 non valido'));\n   return new Promise(function(resolve,reject){var id=++next,t=setTimeout(function(){pending.delete(id);reject(Error('Timeout SHA-256 WebPlayer'))},60000);pending.set(id,{resolve:resolve,reject:reject,timer:t});post('SELLONE_BRIDGE_SHA_REQUEST',{id:id,bytes:bytes})})},\n  scan:function(callback){if(typeof callback!=='function')return Promise.reject(Error('Scanner non disponibile'));onQr=callback;return new Promise(function(resolve,reject){opened={resolve:resolve,reject:reject};post('SELLONE_BRIDGE_CAMERA_START')})},\n  stop:function(){onQr=null;post('SELLONE_BRIDGE_CAMERA_STOP')}\n });\n window.addEventListener('message',function(e){\n  if(e.source!==parent||!e.data||e.data.channel!==channel)return;\n  var d=e.data;\n  if(d.type==='SELLONE_BRIDGE_SHA_REPLY'){var p=pending.get(d.id);if(!p)return;pending.delete(d.id);clearTimeout(p.timer);if(d.error)p.reject(Error(String(d.error)));else p.resolve(d.hash)}\n  else if(d.type==='SELLONE_BRIDGE_CAMERA_OPENED'){if(opened){opened.resolve();opened=null}}\n  else if(d.type==='SELLONE_BRIDGE_CAMERA_ERROR'){if(opened){opened.reject(Error(String(d.error)));opened=null}}\n  else if(d.type==='SELLONE_BRIDGE_CAMERA_CLOSED'){onQr=null}\n  else if(d.type==='SELLONE_BRIDGE_CAMERA_FRAME'&&onQr&&typeof jsQR==='function'){\n   try{var code=jsQR(d.pixels,d.width,d.height,{inversionAttempts:'attemptBoth'});if(code&&typeof code.data==='string')onQr(code.data)}catch(_){}\n  }\n });\n window.addEventListener('pagehide',function(){post('SELLONE_BRIDGE_CAMERA_STOP')});\n})()".replace('CHANNEL',JSON.stringify(syncChannel));
+  const capabilityTag='<script>'+capabilitySource+'</script>';
+  const first=html.search(/<script\b/i);
+  if(first>=0)html=html.slice(0,first)+capabilityTag+html.slice(first);else html+=capabilityTag;
+ }
  const tag='<script>'+bridge+'</script>';
  const idx=html.toLowerCase().lastIndexOf('</body>');
  return idx>=0?html.slice(0,idx)+tag+html.slice(idx):html+tag;
@@ -121,7 +119,9 @@ function showJS(result){
  hideTunnel();
  $('localAppFrame').removeAttribute('src');$('localAppFrame').classList.add('hidden');
  $('playframe').classList.remove('hidden');$('playframe').removeAttribute('src');
- $('playframe').srcdoc=bridgeHtml(result.html);
+ const trustedApp=isTunnel(selected);
+ if(trustedApp){if(!window.SelloneBridgeHost)throw Error('Bridge WebPlayer assente');window.SelloneBridgeHost.enable($('playframe'),syncChannel)}
+ $('playframe').srcdoc=bridgeHtml(result.html,trustedApp);
  syncReady.js=false;updateSync();
 }
 function updateSync(){
@@ -175,7 +175,6 @@ function enableUI(active){busy=active;
 }
 async function githubHTML(opts={}){
  if(!selected)return;
- if(isTunnel(selected)&&view!=='source'){localBuild(selected);return}
  enableUI(true);showFrame();showStatus('Lettura da GitHub e verifica SHA…');
  try{
   // In split mode the emulator must remain running while the JS build reloads.
@@ -191,28 +190,6 @@ async function githubHTML(opts={}){
   showJS(result);
   $('detailStatus').textContent='HTML GitHub · '+result.path+' · commit '+result.ref.slice(0,12);
   showStatus('HTML verificato: '+result.path+' · '+result.moduleCount+' moduli JS · '+result.assetCount+' dipendenze.');
-  // Private apps needing secure-context browser APIs cannot run inside an
-  // opaque-origin sandbox. Export the already SHA-verified, self-contained HTML.
-  const oldStandalone=$('standaloneAction');
-  if(oldStandalone)oldStandalone.remove();
-  if(/(?:^|\/)OBSCURA-TUNNEL$/i.test(result.repo)){
-   const standalone=document.createElement('button');
-   standalone.id='standaloneAction';
-   standalone.className='action secondary';
-   standalone.type='button';
-   standalone.textContent='↓ Scarica app autonoma';
-   standalone.title='Un HTML completo, senza token GitHub; aprilo in un browser come file locale o su localhost';
-   standalone.addEventListener('click',()=>{
-    const file=new Blob([result.html],{type:'text/html;charset=utf-8'});
-    const url=URL.createObjectURL(file);
-    const link=document.createElement('a');
-    link.href=url;link.download='OBSCURA-TUNNEL-standalone.html';link.rel='noopener';
-    document.body.append(link);link.click();link.remove();
-    setTimeout(()=>URL.revokeObjectURL(url),60000);
-   });
-   $('detailActions').append(standalone);
-   showStatus('WebPlayer isolato: Web Crypto non disponibile nell’iframe. Usa “Scarica app autonoma” e apri l’HTML nel browser (oppure via localhost).');
-  }
   const existing=$('commitAction');
   if(existing)existing.remove();
   const a=link($('detailActions'),'↗ Commit GitHub','https://github.com/'+result.repo+'/commit/'+result.ref,true);
@@ -277,19 +254,6 @@ async function boot(){
  finally{enableUI(false)}
 }
 function localBuild(item){
- if(isTunnel(item)){
-  showFrame();
-  $('playframe').classList.add('hidden');
-  $('playframe').removeAttribute('src');
-  $('localAppFrame').classList.add('hidden');
-  $('localAppFrame').removeAttribute('src');
-  const frame=$('tunnelFrame');
-  frame.classList.remove('hidden');
-  if(frame.src!==tunnelUrl)frame.src=tunnelUrl;
-  $('detailStatus').textContent='OBSCURA/TUNNEL · HTTPS · WebRTC e fotocamera';
-  showStatus('App P2P verificata incorporata: fotocamera autorizzabile in HTTPS, senza download.');
-  return true;
- }
  hideTunnel();
  const url=item.published?approvedBuild(item.url):'';
  if(!url)return false;
