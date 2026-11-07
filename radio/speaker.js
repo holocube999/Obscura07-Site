@@ -30,56 +30,152 @@ const WORDS={
  fanLabel:"Fictional call",adLabel:"Imaginary advertisement"
  }
 };
-export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[]}={}){
- const r=randomFor(seed+"|"+(previous?.seed||"")+"|"+(next?.seed||"")+"|DJ06");
- // One consistent presenter, independently cast callers for every appearance.
- const host=createVoicePersona("RNR/station/"+(seed||"default"),{role:"host",style:"radio"});
- const caller=createVoicePersona(next?.seed||seed||"guest",{role:"caller",style:"radio",excludeId:host.id});
- const pack=WORDS[language]||WORDS.en;
- const roll=r();if(roll<.52)return null;
- const voices=[{...host,emotion:"warm",stumble:0},
- {...caller,emotion:"excited"}];
- const band=next?.artist||"Random Null",title=next?.title||"Unknown Transmission";
- const pick=(a)=>choose(r,a);
- const news=Array.isArray(verifiedNews)?verifiedNews.filter(v=>v&&typeof v.title==="string"&&/^https:\/\//.test(v.url||"")&&v.verified===true):[];
- let type,text,persona=voices[0];
- if(roll<.68){type="intro";text=pick(pack.greet)+". "+pick(pack.bridge)+". "+band+". "+title+".";}
- else if(roll<.80){type="bio";text=band+". "+pick(pack.bio)+" "+pick(pack.origin)+". "+pick(pack.bio2)+" "+pick(pack.reason)+".";}
- else if(roll<.89){type="joke";text=pick(pack.jokes);}
- else if(roll<.96){type="advertisement";text=pick(pack.ads);}
- else if(roll<.99){type="caller";persona=voices[1];text=pack.fanLabel+". "+pick(pack.calls);}
- else if(news.length){type="news";const item=pick(news);text=item.title;}
- else {type="intro";text=pick(pack.bridge)+". "+band+".";}
- if(type==="joke")persona={...persona,emotion:r()>.5?"sarcastic":"grumpy"};
+const BIO_QUESTIONS=[
+ (band,p)=>band+" nasce "+p.origin+". Il primo esperimento era "+p.experiment+".",
+ (band,p)=>"Il progetto "+band+" è formato da "+p.members+". Sono noti per "+p.instrument+".",
+ (band,p)=>"La loro ossessione è "+p.reason+". Tutto è cominciato "+p.origin+".",
+ (band,p)=>"Quando gli chiedono perché suonano, rispondono che vogliono "+p.reason+".",
+ (band,p)=>"Il primo concerto di "+band+" è stato "+p.origin+".",
+ (band,p)=>"Per "+band+" il suono più importante è "+p.instrument+".",
+ (band,p)=>"La band è nata nel "+p.year+", dopo un esperimento con "+p.instrument+".",
+ (band,p)=>"La leggenda vuole che "+band+" abbia scritto il suo primo pezzo "+p.origin+".",
+ (band,p)=>"Non hanno mai smesso di cercare "+p.reason+".",
+ (band,p)=>"Il loro metodo è insolito: prima registrano "+p.instrument+", poi scrivono il resto.",
+ (band,p)=>"Una volta hanno suonato per "+p.members+" e un tecnico addormentato.",
+ (band,p)=>"La cosa che li rende diversi è la scelta di "+p.instrument+".",
+ (band,p)=>"I loro concerti cambiano sempre, ma il punto di partenza rimane "+p.reason+".",
+ (band,p)=>"Il brano di stasera è la loro risposta a una domanda: come trasformare "+p.experiment+" in musica?",
+ (band,p)=>"Hanno scelto il nome "+band+" dopo una notte trascorsa "+p.origin+".",
+ (band,p)=>"I loro strumenti cambiano spesso. Non rinunciano mai a "+p.instrument+"."
+];
+const BIO_DETAIL={
+ it:{members:["un duo di fratelli","tre amici d'infanzia","quattro improvvisatori","una musicista e due programmatori","cinque sperimentatori","due ex tecnici radio"],
+ instrument:["un sintetizzatore difettoso","un vecchio campionatore","una drum machine modificata","un basso preparato","nastri magnetici consumati","strumenti costruiti a mano","un oscillatore analogico","un organo modificato","una chitarra senza accordatura","microfoni a contatto"],
+ experiment:["una registrazione notturna","un segnale ricevuto per errore","un rumore di fabbrica","il canto di una vecchia antenna","una sequenza senza fine"]},
+ en:{members:["a pair of siblings","three old friends","four improvisers","two sound engineers","five sonic explorers"],
+ instrument:["a damaged synthesizer","an old sampler","a modified drum machine","a prepared bass","tape loops","handbuilt instruments","an analog oscillator","a detuned guitar"],
+ experiment:["a midnight recording","a stray radio signal","factory noise","a forgotten tape","an endless pulse"]}
+};
+function bandProfile(band,lang,pack){
+ const r=randomFor("RNR-BAND-PROFILE-1|"+band+"|"+lang),details=BIO_DETAIL[lang]||BIO_DETAIL.en;
+ return {origin:choose(r,pack.origin),reason:choose(r,pack.reason),members:choose(r,details.members),
+ instrument:choose(r,details.instrument),experiment:choose(r,details.experiment),
+ year:1980+Math.floor(r()*46)};
+}
+const FOREIGN={
+ fr:{intro:["Vous écoutez Random Null Radio","Un nouveau morceau arrive"],bio:["Un groupe venu de","Ils créent de la musique pour"],joke:["Notre technicien a encore perdu la fréquence."],ad:"Publicité fictive",call:"Appel fictif",news:"Selon"},
+ es:{intro:["Escuchas Random Null Radio","Llega otra canción"],bio:["Un grupo nacido en","Hacen música para"],joke:["El técnico dice que todo funciona. Qué sospechoso."],ad:"Anuncio ficticio",call:"Llamada ficticia",news:"Según"},
+ de:{intro:["Hier ist Random Null Radio","Gleich kommt ein neuer Titel"],bio:["Eine Band aus","Sie machen Musik, um"],joke:["Unser Techniker sagt, alles funktioniert. Verdächtig."],ad:"Erfundene Werbung",call:"Erfundener Anruf",news:"Laut"}
+};
+export function planSpeaker(previous,next,{language="it",seed="",verifiedNews=[],forcedType=null}={}){
+ const r=randomFor(seed+"|"+(previous?.seed||"")+"|"+(next?.seed||"")+"|DJ07");
+ const host=createVoicePersona("RNR/station/"+(seed.split("-")[0]||"default"),{role:"host",style:"radio"});
+ const caller=createVoicePersona("RNR/fan/"+(next?.seed||seed),{role:"caller",style:"radio",excludeId:host.id});
+ const pack=WORDS[language]||WORDS.en,foreign=FOREIGN[language];
+ const roll=r();
+ if(!forcedType&&roll<.52)return null;
+ const news=Array.isArray(verifiedNews)?verifiedNews.filter(v=>v&&typeof v.title==="string"&&/^https:\/\//.test(v.url||"")&&v.verified===true&&typeof v.source==="string"):[];
+ const type=forcedType||(
+  roll<.68?"intro":roll<.80?"bio":roll<.89?"joke":
+  roll<.96?"advertisement":roll<.99?"caller":news.length?"news":"intro");
+ if(!["intro","bio","joke","advertisement","caller","news"].includes(type))return null;
+ if(type==="news"&&!news.length)return null;
+ const band=String(next?.artist||"Random Null").slice(0,100),
+  title=String(next?.title||"Unknown Transmission").slice(0,100);
+ const profile=bandProfile(band,language,pack),pick=a=>choose(r,a);
+ let text="",persona={...host,emotion:"warm",stumble:0},segments=null,article=null;
+ if(type==="intro"){
+  if(foreign)text=pick(foreign.intro)+". "+band+", "+title+".";
+  else {
+   const variants=[
+    ()=>pick(pack.greet)+". "+band+" con "+title+".",
+    ()=>pick(pack.bridge)+". Arrivano "+band+": "+title+".",
+    ()=>"Dopo "+(previous?.title||"la pausa")+" cambiamo aria. "+band+", "+title+".",
+    ()=>"Tra poco ascolterete "+title+" dei "+band+".",
+    ()=>"La prossima frequenza è di "+band+". Si chiama "+title+".",
+    ()=>"Per chi è ancora sveglio, ecco "+band+" con "+title+".",
+    ()=>"Non aggiungo altro: "+band+", "+title+".",
+    ()=>"Abbassiamo le luci. "+band+" e "+title+"."
+   ];
+   text=pick(variants)();
+  }
+ }else if(type==="bio"){
+  if(foreign)text=band+". "+pick(foreign.bio)+" "+profile.origin+".";
+  else if(language==="it")text=pick(BIO_QUESTIONS)(band,profile);
+  else {
+   const choices=[
+    band+" formed in "+profile.origin+" and started by recording "+profile.experiment+".",
+    band+" is "+profile.members+". Their trademark is "+profile.instrument+".",
+    "Why do they play? To "+profile.reason+". "+title+" is their latest experiment.",
+    band+" first played in "+profile.origin+". They still use "+profile.instrument+".",
+    band+" began in "+profile.year+". Their obsession is "+profile.reason+"."
+   ];
+   text=pick(choices);
+  }
+ }else if(type==="joke"){
+  text=foreign?pick(foreign.joke):pick(pack.jokes);
+  persona={...persona,emotion:r()>.5?"sarcastic":"grumpy"};
+ }else if(type==="advertisement"){
+  text=foreign?foreign.ad+". "+pick(WORDS.en.ads):pick(pack.ads);
+ }else if(type==="caller"){
+  const fan=foreign?foreign.call+". "+pick(WORDS.en.calls):pack.fanLabel+". "+pick(pack.calls);
+  const intro=language==="it"?"C'è una telefonata immaginaria in linea. Pronto?":
+   "We have a fictional caller on the line. Hello?";
+  segments=[
+   {text:intro,persona:{...host,emotion:"curious",stumble:0}},
+   {text:fan,persona:{...caller,emotion:"excited"}},
+   {text:language==="it"?"Grazie per la chiamata, torniamo alla musica.":"Thanks for calling. Back to the music.",persona:{...host,emotion:"warm",stumble:0}}
+  ];
+  text=segments.map(x=>x.text).join(" ");
+  persona=caller;
+ }else if(type==="news"){
+  article=pick(news);
+  const prefix=language==="it"?"Titolo dalle notizie, secondo":
+   foreign?foreign.news:"News headline according to";
+  text=prefix+" "+article.source+": "+article.title+".";
+ }
  if(type==="intro"&&next?.style==="hiphop")persona={...persona,emotion:"excited"};
- return {type,text,persona,language:WORDS[language]?language:"en",fictional:type==="caller"||type==="advertisement",verified:type==="news"};
+ return {type,text,persona,segments,language:WORDS[language]||FOREIGN[language]?language:"en",
+  fictional:type==="caller"||type==="advertisement"||type==="bio",
+  verified:type==="news",article};
 }
 export function renderSpeakerPCM(cue,{sampleRate=22050}={}){
  if(!cue?.text)return null;
- const sr=C(Math.round(sampleRate),8000,48000),rnd=randomFor(cue.text+cue.persona.id);
- const words=cue.text.split(/\s+/).filter(Boolean).slice(0,45);
- const samples=[];let total=0;
- for(let i=0;i<words.length;i++){
-  let word=words[i];
-  if(cue.persona.stumble&&rnd()<cue.persona.stumble&&word.length>4)
-   word=word.slice(0,2)+"-"+word;
-  const pause=/[.!?]$/.test(word)?.14:/[,;:]$/.test(word)?.06:.026;
-  const duration=(.17+Math.min(.16,word.length*.012))/cue.persona.pace;
-  const mood=cue.persona.emotion||"warm";
-  const attitude=mood==="excited"?1.10:mood==="grumpy"?.94:1;
-  const hz=cue.persona.pitch*attitude*(1+.065*Math.sin(i*.7)+(/\?$/.test(word)?.09:0));
-  const pcm=synthesizeWord(word,{sampleRate:sr,targetSamples:Math.floor(duration*sr),pitch:hz,
-   formantShift:cue.persona.formant,tuneStrength:0,language:cue.language,
-   breathiness:cue.persona.breath,mode:cue.persona.mode,
-   spectralTilt:cue.persona.spectralTilt,nasality:cue.persona.nasality,
-   rasp:cue.persona.rasp,jitter:cue.persona.jitter,shimmer:cue.persona.shimmer,
-   attack:cue.persona.attack,
-   inflection:(mood==="excited"?.09:.06)*Math.sin(i*.5)},rnd);
-  samples.push({pcm,pause:Math.round(pause*sr)});total+=pcm.length+Math.round(pause*sr);
+ const sr=C(Math.round(sampleRate),8000,48000);
+ const segments=Array.isArray(cue.segments)&&cue.segments.length?cue.segments:[{text:cue.text,persona:cue.persona}];
+ const packets=[];let total=0;
+ for(const segment of segments){
+  const persona=segment.persona||cue.persona,rnd=randomFor(segment.text+persona.id);
+  const words=String(segment.text).split(/\s+/).filter(Boolean).slice(0,55);
+  for(let i=0;i<words.length;i++){
+   let word=words[i];
+   if(persona.stumble&&rnd()<persona.stumble&&word.length>4)word=word.slice(0,2)+"-"+word;
+   const pause=/[.!?]$/.test(word)?.14:/[,;:]$/.test(word)?.06:.026;
+   const duration=(.17+Math.min(.16,word.length*.012))/persona.pace;
+   const mood=persona.emotion||"warm";
+   const attitude=mood==="excited"?1.10:mood==="grumpy"?.94:1;
+   const hz=persona.pitch*attitude*(1+.065*Math.sin(i*.7)+(/\?$/.test(word)?.09:0));
+   const pcm=synthesizeWord(word,{sampleRate:sr,targetSamples:Math.floor(duration*sr),pitch:hz,
+    formantShift:persona.formant,tuneStrength:0,language:cue.language,
+    breathiness:persona.breath,mode:persona.mode,
+    spectralTilt:persona.spectralTilt,nasality:persona.nasality,
+    rasp:persona.rasp,jitter:persona.jitter,shimmer:persona.shimmer,
+    attack:persona.attack,inflection:(mood==="excited"?.09:.06)*Math.sin(i*.5)},rnd);
+   const silence=Math.round(pause*sr);packets.push({pcm,silence,pan:persona.role==="caller"?.16:0});
+   total+=pcm.length+silence;
+  }
+  total+=Math.round(sr*.15);packets.push({pcm:new Float32Array(0),silence:Math.round(sr*.15),pan:0});
  }
  const left=new Float32Array(total+Math.round(sr*.24)),right=new Float32Array(left.length);
- let at=0;for(const {pcm,pause} of samples){for(let i=0;i<pcm.length;i++){left[at+i]+=pcm[i]*.30;right[at+i]+=pcm[i]*.30;}at+=pcm.length+pause;}
+ let at=0;
+ for(const {pcm,silence,pan} of packets){
+  const l=pan>0?.25:.30,r=pan<0?.25:.30;
+  for(let i=0;i<pcm.length;i++){left[at+i]+=pcm[i]*l;right[at+i]+=pcm[i]*r;}
+  at+=pcm.length+silence;
+ }
  const edge=Math.min(Math.round(sr*.025),left.length>>>2);
- for(const ch of [left,right])for(let i=0;i<edge;i++){ch[i]*=i/edge;ch[ch.length-1-i]*=i/edge;}
+ for(const ch of [left,right])for(let i=0;i<edge;i++){
+  ch[i]*=i/edge;ch[ch.length-1-i]*=i/edge;
+ }
  return {sampleRate:sr,channels:[left,right],duration:left.length/sr,cue};
 }
