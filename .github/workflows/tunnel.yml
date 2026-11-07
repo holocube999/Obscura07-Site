@@ -3,7 +3,8 @@ on:
   push:
     paths:
       - 'transfer/**'
-      - 'viewer/catalog.js'
+      - 'viewer/**'
+      - 'catalog.json'
       - '.github/workflows/tunnel.yml'
   pull_request:
     paths:
@@ -22,8 +23,11 @@ jobs:
         run: |
           node --check transfer/app.js
           node --check viewer/catalog.js
+          node --check viewer/tests/embedded-tunnel.cjs
           node --check transfer/tests/browser-smoke.cjs
       - name: Install browser test driver
         run: npm install --no-save playwright-core@1.56.1
       - name: Exercise top-level camera, QR, two WebRTC peers
-        run: node transfer/tests/browser-smoke.cjs
+        run: |
+          node transfer/tests/browser-smoke.cjs
+          node viewer/tests/embedded-tunnel.cjs
