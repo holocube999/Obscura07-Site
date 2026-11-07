@@ -1,0 +1,52 @@
+{
+  "schema": "sellone-project/1",
+  "id": "RandomNullRadio",
+  "title": "RΛNDØM[NULL] RADIO",
+  "origin": "holocube999/Obscura07-Site",
+  "root": "radio/",
+  "language": "JavaScript",
+  "runtime": "browser-static",
+  "deps": "vendor/lame.min.js",
+  "url": "radio/",
+  "viewer_type": "web_js",
+  "capabilities": [
+    "audio",
+    "xenarmonic",
+    "deterministic-seed",
+    "embedded-player",
+    "mp3-export",
+    "vox",
+    "offline",
+    "symbolic-phonetics",
+    "articulatory-dsp",
+    "syllable-timing",
+    "melodic-autotune",
+    "semantic-rap",
+    "seed-revision-restore"
+  ],
+  "embed": {
+    "css": "radio/widget.css",
+    "script": "radio/widget.js",
+    "tag": "<div data-null-radio></div>"
+  },
+  "api": {
+    "module": "radio/api.js",
+    "functions": [
+      "compose",
+      "exportTrack",
+      "synthesize",
+      "playPCM"
+    ]
+  },
+  "guardrails": [
+    "No Node backend",
+    "No secret signing keys in public JS",
+    "User gesture required for audio",
+    "No cross-project modifications without lease"
+  ],
+  "integrations": {
+    "catalog": "../../catalog.json",
+    "webPlayer": "web_js",
+    "status": "registered-in-site-catalog; sellone-local-import-unverified"
+  }
+}

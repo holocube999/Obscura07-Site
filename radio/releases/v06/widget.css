@@ -1,0 +1,112 @@
+/* RΛNDØM[NULL] RADIO — translucent low-profile player */
+.rnr-root{--rnr-ink:#eae4f5;--rnr-dim:#a49cb2;--rnr-border:rgba(220,201,255,.21);font-family:ui-monospace,SFMono-Regular,Consolas,monospace;color:var(--rnr-ink);font-size:11px;max-width:390px;min-width:264px;width:calc(100vw - 28px);text-align:left;line-height:1.25}
+.rnr-root *{box-sizing:border-box}.rnr-root button,.rnr-root input,.rnr-root select{font:inherit}
+.rnr-shell{border:1px solid var(--rnr-border);background:linear-gradient(120deg,rgba(42,34,55,.79),rgba(9,10,17,.65));backdrop-filter:blur(15px) saturate(120%);-webkit-backdrop-filter:blur(15px) saturate(120%);box-shadow:0 9px 28px rgba(0,0,0,.25);border-radius:12px;overflow:hidden}
+.rnr-main{display:flex;align-items:center;gap:8px;padding:8px 9px;min-height:65px}
+.rnr-root button{color:var(--rnr-ink);border:0;background:transparent;cursor:pointer;line-height:1.2;border-radius:6px}.rnr-root button:hover,.rnr-root button:focus-visible{background:rgba(199,173,244,.13)}.rnr-root button:focus-visible{outline:1px solid #dac9ff}
+.rnr-play{height:42px;width:38px;flex:none;font-size:20px!important;color:#e4ccff!important;text-align:center}
+.rnr-ident{min-width:0;flex:1}.rnr-brand{white-space:nowrap;font-size:10px;font-weight:700;letter-spacing:.05em}.rnr-brand span{color:#b08cd8}.rnr-brand small{font-size:8px;font-weight:400;color:#a79aa9;letter-spacing:.14em}
+.rnr-title{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:#e7d8ef;font-size:10px;margin:5px 0 1px}.rnr-artist{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--rnr-dim);font-size:9px}
+.rnr-spectrum{width:72px;height:32px;flex:none;opacity:.95}.rnr-actions{display:flex;gap:1px;align-items:center}.rnr-actions button{padding:6px 3px;font-size:14px;min-width:17px}
+.rnr-panel{padding:10px 12px 12px;border-top:1px solid var(--rnr-border);background:rgba(6,7,15,.17)}.rnr-panel[hidden]{display:none!important}
+.rnr-field{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:0 0 10px}.rnr-panel label{display:block;color:#aaa0b9;font-size:9px;letter-spacing:.06em}
+.rnr-field select,.rnr-seed{margin:4px 0 0;width:100%;background:rgba(4,7,13,.65);color:#eee1f4;border:1px solid rgba(195,175,221,.22);padding:7px;border-radius:5px;min-height:29px;outline-offset:1px}
+.rnr-vox{display:flex!important;gap:7px;align-items:center;color:#ead3ff!important;white-space:nowrap}.rnr-vox span{display:block;color:#9c91ae;font-size:8px;white-space:normal;letter-spacing:0}.rnr-vox input{accent-color:#ac80e0}
+.rnr-seed-row{display:flex;align-items:end;gap:6px;margin:0 0 10px}.rnr-seed-row label{flex:1;min-width:0}.rnr-restore{border:1px solid rgba(195,175,221,.25)!important;padding:7px 6px}
+.rnr-download{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.rnr-download button{border:1px solid rgba(195,175,221,.3);background:rgba(102,76,123,.19);padding:7px 9px;font-size:10px}.rnr-progress{color:#afa5bc;font-size:9px;flex:1}.rnr-meta{color:#92849e;font-size:9px;margin-top:8px}
+.rnr-root.rnr-busy .rnr-play{opacity:.7}
+.rnr-obscura-dock{position:fixed;z-index:105;left:clamp(12px,2vw,28px);bottom:clamp(12px,2vw,24px);pointer-events:auto}
+@media(max-width:540px){.rnr-root{width:min(350px,calc(100vw - 22px));min-width:0}.rnr-obscura-dock{left:11px;bottom:11px}.rnr-spectrum{width:51px}.rnr-main{gap:5px;padding:7px}.rnr-root{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.rnr-shell{backdrop-filter:none;-webkit-backdrop-filter:none}}
+
+/* Album sleeve is intentionally compact; dock layout stays intact. */
+.rnr-cover{width:43px;height:43px;flex:0 0 43px;object-fit:cover;border-radius:3px;box-shadow:0 1px 8px #0008;border:1px solid #fff2}
+@media(max-width:540px){.rnr-cover{width:35px;height:35px;flex-basis:35px}.rnr-spectrum{width:40px}}
+
+
+/* Obscura07 integrates this independently versioned component as a quiet,
+   dismissible top-right dock. The standalone /radio/ remains full size. */
+.rnr-site-dock{position:fixed;right:clamp(10px,2vw,28px);top:clamp(10px,2vw,23px);
+ z-index:150;display:flex;flex-direction:column;align-items:flex-end;gap:6px;
+ max-width:calc(100vw - 20px);pointer-events:none}
+.rnr-site-dock>*{pointer-events:auto}
+.rnr-site-toggle{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;
+ border:1px solid rgba(170,162,193,.31);border-radius:999px;
+ color:#cfcae4;background:rgba(10,9,18,.65);
+ backdrop-filter:blur(14px);box-shadow:0 3px 15px #0008;
+ font:10px ui-monospace,Consolas,monospace;letter-spacing:.04em;
+ cursor:pointer;white-space:nowrap}
+.rnr-site-toggle:focus-visible{outline:2px solid #cfc8ea;outline-offset:3px}
+.rnr-site-panel[hidden]{display:none!important}
+.rnr-site-panel{width:min(380px,calc(100vw - 20px));max-height:min(75svh,650px);
+ overflow:auto;overscroll-behavior:contain;border-radius:12px}
+.rnr-site-panel .rnr-root{width:100%;min-width:0}
+.rnr-site-dock[data-playing=true] .rnr-site-toggle{border-color:rgba(140,199,187,.5)}
+@media(max-width:640px){.rnr-site-dock{top:10px;right:10px}.rnr-site-toggle{font-size:9px;padding:6px 9px}
+ .rnr-site-panel{max-height:70svh}}
+
+
+/* Master gain is always visible. Voice trim belongs to the advanced panel. */
+.rnr-volume-row,.rnr-voice-row{display:flex!important;align-items:center;gap:9px;
+ color:#baacd4;font-size:9px;letter-spacing:.12em;white-space:nowrap}
+.rnr-volume-row{padding:2px 12px 8px;border-top:1px solid rgba(193,176,219,.13)}
+.rnr-voice-row{padding:4px 0 11px;margin-bottom:10px;
+ border-bottom:1px solid rgba(193,176,219,.14)}
+.rnr-volume-row input,.rnr-voice-row input{flex:1;min-width:28px;height:15px;
+ accent-color:#ac87d3;cursor:pointer}
+.rnr-volume-row output,.rnr-voice-row output{font:10px ui-monospace,Consolas,monospace;
+ letter-spacing:0;min-width:35px;text-align:right;color:#e5d8f4}
+.rnr-context-label{display:block;margin-bottom:10px;color:#bcb0cf;font-size:9px}
+.rnr-context{display:block;width:100%;resize:vertical;min-height:40px;max-height:130px;
+ padding:8px;margin-top:4px;border:1px solid rgba(195,175,221,.22);
+ background:#0b0c18;color:#eee4f7;border-radius:6px;
+ font:11px/1.4 ui-monospace,monospace;outline-offset:2px}
+.rnr-cover-open{margin:0;padding:0!important;flex:none;border:0;border-radius:4px;
+ line-height:0!important;background:transparent!important}
+.rnr-cover-open:hover .rnr-cover,.rnr-cover-open:focus-visible .rnr-cover{
+ outline:1px solid #cbbbe9;outline-offset:2px;filter:brightness(1.13)}
+.rnr-cover-dialog{position:fixed;inset:0;margin:auto;
+ max-width:min(93vw,880px);max-height:94vh;width:fit-content;
+ background:#0c0b16;color:#e9e2f5;
+ border:1px solid #77658a;border-radius:14px;
+ box-shadow:0 20px 65px #000c;padding:18px;text-align:center}
+.rnr-cover-dialog::backdrop{background:#020206dc;backdrop-filter:blur(6px)}
+.rnr-cover-large{display:block;max-width:min(82vw,760px);max-height:75vh;
+ width:auto;height:auto;object-fit:contain;border-radius:6px}
+.rnr-cover-close{position:absolute;top:3px;right:8px;font:24px sans-serif!important;
+ background:#1a1628!important;border-radius:50%!important;padding:3px 9px!important}
+.rnr-cover-caption{margin:13px 0 2px;font:12px ui-monospace,monospace;overflow-wrap:anywhere}
+@media(max-width:540px){.rnr-volume-row{padding:3px 8px 7px}
+.rnr-cover-dialog{padding:12px}}
+
+/* Small lyric action attached to the existing TEXT INPUT, no layout redesign. */
+.rnr-generate-lyrics{float:right;min-width:24px;height:22px;padding:1px 5px!important;font-size:15px!important;opacity:1;color:#e9ccff!important;border:1px solid rgba(195,175,221,.45)!important;background:rgba(152,112,179,.19)!important}
+.rnr-generate-lyrics:hover,.rnr-generate-lyrics:focus-visible{opacity:1}
+
+.rnr-share-dialog{position:fixed;margin:auto;max-width:min(350px,90vw);width:280px;background:#110f1c;color:#e8def3;border:1px solid #84709e;border-radius:10px;padding:15px;box-shadow:0 12px 40px #000b;font:11px ui-monospace,monospace}
+.rnr-share-dialog::backdrop{background:#030309be}
+.rnr-share-dialog p{margin:0 0 12px;font-weight:bold}
+.rnr-share-actions{display:flex;flex-direction:column;gap:7px}
+.rnr-share-actions a{display:block;color:#e8d6ff;text-decoration:none;border:1px solid #746187;border-radius:6px;padding:7px}
+.rnr-share-copy{margin-top:9px!important;padding:7px!important;border:1px solid #746187!important;width:100%}
+.rnr-share-close{position:absolute;top:7px;right:8px;font-size:18px!important}
+
+/* RNR 0.6: unobtrusive player controls and folded sections. */
+.rnr-mini-toolbar{display:flex;justify-content:flex-end;gap:3px;padding:0 10px 4px;margin-top:-4px}
+.rnr-mini-toolbar button{font-size:11px!important;min-width:22px;height:20px;opacity:.7}
+.rnr-mini-toolbar button[aria-pressed=true],.rnr-mini-toolbar button[aria-expanded=true]{opacity:1;color:#e6c9ff!important;background:#765a9738}
+.rnr-karaoke{margin:0 9px 6px;padding:4px 7px;border-top:1px solid #bda4d527;text-align:center;overflow:hidden}
+.rnr-karaoke[hidden],.rnr-playlist[hidden]{display:none!important}
+.rnr-karaoke-previous,.rnr-karaoke-next{height:13px;font-size:8px;opacity:.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rnr-karaoke-current{min-height:19px;max-height:40px;overflow:hidden;font-size:11px;line-height:1.5;opacity:.85}
+.rnr-karaoke-current .active{color:#f2cdff;text-shadow:0 0 4px #bba2f3;font-weight:700}
+.rnr-playlist{max-height:190px;overflow-y:auto;margin:0 8px 8px;padding:5px;border-top:1px solid #c5adde27}
+.rnr-play-modes{display:flex;gap:3px;padding:0 0 6px}
+.rnr-play-modes button{font-size:9px!important;padding:4px 5px!important;border:1px solid #c4adde24!important;flex:1}
+.rnr-play-modes button[aria-pressed=true]{color:#eed5ff!important;background:#8064a044}
+.rnr-play-items{list-style:none;padding:0;margin:0;max-height:120px;overflow:auto}
+.rnr-play-items li button{width:100%;text-align:left;padding:5px 4px!important;font-size:9px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.72}
+.rnr-play-items li button.current{opacity:1;color:#eed2ff!important;background:#b8a1ce1a}
+.rnr-speaker-row{display:flex!important;gap:6px;margin:0 0 8px;align-items:center;color:#c8b9df!important}
+.rnr-speaker-row input{accent-color:#ae8bd9}
+.rnr-speaker-row span{font-size:8px;color:#9e91b2}
