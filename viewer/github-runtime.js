@@ -115,9 +115,9 @@ async function discover(input){
  const result=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(result.truncated)throw Error('Albero GitHub troppo grande: selezione automatica sospesa');
  if(repo===POCKETJS_REPO){
-  const zip=(result.tree||[]).find(x=>x.type==='blob'&&x.path===POCKETJS_BOOTSTRAP&&x.size>1024);
-  if(!zip)throw Error('PocketJS: archivio bootstrap non presente');
-  return {repo,ref:commit.sha,files:[POCKETJS_BOOTSTRAP],path:POCKETJS_BOOTSTRAP};
+  const front=(result.tree||[]).find(x=>x.type==='blob'&&x.path==='web/index.html'&&x.size>1024*1024&&x.size<=12*1024*1024);
+  if(!front)throw Error('PocketJS: frontend web/index.html completo non disponibile');
+  return {repo,ref:commit.sha,files:['web/index.html'],path:'web/index.html'};
  }
  const files=(result.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
   !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
@@ -173,7 +173,11 @@ async function load(input){
  let files;
  if(!ref){const newest=await discover(repo);ref=newest.ref;files=newest.files;path=path||newest.path}
  if(!shaPattern.test(ref||''))throw Error('SHA GitHub completo richiesto');
- if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP)return pocketJSArchive(repo,ref,files);
+ if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP){
+  // Legacy viewer links pointed to a ZIP without HTML: use the actual frontend.
+  path='web/index.html';
+ }
+ if(repo===POCKETJS_REPO&&path!=='web/index.html')throw Error('Percorso PocketJS non autorizzato');
  safePath(path);
  const url='https://api.github.com/repos/'+repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref;
  const entry=await api(url);
