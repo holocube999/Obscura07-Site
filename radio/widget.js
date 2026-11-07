@@ -10,6 +10,7 @@ import {makeQueue} from "./playlist-core.js";
 import {makeKaraokeCues,karaokeAt} from "./karaoke.js";
 import {renderSpeakerPCM} from "./speaker.js";
 import {createStationDirector} from "./station-director.js";
+import {createNativeAnnouncer} from "./native-announcer.js";
 import {fetchVerifiedNews} from "./news-source.js";
 import {createSongLink,shareTargets} from "./share.js";
 import {renderPCM} from "./radio.js";
@@ -18,7 +19,7 @@ const qs=(root,sel)=>root.querySelector(sel);
 function optionMarkup(items,any){return (any?[['',"Random"]]:[]).concat(items.map(x=>Array.isArray(x)?x:[x,names[x]||x])).map(x=>'<option value="'+x[0]+'">'+x[1]+'</option>').join("");}
 export function mount(root,settings={}){
  if(root.__rnr)return root.__rnr;
- const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,repeat:false,karaoke:false,startedAt:0,lyricKey:"",karaokeCues:[],prefetched:null,prefetchTicket:0,speakerActive:false,pendingEntry:null,station:createStationDirector({seed:"RNR-Station-v07"}),loadingExisting:false,newsCache:[],lastNewsFetch:0,loadingNews:false,queue:makeQueue(),active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:"",generatedLyrics:false,lyricsVariant:0,speaker:Boolean(settings.speaker)}};
+ const state={root,ctx:null,source:null,analyser:null,gain:null,audio:null,plan:null,playing:false,muted:false,busy:false,raf:0,repeat:false,karaoke:false,startedAt:0,lyricKey:"",karaokeCues:[],prefetched:null,prefetchTicket:0,speakerActive:false,pendingEntry:null,station:createStationDirector({seed:"RNR-Station-v07"}),announcer:createNativeAnnouncer(),loadingExisting:false,newsCache:[],lastNewsFetch:0,loadingNews:false,queue:makeQueue(),active:null,voiceActive:null,voiceGain:null,token:0,nextTimer:null,volume:Number.isFinite(settings.volume)?Math.max(0,Math.min(1,settings.volume)):.75,voiceMix:Number.isFinite(settings.voiceMix)?Math.max(0,Math.min(1,settings.voiceMix)):.22,settings:{seed:settings.seed||"",style:settings.style||"",mood:settings.mood||"",concept:settings.concept||"",language:settings.language||"",duration:settings.duration||"",withVox:Boolean(settings.withVox),extraText:"",generatedLyrics:false,lyricsVariant:0,speaker:Boolean(settings.speaker),speakerVoice:settings.speakerVoice==="synth"?"synth":"system"}};
  root.classList.add("rnr-root");
  root.innerHTML='<section class="rnr-shell" aria-label="RΛNDØM[NULL] RADIO">'+
  '<div class="rnr-main"><button type="button" class="rnr-play" title="Riproduci" aria-label="Riproduci">▶</button>'+
@@ -33,7 +34,7 @@ export function mount(root,settings={}){
  '<div class="rnr-field"><label>CONCEPT<select data-param="concept">'+optionMarkup(CONCEPTS,true)+'</select></label><label>LANGUAGE<select data-param="language">'+optionMarkup(Object.keys(LANGUAGE_PACKS).map(s=>[s,s.toUpperCase()]),true)+'</select></label></div>'+
  '<div class="rnr-field rnr-small"><label>DURATION<select data-param="duration"><option value="">Random</option><option value="30">30s</option><option value="60">60s</option><option value="90">90s</option><option value="120">120s</option></select></label>'+
  '<label class="rnr-vox"><input type="checkbox" data-param="withVox"> withVøx <span>voce PCM preregistrata · coro / mostro / autotune</span></label></div>'+
- '<label class="rnr-speaker-row"><input type="checkbox" data-param="speaker"> SPEAKER <span>DJ, spot e chiamate simulate · intermittente</span></label>'+
+ '<label class="rnr-speaker-row"><input type="checkbox" data-param="speaker"> SPEAKER <span>DJ, spot e chiamate simulate · intermittente</span></label><label class="rnr-dj-voice-row">VOCE SPEAKER<select class="rnr-dj-voice" aria-label="Qualità voce speaker"><option value="system">Sistema · più naturale</option><option value="synth">Sintetica · offline</option></select></label>'+
  '<label class="rnr-context-label">TEXT INPUT (opzionale: parole proprie o da fonti autorizzate)<button class="rnr-generate-lyrics" type="button" title="Rigenera versi diversi mantenendo la stessa musica" aria-label="Rigenera testo del brano">⟳</button><textarea class="rnr-context" rows="2" maxlength="3200" aria-label="Lessico aggiuntivo offline" placeholder="Incolla brevi parole o appunti propri, non articoli protetti da copyright"></textarea></label>'+
  '<div class="rnr-seed-row"><label>SEED <input class="rnr-seed" spellcheck="false" maxlength="128" placeholder="random seed"></label><button class="rnr-restore" type="button">↻ SEED</button></div>'+
  '<div class="rnr-download"><button class="rnr-mp3" type="button">↓ MP3</button><button class="rnr-wav" type="button">↓ WAV</button><button class="rnr-share" type="button" title="Condividi il brano">↗ SHARE</button><span class="rnr-progress" aria-live="polite">Offline • 22.05 kHz</span></div>'+
@@ -81,6 +82,9 @@ export function mount(root,settings={}){
  lightbox.addEventListener("click",event=>{if(event.target===lightbox)lightbox.close()});
  volumeSlider.addEventListener("input",()=>setVolume(Number(volumeSlider.value)/100));
  voiceSlider.addEventListener("input",()=>setVoiceMix(Number(voiceSlider.value)/100));
+  const djVoice=qs(root,".rnr-dj-voice");
+  djVoice.value=state.settings.speakerVoice;
+  djVoice.addEventListener("change",()=>{state.settings.speakerVoice=djVoice.value;});
  qs(root,".rnr-context").addEventListener("change",event=>{
   state.settings.extraText=event.target.value.slice(0,3200);
   state.settings.generatedLyrics=Boolean(state.settings.extraText.trim());
@@ -195,7 +199,7 @@ export function mount(root,settings={}){
   state.nextTimer=null;
   haltTrack(state.voiceActive);state.voiceActive=null;
   haltTrack(state.active);
-  state.active=null;state.source=null;state.playing=false;state.speakerActive=false;state.pendingEntry=null;
+  state.announcer.cancel();state.active=null;state.source=null;state.playing=false;state.speakerActive=false;state.pendingEntry=null;
   play.textContent="▶";play.setAttribute("aria-label","Riproduci");
   if(state.raf)cancelAnimationFrame(state.raf);state.raf=0;paint();
  }
@@ -285,6 +289,24 @@ export function mount(root,settings={}){
   const cue=state.station.next(state.plan,entry,{enabled:state.settings.speaker,
    language:stationLanguage(),verifiedNews:state.newsCache});
   if(cue){
+   if(state.settings.speakerVoice==="system"&&state.announcer.available){
+    const ticket=++state.token;
+    state.speakerActive=true;state.pendingEntry={entry,ready};
+    clearTimeout(state.nextTimer);state.nextTimer=null;
+    if(state.active?.gain){
+     const gain=state.active.gain.gain,t=state.ctx.currentTime;
+     gain.cancelScheduledValues(t);gain.setValueAtTime(gain.value,t);
+     gain.setTargetAtTime(0,t,.25);
+    }
+    if(state.voiceActive){
+     haltTrack(state.voiceActive);state.voiceActive=null;
+    }
+    message("Speaker · "+cue.type+" · voce sistema");
+    const completed=await state.announcer.speak(cue,{language:stationLanguage()});
+    if(ticket!==state.token||!state.playing)return;
+    if(completed){state.pendingEntry=null;await goToEntry(entry,ready);return;}
+    state.pendingEntry=null;state.speakerActive=false;
+   }
    try{
     const spoken=renderSpeakerPCM(cue,{sampleRate:22050});
     if(spoken&&state.playing){
@@ -311,6 +333,7 @@ export function mount(root,settings={}){
   await goToEntry(entry,ready);
  }
  async function goToEntry(entry,prepared=null){
+  state.pendingEntry=null;
   if(entry.existingIndex!==undefined)state.queue.select(entry.existingIndex);
   state.settings.seed=entry.seed;
   state.settings.lyricsVariant=entry.lyricsVariant||0;
@@ -345,6 +368,7 @@ export function mount(root,settings={}){
  async function skip(){
   if(state.speakerActive&&state.pendingEntry){
    const {entry,ready}=state.pendingEntry;state.pendingEntry=null;
+   ++state.token;state.announcer.cancel();
    clearTimeout(state.nextTimer);state.nextTimer=null;
    haltTrack(state.active);state.active=null;state.speakerActive=false;
    await goToEntry(entry,ready);return;
