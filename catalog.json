@@ -508,6 +508,19 @@
       "visibility": "private",
       "category": "research",
       "release_path": "viewer/vic20/"
+    },
+    {
+      "id": "NULLGOD-MUSIC",
+      "repo": "NULLGOD-MUSIC",
+      "title": "NULLGOD / MUSIC",
+      "kind": "Musica",
+      "description": "Hub musicale NullGod: ricerca multi-sorgente, player audio/video, album e playlist, tag ID3, splitting full album, ZIP e raccomandazioni. Repository privato: accesso GitHub richiesto.",
+      "published": false,
+      "url": null,
+      "advanced_url": null,
+      "viewer_type": "web_js",
+      "visibility": "private",
+      "category": "audio"
     }
   ]
 }
