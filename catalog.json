@@ -13,7 +13,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "PocketJS-NativeServer",
@@ -24,7 +25,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "native"
+      "viewer_type": "native",
+      "category": "systems"
     },
     {
       "id": "death-mask-enhanced",
@@ -35,7 +37,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "holo-crm",
@@ -46,7 +49,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "tools"
     },
     {
       "id": "deathmask",
@@ -57,7 +61,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "reverse-eng",
@@ -68,7 +73,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "archive"
+      "viewer_type": "archive",
+      "category": "research"
     },
     {
       "id": "synd",
@@ -79,7 +85,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "rhunter",
@@ -90,7 +97,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "amiga_media"
+      "viewer_type": "amiga_media",
+      "category": "research"
     },
     {
       "id": "streamchat",
@@ -101,7 +109,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "communication"
     },
     {
       "id": "64zr",
@@ -112,7 +121,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "vroom",
@@ -123,7 +133,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "communication"
     },
     {
       "id": "dmpack-registry",
@@ -134,7 +145,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "archive"
+      "viewer_type": "archive",
+      "category": "research"
     },
     {
       "id": "deathmask-cold-archive",
@@ -145,7 +157,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "archive"
+      "viewer_type": "archive",
+      "category": "research"
     },
     {
       "id": "ghostchat-p2p",
@@ -156,7 +169,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "communication"
     },
     {
       "id": "JSDoctor-MadDoctor",
@@ -168,7 +182,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "origin_system": "c64"
+      "origin_system": "c64",
+      "category": "games"
     },
     {
       "id": "RoboCop3-JS",
@@ -180,7 +195,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "origin_system": "amiga"
+      "origin_system": "amiga",
+      "category": "games"
     },
     {
       "id": "ARMigaOs",
@@ -191,7 +207,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "amiga_media"
+      "viewer_type": "amiga_media",
+      "category": "retro"
     },
     {
       "id": "NG-REForge",
@@ -202,7 +219,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "native"
+      "viewer_type": "native",
+      "category": "tools"
     },
     {
       "id": "JSSkool",
@@ -213,7 +231,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSWho2",
@@ -224,7 +243,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSWorld",
@@ -235,7 +255,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSFears",
@@ -246,7 +267,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSGloom",
@@ -258,7 +280,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "origin_system": "amiga"
+      "origin_system": "amiga",
+      "category": "games"
     },
     {
       "id": "JSQuest",
@@ -269,7 +292,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSHunter",
@@ -281,7 +305,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "origin_system": "amiga"
+      "origin_system": "amiga",
+      "category": "games"
     },
     {
       "id": "JSDesert",
@@ -292,7 +317,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSWarmUp",
@@ -303,7 +329,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSNexus",
@@ -314,7 +341,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSBrewBiz",
@@ -326,7 +354,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "origin_system": "c64"
+      "origin_system": "c64",
+      "category": "games"
     },
     {
       "id": "JSLeader",
@@ -337,7 +366,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSWonder",
@@ -348,7 +378,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSTerror2",
@@ -359,7 +390,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "JSTopCat",
@@ -370,7 +402,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "ARMigaFW",
@@ -381,7 +414,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "amiga_media"
+      "viewer_type": "amiga_media",
+      "category": "retro"
     },
     {
       "id": "DeathMask-Gloom-Amiga",
@@ -393,7 +427,9 @@
       "url": "viewer/deathmask/lab.html",
       "advanced_url": "viewer/deathmask/",
       "viewer_type": "amiga_media",
-      "origin_system": "amiga"
+      "origin_system": "amiga",
+      "category": "games",
+      "release_path": "viewer/deathmask/"
     },
     {
       "id": "Obscura07-Site",
@@ -404,7 +440,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "site"
+      "viewer_type": "site",
+      "category": "web"
     },
     {
       "id": "JSWolf3D",
@@ -415,7 +452,8 @@
       "published": false,
       "url": null,
       "advanced_url": null,
-      "viewer_type": "web_js"
+      "viewer_type": "web_js",
+      "category": "games"
     },
     {
       "id": "RandomNullRadio",
@@ -427,7 +465,9 @@
       "url": "radio/index.html",
       "advanced_url": "radio/index.html",
       "viewer_type": "web_js",
-      "source_repo_pending": "RandomNullRadio"
+      "source_repo_pending": "RandomNullRadio",
+      "category": "audio",
+      "release_path": "radio/"
     },
     {
       "id": "OBSCURA-EMU",
@@ -439,7 +479,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "visibility": "private"
+      "visibility": "private",
+      "category": "retro"
     },
     {
       "id": "OBSCURA-TUNNEL",
@@ -451,7 +492,8 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "visibility": "private"
+      "visibility": "private",
+      "category": "communication"
     },
     {
       "id": "VIC20-Bible",
@@ -463,7 +505,9 @@
       "url": "viewer/vic20/index.html",
       "advanced_url": "viewer/vic20/index.html",
       "viewer_type": "web_js",
-      "visibility": "private"
+      "visibility": "private",
+      "category": "research",
+      "release_path": "viewer/vic20/"
     }
   ]
 }

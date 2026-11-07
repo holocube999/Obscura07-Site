@@ -19,7 +19,23 @@ h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4
 .lede{color:#b9c0ce;max-width:740px;font-size:1.05rem}
 .panel{background:var(--pane);border:1px solid var(--edge);border-radius:16px}
 .toolbar{margin:31px 0 17px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-#search{background:#171b29;color:#fff;border:1px solid #48506b;border-radius:9px;padding:13px 15px;font:inherit;flex:1;min-width:190px}
+#search{background:#171b29;color:#fff;border:1px solid #48506b;border-radius:9px;padding:11px 13px;font:inherit;flex:1;min-width:190px}
+.catalog-control{font-size:10px;color:#aab1c3;display:flex;flex-direction:column;gap:3px;letter-spacing:.02em}
+.catalog-control select{background:#171b29;color:#e8e7ef;border:1px solid #48506b;border-radius:8px;font:12px/1.4 system-ui,sans-serif;padding:9px 26px 9px 10px;max-width:220px}
+.catalog-groups{margin:20px 0 50px}
+.catalog-group{margin:0 0 29px}
+.catalog-group-header{display:flex;gap:12px;align-items:baseline;border-bottom:1px solid #2b3040;padding:0 0 7px}
+.catalog-group-header h2{font-size:16px;font-weight:650;margin:0;letter-spacing:-.015em}
+.catalog-count{color:#8991a6;font-size:11px;font-variant-numeric:tabular-nums}
+.catalog-group .grid{margin:12px 0 0}
+.project-release{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:-3px 0 11px;color:#9da8b9;font-size:10px;font-variant-numeric:tabular-nums}
+.project-release time{color:#b6bac9}
+.new-badge{font-size:9px;letter-spacing:.06em;font-weight:750;line-height:1.5;border-radius:4px;border:1px solid #38755e;color:#a9e0c3;background:#203d32;padding:1px 4px}
+.new-badge.is-blink{animation:sellone-new-pulse 3.4s ease-in-out infinite}
+.new-badge.is-dark{border-color:#355246;color:#719d86;background:#1c2d26}
+@keyframes sellone-new-pulse{0%,100%{opacity:1}50%{opacity:.53}}
+@media(prefers-reduced-motion:reduce){.new-badge.is-blink{animation:none}}
+@media(max-width:650px){.catalog-control select{max-width:none}.toolbar{gap:9px}.catalog-control{flex:1;min-width:130px}.catalog-control select{width:100%}.stat{width:100%}}
 .stat{color:var(--muted);font-size:13px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px;margin:20px 0 55px}
 .project{padding:19px;min-height:185px;display:flex;flex-direction:column}
@@ -90,10 +106,17 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <p class="lede">Tutti i progetti. Apri le build disponibili, anche dal telefono.</p>
 <div class="toolbar">
 <input id="search" type="search" autocomplete="off" placeholder="Cerca un progetto…" aria-label="Cerca un progetto">
+<label class="catalog-control">Categoria <select id="categoryFilter" aria-label="Filtra macro-categoria">
+<option value="all">Tutte</option>
+</select></label>
+<label class="catalog-control">Ordina <select id="sortOrder" aria-label="Ordina progetti">
+<option value="recent">Ultimo aggiornamento</option>
+<option value="az">Alfabetico A–Z</option>
+</select></label>
 <span class="stat" id="stats" aria-live="polite">Caricamento catalogo…</span>
 </div>
 <div id="message" role="status"></div>
-<div class="grid" id="grid" aria-label="Catalogo progetti"></div>
+<div class="catalog-groups" id="grid" aria-label="Catalogo progetti raggruppato per categoria"></div>
 </section>
 <section id="detail" class="hidden">
 <a id="back" href="./">← Torna a tutti i progetti</a>
@@ -167,6 +190,8 @@ footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-s
 <script src="./web-bundler.js" defer></script>
 <script src="./retro-runtime.js" defer></script>
 <script src="./host-bridge.js" defer></script>
+<script src="./catalog-organizer.js" defer></script>
+<script src="./catalog-ui.js" defer></script>
 <script src="./catalog.js" defer></script>
 <script src="./sellone-ui.js" defer></script>
 <script src="../assets/embed-bridge.js" defer></script>

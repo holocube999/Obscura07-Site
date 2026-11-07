@@ -46,6 +46,7 @@ function card(item){
  return el;
 }
 function listing(value=''){
+ if(window.SelloneCatalogUI)return window.SelloneCatalogUI.list(all,value,card);
  const filter=value.toLocaleLowerCase('it');const grid=$('grid');grid.replaceChildren();
  let count=0;
  for(const item of all){
@@ -348,9 +349,12 @@ async function loadCatalog(){
    seen.add(id.toLowerCase());
    all.push({id,repo:item.repo,title:String(item.title||item.repo).slice(0,90),
     description:String(item.description||'').slice(0,250),kind:String(item.kind||''),
-    viewer_type:types[item.viewer_type]?item.viewer_type:'archive',origin_system:String(item.origin_system||''),
-    published:item.published===true&&!!approvedBuild(item.url),url:item.url});
+    category:String(item.category||''),viewer_type:types[item.viewer_type]?item.viewer_type:'archive',
+    origin_system:String(item.origin_system||''),published:item.published===true&&!!approvedBuild(item.url),url:item.url,
+    release_path:typeof item.release_path==='string'&&/^(?:radio\/|viewer\/[A-Za-z0-9_-]+\/)$/i.test(item.release_path)?item.release_path:'',
+    released_at:typeof item.released_at==='string'?item.released_at:''});
   }
+  if(window.SelloneCatalogUI)window.SelloneCatalogUI.init(all,card,{visible:!(initial&&validRepo.test(initial))});
   if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&initialView==='source'?{ref:initialRef,mode:'source'}:null);
   else {listing();if(initial)$('message').textContent='Identificativo repository non valido'}
  }catch(error){$('message').textContent='Errore catalogo: '+String(error.message||error)}
