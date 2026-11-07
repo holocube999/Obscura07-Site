@@ -1,6 +1,7 @@
 /* RNR generative arranger v2: seeded sections, polymeter, break/drop, melodic motifs.
  * Uses the existing microtonal pitch mapping and emits ordinary renderPCM events.
  * This file deliberately has no external dependencies or samples. */
+import {createMusicDNA,tensionAtBar} from "./music-dna.js";
 export const EXTRA_STYLES=["chiptune","harpsichord","medieval","meditation","hangdrum","metal","techno","punk","glitch","hiphop"];
 const profiles={
  xenodrone:{lead:"choir",harmony:"drone",bass:"bass",drums:0,density:.25,triplets:.20},
@@ -27,6 +28,7 @@ const choose=(r,a)=>a[Math.floor(r()*a.length)];
 const clip=(x,a,b)=>Math.min(b,Math.max(a,x));
 export function arrangeMusic(plan,tuning,root,rngFor,pitch){
  const r=rngFor(plan.seed+"|form-v2");
+ const dna=createMusicDNA(r,plan);
  const profile=profiles[plan.style]||profiles.xenodrone;
  const events=[],sections=[],breaks=[];
  const oct=tuning.steps||tuning.ratios.length;
@@ -41,12 +43,12 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
    amp:+clip(volume,.001,.8).toFixed(4),pan:panValue,phase:r()*Math.PI*2,noiseSeed:Math.floor(r()*2147483647)});
  };
  const barsize=(meter,tempo)=>meter*60/tempo;
- const progression=[0,3,4,1,5,2,3,0],shape=["intro","verse","build","drop","bridge","breakdown","return","outro"];
+ const progression=dna.route,shape=["intro","verse","build","drop","bridge","breakdown","return","outro"];
  if(plan.style==="hiphop"){
   // A fixed structural score with real instrumental interludes, verse gaps,
   // groove cuts, pre-drop stops and accented returns. No generic density dice.
   const beat=60/plan.bpm,bar=4*beat,n=Math.ceil(plan.duration/bar);
-  const chord=[0,3,5,4,2,3,0,4];
+  const chord=dna.route;
   const middleShort=n<11;
   for(let index=0;index<n;index++){
    const start=index*bar,end=Math.min(plan.duration,start+bar);
@@ -77,11 +79,11 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
    if(label==="breakdown"){
     breaks.push({start:+start.toFixed(4),end:+Math.min(end,start+beat*1.1).toFixed(4),kind:"stop"});
    }
-   const bass=chord[Math.floor(index/2)%chord.length];
+   const bass=chord[Math.floor(index/(dna.bassMove+1))%chord.length];
    const level=label==="intro"?.55:label==="outro"?.59:
     label==="breakdown"?.46:label==="instrumental"?.77:
     label==="hook"?1.16:1;
-   const attack=pickup?1.42:1;
+   const attack=(pickup?1.42:1)*tensionAtBar(index);
    mk("bass",start,Math.min(bar*.91,end-start),bass-scale.length,
       (.14+.08*plan.intensity)*level*attack,0);
    mk("pad",start,Math.min(bar*.94,end-start),bass,
@@ -95,7 +97,7 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
     const hold=label==="breakdown"&&k===0;
     const stopBeat=label==="verse"&&index%4===3&&k===3;
     if(hold||stopBeat)continue;
-    if(k===0||k===2||pickup||((index+k)%7===0)){
+    if(k===0||pickup||(dna.groove%3===0?k===2:dna.groove%3===1?k===3:(k===2&&index%2===0))||((index+k)%7===0)){
      mk("kick",t,.25,0,(.24+.15*plan.intensity)*level*(k===0?attack:1),0);
     }
     if(k===1||k===3)mk("snare",t,.16,0,
@@ -104,8 +106,8 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
       (.075+.04*plan.intensity)*level,-.1);
     // Nonrepetitive swung hi-hats with deliberate gaps and rolls.
     for(let j=0;j<4;j++){
-     const shifted=j%2?beat*.055:0,hit=t+j*beat/4+shifted;
-     if(hit>=end||r()>(label==="instrumental"?.72:.77))continue;
+     const shifted=j%2?beat*dna.swing:0,hit=t+j*beat/4+shifted;
+     if(hit>=end||r()>1-dna.hiHatSpace*(label==="instrumental"?.8:1))continue;
      mk("hat",hit,.041,0,(.013+.013*plan.intensity)*level,pan());
     }
    }
@@ -124,7 +126,7 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
  }
 
  let time=0,s=0;
- let motif=Array.from({length:12},(_,i)=>choose(r,[0,1,2,3,4,5,6,7])+((i%6===5)?1:0));
+ let motif=[...dna.motif];
  while(time<plan.duration-.05&&s<48){
   const label=shape[s%shape.length];
   if(s>0&&(s%3===2||(s>3&&r()<.19))){
@@ -138,7 +140,7 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
   const beat=60/tempo,bar=barsize(meter,tempo);
   const bars=s===0?1:1+Math.floor(r()*3);
   const end=Math.min(plan.duration,time+bar*bars);
-  const density=clip(profile.density*(label==="intro"?.56:label==="breakdown"?.42:label==="drop"?1.25:1)*(0.8+r()*.5),.13,1);
+  const density=clip(profile.density*dna.densityCurve[s%4]*(label==="intro"?.56:label==="breakdown"?.42:label==="drop"?1.25:1)*(0.8+r()*.5),.13,1);
   const triples=r()<profile.triplets || label==="build";
   const section={name:label,start:+time.toFixed(4),end:+end.toFixed(4),bpm:tempo,meter,triplets:triples};
   sections.push(section);
@@ -180,7 +182,7 @@ export function arrangeMusic(plan,tuning,root,rngFor,pitch){
      const move=label==="build"?j:label==="outro"?-j:0;
      const degree=motif[idx]+harmony+move+(r()<.1?scale.length:0);
      const dur=beat/subdivisions*(profile.lead==="harpsichord"?.84:profile.lead==="handpan"?1.65:.93);
-     const vol=(.054+r()*.08)*(1+plan.intensity)*(j===0?1.25:.78);
+     const vol=(.054+r()*.08)*(1+plan.intensity)*(j===0?1.25:.78)*dna.beatEmphasis;
      mk(profile.lead,t,Math.min(dur,end-t),degree,vol,pan());
     }
     if(beatIndex===meter-1&&label==="build"&&r()<.6){

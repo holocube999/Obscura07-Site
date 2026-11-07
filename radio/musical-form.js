@@ -62,11 +62,11 @@ export function organizeArrangement(plan,arranged){
  return {events,sections,breaks};
 }
 export function createVocalGuide(plan,rngFor){
- const r=rngFor(plan.seed+"|vocal-lead-v4"),beat=60/plan.bpm;
+ const r=rngFor(plan.seed+"|hidden-vocal-v6"),beat=60/plan.bpm;
  const tonal=plan.events.filter(e=>!["kick","snare","hat","clap","glitch"].includes(e.kind)&&
   Number.isFinite(e.freq)&&e.freq>24&&e.amp>.009);
  if(!tonal.length)return [];
- const cell=beat*(plan.style==="hiphop"?1:1.5);
+ const cell=beat*(plan.style==="hiphop"?.5:1); // hidden eighth-note vocal pitch guide
  const motifs=[[0,0,1,0,2,1,0,-1],[0,1,2,1,0,-1,0,1],[0,0,-1,1,0,2,1,0]];
  const motif=motifs[Math.floor(r()*motifs.length)];
  const beatShift=r()>.5?0:1;
@@ -85,7 +85,9 @@ export function createVocalGuide(plan,rngFor){
   // Pitch-class candidates are the pitches actually rendered in the song.
   const options=[...new Set(notes.map(e=>+inRange(e.freq,108,260).toFixed(3)))];
   if(!options.length)continue;
-  const phrase=motif[(index+beatShift)%motif.length];
+  const section=plan.sections?.find(s=>s.start<=t&&s.end>t);
+  const hook=["hook","chorus"].includes(section?.name);
+  const phrase=motif[(index+beatShift+Math.floor(index/16))%motif.length]*(hook?1.25:.9);
   const preferred=previous?previous*Math.pow(2,phrase/12):options[0];
   const scored=options.map(hz=>{
    const motion=previous?st(previous,hz):0;

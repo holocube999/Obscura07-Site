@@ -1,6 +1,7 @@
 /* Seeded varied spoken material: isolated words, slogans, full statements.
  * No online lyric corpus. Exact repeats within one song are rejected. */
-import {OFFLINE_DICTIONARY,originalSentence,rhymeStanza} from './linguistic-corpus.js';
+import {OFFLINE_DICTIONARY,originalSentence} from './linguistic-corpus.js';
+import {composeRapStanza} from './rap-poetics.js';
 const pick=(r,a)=>a[Math.floor(r()*a.length)];
 const TERMS={
  it:["silenzio","eclissi","macchina","infinito","memoria","vuoto","orizzonte","rinascita","antenna","segnale","ombra","luce","eternità","stella","oceano","tempo","entropia"],
@@ -65,10 +66,10 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
   // Scores explicitly mark instrumentals and breakdowns as vocal rests.
   const beat=60/(plan.bpm||94);
   const active=(plan.sections||[]).filter(s=>s.voice&&s.name!=="outro"&&s.end>s.start+beat);
-  const count=Math.min(42,active.length),voices=[],usedRap=new Set();
+  const count=Math.min(42,active.length),voices=[],usedRap=new Set(),stanzaUsed=new Set();
   let stanza=[];
   for(let i=0;i<count;i++){
-   if(i%4===0)stanza=rhymeStanza(r,lang,Math.floor(i/4),plan.concept);
+   if(i%4===0)stanza=composeRapStanza(r,lang,Math.floor(i/4),plan.concept,stanzaUsed);
    const phrase=stanza[i%4],custom=provided.length?provided[i%provided.length]:null;
    let finalText=custom||phrase.text;
    if(!custom&&usedRap.has(finalText)){
@@ -86,7 +87,7 @@ export function composeVoices(plan,languagePacks,conceptTerms,concepts,rngFor,vo
    const voice=voiceIdentity(r,plan.mood,plan.concept);
    voices.push({time:+time.toFixed(3),rhymeTime:+(time+beat*3).toFixed(3),
     barEnd:+Math.min(plan.duration,section.end).toFixed(3),bar:section.bar,
-    text:finalText,rhymeWord:endWord,rhymeFamily:phrase.family,scheme:phrase.scheme,
+    text:finalText,rhymeWord:endWord,rhymeFamily:phrase.family,scheme:phrase.scheme,syllables:phrase.syllables,rhythm:phrase.rhythmic,
     form:"rap",delivery:"hiphop",language:lang,section:section.name,
     emphasis:section.name==="hook"?.9:.52,restBefore:i===0||section.bar-active[i-1].bar>1,
     mood:plan.mood,concept:plan.concept,voice});

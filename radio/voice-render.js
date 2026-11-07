@@ -47,7 +47,7 @@ function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=f
   Math.max(1,Math.min(Math.round(sr*8),Math.round((plan.duration-entry.time)*sr)));
  const section=plan.sections?.find(s=>entry.time>=s.start&&entry.time<s.end);
  const hook=["hook","chorus"].includes(section?.name);
- const tuneStrength=harmonize?.90:rap?(hook?.60:.12):.52;
+ const tuneStrength=harmonize?.95:rap?(hook?.87:.66):.76;
  const out=new Float32Array(cap);
  for(let i=0;i<slots.length;i++){
   const slot=slots[i],accent=entry.emphasis??.5;
@@ -57,7 +57,7 @@ function processedSegment(text,plan,entry,index,sr,rng,mode,identity,harmonize=f
    inflection:clamp((i===0?.025:0)+(slot.accent?-.023:0)+expressive*.016,-.065,.065),
    breathiness:rap?.055:.095,grain:rap?.03:.06,
    pitch:identity.base,rate:identity.rate,formantShift:identity.formant,
-   vibrato:rap?.0010:.0035,mode,referenceHz:55,tuning:plan.tuning,
+   vibrato:rap?(hook?.0038:.0018):.0035,mode,referenceHz:55,tuning:plan.tuning,
    melody:slot.pitches.map(p=>p?(harmonize?p.harmonyHz:p.hz):null),
    guideHz:slot.pitches.find(Boolean)?.[harmonize?"harmonyHz":"hz"],
    tuneStrength,targetSamples:slot.length,rap,accent:slot.accent};

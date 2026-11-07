@@ -4,7 +4,7 @@ import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
 import {composeVoices} from "./lyrics.js";
 import {renderVocalBus,mixVocalBus} from "./voice-render.js";
 import {chooseMusicalForm,organizeArrangement,createVocalGuide,applyMusicalEnding} from "./musical-form.js";
-export const VERSION="0.4.0";
+export const VERSION="0.6.0";
 export const SAMPLE_RATE=22050;
 export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse",...EXTRA_STYLES];
 export const MOODS=["liminal","euphoric","melancholic","nocturnal","hypnotic","curious","serene","alien","nostalgic","ominous","weightless","electric"];
@@ -110,8 +110,8 @@ export function makePlan(options={}){
  const form=chooseMusicalForm(seed,style,rngFor);
  const {events,sections,breaks}=organizeArrangement({seed,style,bpm,duration,form},
   arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity,form},tuning,root,rngFor,pitch));
- const vocalGuide=createVocalGuide({seed,style,bpm,duration,events},rngFor);
- const lyricsVariant=Math.max(0,Math.min(9999,Math.floor(Number(options.lyricsVariant)||0)));
+ const vocalGuide=createVocalGuide({seed,style,bpm,duration,events,sections},rngFor);
+ const lyricsVariant=Math.max(0,Math.min(Number.MAX_SAFE_INTEGER-1,Math.floor(Number(options.lyricsVariant)||0)));
  const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,form,withVox,breaks,sections,vocalGuide,lyricsVariant,context:String(options.extraText||"").slice(0,3200),lyricsText:String(options.lyricsText||"").slice(0,3200)},
    LANGUAGE_PACKS,CONCEPT_TERMS,CONCEPTS,rngFor,voiceIdentity);
  return {version:VERSION,seed,style,mood,concept,language,bpm,duration,withVox,intensity,
