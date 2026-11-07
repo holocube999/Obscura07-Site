@@ -4,7 +4,8 @@ import {arrangeMusic,EXTRA_STYLES} from "./arrangement.js";
 import {composeVoices} from "./lyrics.js";
 import {renderVocalBus,mixVocalBus} from "./voice-render.js";
 import {chooseMusicalForm,organizeArrangement,createVocalGuide,applyMusicalEnding} from "./musical-form.js";
-export const VERSION="0.6.0";
+import {reinforceMotifs} from "./composition-coherence.js";
+export const VERSION="0.7.0";
 export const SAMPLE_RATE=22050;
 export const STYLES=["xenodrone","vaporwave","dreamwave","synthwave","guitar","ritual","biosphere","darkambient","pulse",...EXTRA_STYLES];
 export const MOODS=["liminal","euphoric","melancholic","nocturnal","hypnotic","curious","serene","alien","nostalgic","ominous","weightless","electric"];
@@ -61,7 +62,12 @@ const TUNINGS=[
  {name:"7-limit JI",oct:2,ratios:[1,9/8,7/6,5/4,4/3,7/5,3/2,5/3,7/4,2],chord:[0,3,6,8],mel:[0,1,2,3,4,5,6,7,8,9]}
 ];
 function hash(s){let h=2166136261;for(let i=0;i<String(s).length;i++){h^=String(s).charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
-export function randomSeed(){const a=new Uint32Array(2);if(globalThis.crypto?.getRandomValues)globalThis.crypto.getRandomValues(a);else{a[0]=(Math.random()*2**32)>>>0;a[1]=(Math.random()*2**32)>>>0;}return Array.from(a,x=>x.toString(36)).join("-");}
+export function randomSeed(){
+ const a=new Uint32Array(4);
+ if(globalThis.crypto?.getRandomValues)globalThis.crypto.getRandomValues(a);
+ else for(let i=0;i<a.length;i++)a[i]=(Math.random()*2**32)>>>0;
+ return Array.from(a,x=>x.toString(36)).join("-");
+}
 export function rngFor(seed){let a=hash(seed);return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);t^=t+Math.imul(t^(t>>>7),61|t);return ((t^(t>>>14))>>>0)/4294967296;};}
 const select=(r,a)=>a[Math.floor(r()*a.length)];
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
@@ -108,8 +114,8 @@ export function makePlan(options={}){
  const root=[41.2,43.65,48.999,55,61.735,65.406,73.416,82.407,98][Math.floor(r()*9)];
  // Arrangement is deterministic for a given recipe; style indices 0–8 remain compatible.
  const form=chooseMusicalForm(seed,style,rngFor);
- const {events,sections,breaks}=organizeArrangement({seed,style,bpm,duration,form},
-  arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity,form},tuning,root,rngFor,pitch));
+ const {events,sections,breaks}=reinforceMotifs(organizeArrangement({seed,style,bpm,duration,form},
+  arrangeMusic({seed,style,mood,concept,language,bpm,duration,intensity,form},tuning,root,rngFor,pitch)));
  const vocalGuide=createVocalGuide({seed,style,bpm,duration,events,sections},rngFor);
  const lyricsVariant=Math.max(0,Math.min(Number.MAX_SAFE_INTEGER-1,Math.floor(Number(options.lyricsVariant)||0)));
  const voices=composeVoices({seed,style,mood,concept,language,bpm,duration,intensity,form,withVox,breaks,sections,vocalGuide,lyricsVariant,context:String(options.extraText||"").slice(0,3200),lyricsText:String(options.lyricsText||"").slice(0,3200)},
