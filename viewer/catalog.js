@@ -6,6 +6,12 @@ const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999
 const initialRef=q.get('ref'),initialPath=q.get('path'),initialView=q.get('view');
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
+// This vetted file-transfer client needs a first-party secure top-level origin
+// for camera and WebCrypto. Do not run arbitrary GitHub source in that origin.
+if(initial.toLowerCase()==='obscura-tunnel'&&initialView!=='source'){
+ location.replace(new URL('transfer/index.html',root).href);
+ return;
+}
 const GH=window.SelloneGitHub,Retro=window.SelloneRetro,Bundle=window.SelloneBundle;
 const all=[];
 const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archive:'ARCHIVIO',utility:'UTILITY',audio:'AUDIO'};
