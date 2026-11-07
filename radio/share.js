@@ -13,7 +13,7 @@ export function createSongLink(base,plan,{lyricsVariant=0,lyrics="",voiceMix=.22
  if(text)url.searchParams.set("lyrics",text);
  url.searchParams.set("vm",String(Math.round(Math.max(0,Math.min(1,voiceMix))*100)));
  if(speaker)url.searchParams.set("sp","1");
- url.searchParams.set("engine","0.6.0");
+ url.searchParams.set("engine",plan.version||"0.6.0");
  return url.toString();
 }
 export function shareTargets(link,title){

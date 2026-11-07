@@ -1,7 +1,7 @@
 /* Optional online news metadata. Fails closed if network/CORS is unavailable. */
 const SOURCES={
- it:{query:'(cultura OR tecnologia OR scienza OR economia) sourcelang:italian',domains:['rainews.it','ilpost.it','ilsole24ore.com','repubblica.it','corriere.it']},
- en:{query:'(science OR technology OR culture OR economy) sourcelang:english',domains:['reuters.com','bbc.com','apnews.com','theguardian.com']},
+ it:{query:'(cultura OR tecnologia OR scienza OR economia) sourcelang:italian',domains:['ansa.it','rainews.it','agi.it','adnkronos.com','ilpost.it','ilsole24ore.com','repubblica.it','corriere.it']},
+ en:{query:'(science OR technology OR culture OR economy) sourcelang:english',domains:['reuters.com','bbc.com','apnews.com','theguardian.com','npr.org']},
  fr:{query:'(culture OR technologie OR science) sourcelang:french',domains:['lemonde.fr','francetvinfo.fr']},
  de:{query:'(kultur OR technik OR wissenschaft) sourcelang:german',domains:['tagesschau.de','dw.com']},
  es:{query:'(cultura OR tecnologia OR ciencia) sourcelang:spanish',domains:['elpais.com','rtve.es']}
@@ -23,7 +23,7 @@ export function verifiedHeadline(record,language='it',now=Date.now()){
  if(!Number.isFinite(date)||date>now+600000||now-date>36*3600*1000)return null;
  const title=clean(record.title);
  if(title.length<12||title.length>180)return null;
- return {title,url:url.href,source:host,published:new Date(date).toISOString(),verified:true};
+ return {title,url:url.href,source:host,published:new Date(date).toISOString(),verified:true,factChecked:false};
 }
 export async function fetchVerifiedNews(language='it',{timeoutMs=4500,fetchImpl=globalThis.fetch,now=Date.now()}={}){
  if(typeof fetchImpl!=='function')return [];
@@ -38,7 +38,17 @@ export async function fetchVerifiedNews(language='it',{timeoutMs=4500,fetchImpl=
   const res=await fetchImpl(url.toString(),{mode:'cors',cache:'no-store',referrerPolicy:'no-referrer',signal:controller.signal});
   if(!res?.ok)return [];
   const data=await res.json();
-  return (Array.isArray(data.articles)?data.articles:[]).map(x=>verifiedHeadline(x,language,now))
-   .filter(Boolean).slice(0,10);
+  const results=(Array.isArray(data.articles)?data.articles:[]).map(x=>verifiedHeadline(x,language,now))
+   .filter(Boolean);
+  // Diversify by publisher. A headline's source/date/HTTPS can be validated,
+  // but this client cannot independently fact-check the article's claims.
+  const seen=new Set(),perHost=new Map(),out=[];
+  for(const item of results){
+   const key=item.title.toLocaleLowerCase().replace(/[^\p{L}\p{N}]/gu,"").slice(0,100);
+   if(seen.has(key)||(perHost.get(item.source)||0)>=3)continue;
+   seen.add(key);perHost.set(item.source,(perHost.get(item.source)||0)+1);
+   out.push(item);if(out.length>=12)break;
+  }
+  return out;
  }catch{return [];}finally{clearTimeout(timer);}
 }
