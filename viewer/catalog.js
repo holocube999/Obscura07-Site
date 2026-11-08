@@ -186,6 +186,11 @@ async function githubHTML(opts={}){
   if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
   showStatus('Verifica CSS e moduli JavaScript del repository…');
   const result=await Bundle.prepare(verified,GH);
+  if(selected?.repo==='NULLGOD-MUSIC'){
+   if(!window.SelloneNullGodStorage)throw Error('Storage NULLGOD non disponibile nel WebPlayer');
+   showStatus('Ripristino statistiche di ascolto locali…');
+   result.html=await window.SelloneNullGodStorage.prepare(result.html,$('playframe'),syncChannel);
+  }
   if(selected?.repo==='PocketJS-NativeServer'){
    if(!window.SellonePocketStorage)throw Error('Storage PocketJS non disponibile nel WebPlayer');
    showStatus('Preparazione memoria persistente PocketJS…');
