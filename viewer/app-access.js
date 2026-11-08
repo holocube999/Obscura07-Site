@@ -8,8 +8,12 @@ if((q.get('repo')||'').toLowerCase()==='nullgod-music'){
   if(event.source!==guest?.contentWindow||event.data?.type!=='NULLGOD_FORGET_ACCESS_V1')return;
   localStorage.removeItem('obscura-nullgod-access-v1');
   window.SelloneGitHub.forget();
-  guest.srcdoc='';guest.src='about:blank';
+  guest.contentWindow?.postMessage({type:'NULLGOD_FORGET_ACCESS_ACK_V1'},'*');
+  guest.removeAttribute('srcdoc');guest.src='about:blank';
+  // Replacing the current URL with itself may be a no-op: require a fresh
+  // document, clearing in-memory authorization and pending GitHub loaders.
   const next=new URL(location.href);next.searchParams.set('app','1');
+  next.searchParams.set('accessReset',String(Date.now()));
   location.replace(next.href);
  });
 }
