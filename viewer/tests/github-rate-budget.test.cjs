@@ -1,0 +1,37 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const src=fs.readFileSync('viewer/github-runtime.js','utf8');
+const requests=[];
+const sha='74cfb579e614dad6319544032c1c131d02dce441';
+const fakeFetch=async (url,opts)=>{
+ requests.push({url,opts});
+ let data;
+ if(url.endsWith('/commits/main'))data={sha};
+ else if(url.endsWith('/repos/holocube999/Example'))data={default_branch:'main'};
+ else if(url.endsWith('/commits/'+sha))data={sha};
+ else if(url.includes('/git/trees/'))data={tree:[{type:'blob',size:12000,path:'index.html'}]};
+ else throw Error('Unexpected URL: '+url);
+ return {ok:true,status:200,headers:{get:key=>({'x-ratelimit-limit':'5000','x-ratelimit-remaining':'4930'}[key]||null)},json:async()=>data};
+};
+const window={},localStorage={getItem(){return null},setItem(){},removeItem(){}};
+const ctx={window,localStorage,fetch:fakeFetch,Date,Map,Set,Promise,Error,RegExp,encodeURIComponent,URL,TextEncoder,TextDecoder};
+vm.runInNewContext(src,ctx,{filename:'github-runtime.js'});
+(async()=>{
+ const GH=window.SelloneGitHub;
+ await GH.setToken('github_pat_fake_token_for_tests_123','',false);
+ const a=await GH.discover('NULLGOD-MUSIC');
+ assert.equal(a.path,'dist/index.html');
+ assert.equal(a.files.length,1);
+ assert.equal(requests.length,1,'NULLGOD must use just one GitHub API call for discovery');
+ assert.equal(requests[0].opts.headers.Authorization,'Bearer github_pat_fake_token_for_tests_123');
+ await GH.discover('NULLGOD-MUSIC');
+ assert.equal(requests.length,1,'Repeated discovery must share the same cached request');
+ const b=await GH.discover('Example');
+ assert.equal(b.path,'index.html');
+ assert.equal(requests.length,4,'Generic viewer discovery still handles arbitrary repositories');
+ assert.ok(!src.includes("cache:'no-store'"),'Allow HTTP conditional requests');
+ assert.match(src,/verifiedHtmlCache\.set\(cacheKey,verified\)/);
+ console.log('PASS private NULLGOD API request budget and auth');
+})().catch(e=>{console.error(e);process.exitCode=1});
