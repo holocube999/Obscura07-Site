@@ -4,6 +4,7 @@ const $=id=>document.getElementById(id);
 const q=new URLSearchParams(location.search);
 const initial=(q.get('repo')||q.get('project')||'').trim().replace(/^holocube999\//i,'');
 const initialRef=q.get('ref'),initialPath=q.get('path'),initialView=q.get('view');
+const dedicatedApp=q.get('app')==='1'&&initial.toLowerCase()==='nullgod-music';
 const validRepo=/^[A-Za-z0-9_.-]{1,100}$/;
 const root=new URL('../',location.href), approvedPrefix=new URL('viewer/',root);
 function isTunnel(item){return String(item?.repo||'').toLowerCase()==='obscura-tunnel'}
@@ -333,6 +334,13 @@ function showDetail(repo,explicit=null){
  presentMode(explicit?.mode==='source'?'source':item.viewer_type==='amiga_media'?'original':
   (item.viewer_type==='archive'||(item.viewer_type==='native'&&item.repo!=='PocketJS-NativeServer'))?'source':'js');
  emptyFrame();showFrame();updateSync();
+ if(dedicatedApp&&!GH.hasToken()){
+  $('authBox').classList.remove('hidden');
+  $('playerStatus').textContent=GH.hasSavedToken()?
+   'Accesso riservato. Inserisci la password locale e premi Sblocca per aprire NULLGOD MUSIC.':
+   'Accesso riservato. Serve un token GitHub di sola lettura per il repository NULLGOD-MUSIC.';
+  return;
+ }
  if(view==='source')githubSource();
  else if(view==='js'){
   if(explicit?.ref&&explicit?.path)githubHTML({explicit});
