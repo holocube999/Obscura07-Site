@@ -171,20 +171,88 @@ function enhanceCards(){for(const card of document.querySelectorAll('#grid .proj
  putIcon(btn,'history');btn.onclick=()=>openHistory(repo,card.querySelector('h3')?.textContent||repo);
 }}
 const grid=$('grid');if(grid){new MutationObserver(enhanceCards).observe(grid,{childList:true});enhanceCards()}
-const btn=document.createElement('button');btn.id='sellone-fullscreen';btn.type='button';btn.setAttribute('aria-label','Schermo intero');btn.innerHTML='<span class="sellone-icon">'+glyphs.expand+'</span><span class="fs-label">Schermo intero</span>';area.append(btn);
-let fallback=false,armed=false,timer=0,pointer='mouse';
+
+const btn=document.createElement('button');
+btn.id='sellone-fullscreen';btn.type='button';
+btn.setAttribute('aria-label','Schermo intero');
+btn.innerHTML='<span class="sellone-icon">'+glyphs.expand+'</span><span class="fs-label">Schermo intero</span>';
+area.append(btn);
+let fallback=false,armed=false,timer=0,pointer='mouse',drag=null,ignoreNextClick=false;
+const POSITION_KEY='sellone-fs-button-position-v1';
 const active=()=>document.fullscreenElement===area||fallback;
+const clamp=(n,a,b)=>Math.min(b,Math.max(a,n));
+function loadPosition(){
+ try{const v=JSON.parse(localStorage.getItem(POSITION_KEY)||'null');
+  return v&&Number.isFinite(v.x)&&Number.isFinite(v.y)?{x:clamp(v.x,0,1),y:clamp(v.y,0,1)}:null;
+ }catch{return null}
+}
+function positionButton(x,y){
+ const rect=area.getBoundingClientRect(),width=btn.offsetWidth||42,height=btn.offsetHeight||42;
+ const left=clamp(x,6,Math.max(6,rect.width-width-6));
+ const top=clamp(y,6,Math.max(6,rect.height-height-6));
+ btn.style.left=left+'px';btn.style.top=top+'px';btn.style.right='auto';btn.style.bottom='auto';
+ return {x:rect.width>width?left/(rect.width-width):0,y:rect.height>height?top/(rect.height-height):0};
+}
+function restorePosition(){
+ if(!active()){btn.style.left='';btn.style.top='';btn.style.right='';btn.style.bottom='';return}
+ const pos=loadPosition();
+ if(pos){const rect=area.getBoundingClientRect();positionButton(pos.x*(rect.width-btn.offsetWidth),pos.y*(rect.height-btn.offsetHeight))}
+ else{const rect=area.getBoundingClientRect();positionButton(rect.width-(btn.offsetWidth||42)-12,12)}
+}
 function clearArm(){armed=false;btn.classList.remove('fs-armed');clearTimeout(timer)}
-function syncFs(){clearArm();const on=active();btn.querySelector('.sellone-icon').innerHTML=on?glyphs.shrink:glyphs.expand;btn.querySelector('.fs-label').textContent=on?'Riduci':'Schermo intero';btn.setAttribute('aria-label',on?'Riduci player':'Schermo intero');btn.setAttribute('aria-pressed',String(on))}
+function syncFs(){
+ clearArm();const on=active();
+ btn.querySelector('.sellone-icon').innerHTML=on?glyphs.shrink:glyphs.expand;
+ btn.querySelector('.fs-label').textContent=on?'Riduci':'Schermo intero';
+ btn.setAttribute('aria-label',on?'Sposta trascinando o clicca per ridurre':'Schermo intero');
+ btn.setAttribute('aria-pressed',String(on));
+ btn.title=on?'Trascina per spostare il pulsante · clic per uscire':'Espandi a schermo intero';
+ restorePosition();
+}
 function setFallback(on){fallback=on;area.classList.toggle('sellone-fs-fallback',on);document.body.classList.toggle('sellone-fs-body',on);syncFs()}
 async function exitFs(){if(document.fullscreenElement===area)try{await document.exitFullscreen()}catch{};if(fallback)setFallback(false);syncFs()}
-btn.addEventListener('pointerdown',e=>{pointer=e.pointerType||'mouse'});
+btn.addEventListener('pointerdown',e=>{
+ pointer=e.pointerType||'mouse';
+ if(!active())return;
+ drag={id:e.pointerId,x:e.clientX,y:e.clientY,box:btn.getBoundingClientRect(),moved:false};
+ btn.setPointerCapture?.(e.pointerId);
+});
+btn.addEventListener('pointermove',e=>{
+ if(!drag||e.pointerId!==drag.id||!active())return;
+ const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+ if(!drag.moved&&Math.hypot(dx,dy)<7)return;
+ drag.moved=true;
+ const areaRect=area.getBoundingClientRect();
+ positionButton(drag.box.left-areaRect.left+dx,drag.box.top-areaRect.top+dy);
+ e.preventDefault();
+});
+function endDrag(e){
+ if(!drag||e.pointerId!==drag.id)return;
+ if(drag.moved){
+  ignoreNextClick=true;
+  const rect=area.getBoundingClientRect(),x=parseFloat(btn.style.left)||0,y=parseFloat(btn.style.top)||0;
+  const pos={x:rect.width>btn.offsetWidth?x/(rect.width-btn.offsetWidth):0,
+   y:rect.height>btn.offsetHeight?y/(rect.height-btn.offsetHeight):0};
+  try{localStorage.setItem(POSITION_KEY,JSON.stringify(pos))}catch{}
+  clearArm();
+ }
+ drag=null;
+}
+btn.addEventListener('pointerup',endDrag);
+btn.addEventListener('pointercancel',endDrag);
 btn.onclick=async()=>{
- if(!active()){try{if(area.requestFullscreen){await area.requestFullscreen();syncFs();return}}catch{}setFallback(true);return}
- const touch=pointer==='touch'||pointer==='pen'||(matchMedia('(hover:none) and (pointer:coarse)').matches);
- if(touch&&!armed){armed=true;btn.classList.add('fs-armed');btn.querySelector('.fs-label').textContent='Tocca per ridurre';timer=setTimeout(syncFs,2500);return}
+ if(ignoreNextClick){ignoreNextClick=false;return}
+ if(!active()){
+  try{if(area.requestFullscreen){await area.requestFullscreen();syncFs();return}}catch{}
+  setFallback(true);return;
+ }
+ const touch=pointer==='touch'||pointer==='pen'||matchMedia('(hover:none) and (pointer:coarse)').matches;
+ if(touch&&!armed){armed=true;btn.classList.add('fs-armed');
+  btn.querySelector('.fs-label').textContent='Tocca per ridurre';timer=setTimeout(syncFs,2500);return}
  await exitFs();
 };
+window.addEventListener('resize',()=>{if(active()&&!drag)restorePosition()},{passive:true});
 document.addEventListener('fullscreenchange',syncFs);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&fallback)exitFs()});
+
 })();
