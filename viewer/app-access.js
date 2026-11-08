@@ -27,6 +27,12 @@ gate.id='appAccess';
 gate.innerHTML='<form><div class="accessBrand">[NULL]GOD <small>/ m u s i c</small></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p></form>';
 document.body.append(gate);
 gate.hidden=!!saved;
+if(q.has('accessReset')&&!saved){
+ const notice=document.getElementById('appAccessError');
+ notice.textContent='Token cancellato.';
+ notice.style.color='#9fd7b0';
+}
+
 let submitting=false;
 function show(message=''){
  gate.hidden=false;
