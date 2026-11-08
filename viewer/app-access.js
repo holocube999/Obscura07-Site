@@ -9,12 +9,16 @@ if((q.get('repo')||'').toLowerCase()==='nullgod-music'){
   localStorage.removeItem('obscura-nullgod-access-v1');
   window.SelloneGitHub.forget();
   guest.contentWindow?.postMessage({type:'NULLGOD_FORGET_ACCESS_ACK_V1'},'*');
-  guest.removeAttribute('srcdoc');guest.src='about:blank';
+  const notice=document.createElement('div');
+  notice.setAttribute('role','status');
+  notice.textContent='✓ Token cancellato';
+  notice.style.cssText='position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#09080df5;color:#b5d5bd;font:500 16px system-ui';
+  document.body.append(notice);
   // Replacing the current URL with itself may be a no-op: require a fresh
   // document, clearing in-memory authorization and pending GitHub loaders.
   const next=new URL(location.href);next.searchParams.set('app','1');
   next.searchParams.set('accessReset',String(Date.now()));
-  location.replace(next.href);
+  setTimeout(()=>{guest.removeAttribute('srcdoc');guest.src='about:blank';location.replace(next.href)},900);
  });
 }
 if(q.get('app')!=='1'||(q.get('repo')||'').toLowerCase()!=='nullgod-music')return;
