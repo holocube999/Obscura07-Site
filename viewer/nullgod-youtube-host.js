@@ -39,7 +39,8 @@ function mount(){
  document.body.append(box);
 }
 function play(id,title){
- if(!trusted()||!validId.test(id))return;
+ // Never start a hidden embed: the child registers a visible Video-section slot first.
+ if(!trusted()||!validId.test(id)||!slot||slot.width<200||slot.height<200)return;
  mount();
  if(videoId===id&&frame){align();command('playVideo');return}
  videoId=id;
