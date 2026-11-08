@@ -33,5 +33,7 @@ jobs:
           for file in viewer/catalog.js viewer/sellone-ui.js viewer/catalog-organizer.js viewer/catalog-ui.js viewer/github-runtime.js viewer/web-bundler.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js; do
             node --check "$file"
           done
+      - name: Verify Sellone NULLGOD persistent storage acknowledgement
+        run: node viewer/tests/nullgod-storage-ack.test.cjs
       - name: Verify playable assets, public deep-links, and proprietary media gate
         run: node --test tests/viewer.test.mjs tests/viewer.smoke.test.mjs tests/viewer.bundler.test.mjs tests/viewer.catalog.test.mjs tests/viewer.layout.test.mjs tests/viewer.fullscreen-drag.test.mjs
