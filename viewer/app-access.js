@@ -46,7 +46,13 @@ function accessMessage(error){
  return 'Connessione non disponibile. Riprova.';
 }
 
-let submitting=false;
+let submitting=false,cooldownUntil=0,cooldownTimer=0;
+function setCooldown(error){
+ if(error?.reason!=='rate_limit')return;
+ cooldownUntil=Number(error.retryAt)>Date.now()?Number(error.retryAt):Date.now()+60000;
+ clearTimeout(cooldownTimer);gate.querySelector('button').disabled=true;
+ cooldownTimer=setTimeout(()=>{cooldownUntil=0;gate.querySelector('button').disabled=cooldownUntil>Date.now()},Math.min(2147483647,cooldownUntil-Date.now()+500));
+}
 function show(message=''){
  gate.hidden=false;
  document.getElementById('appAccessError').textContent=message;
@@ -60,10 +66,10 @@ window.addEventListener('sellone:access-error',e=>{
  if(status===401||status===404){
   try{localStorage.removeItem(KEY)}catch{}
   GH.forget();show('Accesso non disponibile. Inserisci un token valido.');
- }else if(status===403||status===429){show(accessMessage(e.detail))}
+ }else if(status===403||status===429){show(accessMessage(e.detail));setCooldown(e.detail)}
 });
 gate.querySelector('form').addEventListener('submit',async event=>{
- event.preventDefault();if(submitting)return;
+ event.preventDefault();if(submitting||cooldownUntil>Date.now())return;
  const input=document.getElementById('appAccessToken'),value=input.value.trim();
  if(value.length<16){document.getElementById('appAccessError').textContent='Token non valido.';return}
  submitting=true;gate.querySelector('button').disabled=true;
@@ -73,10 +79,10 @@ gate.querySelector('form').addEventListener('submit',async event=>{
   // Persistence is requested explicitly by the user. This is local storage,
   // not unextractable encryption; never embed shared credentials into an APK.
   localStorage.setItem(KEY,value);
-  input.value='';gate.hidden=true;location.reload();
+  input.value='';gate.hidden=true;document.getElementById('loadLatest').click();
  }catch(e){
   const status=e.status;
-  document.getElementById('appAccessError').textContent=accessMessage(e);
+  document.getElementById('appAccessError').textContent=accessMessage(e);setCooldown(e);
  }finally{submitting=false;gate.querySelector('button').disabled=false}
 });
 })();
