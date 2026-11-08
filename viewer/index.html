@@ -124,6 +124,21 @@ html.sellone-app-mode #sourcePane{display:none!important}
 #appAccessError{min-height:18px;margin:0;color:#dc455a;font-size:12px}
 html.sellone-app-mode #authBox,html.sellone-app-mode #playerStatus,html.sellone-app-mode #detailStatus{display:none!important}
 #appAccess button:not(:disabled):active{filter:brightness(.91);box-shadow:inset 0 1px 3px #0005}
+
+/* Dedicated app mode: the host is infrastructure, never visible application UI. */
+html.sellone-app-mode,html.sellone-app-mode body{height:100%;margin:0;overflow:hidden;background:#09080d}
+html.sellone-app-mode #listing,
+html.sellone-app-mode #playerControls,
+html.sellone-app-mode #unavailable,
+html.sellone-app-mode #detailStatus,
+html.sellone-app-mode #playerStatus,
+html.sellone-app-mode .detail-layout,
+html.sellone-app-mode #sellone-fullscreen{display:none!important}
+html.sellone-app-mode main,html.sellone-app-mode #detail{margin:0!important;padding:0!important;border:0!important;max-width:none!important;width:100%!important}
+html.sellone-app-mode #playarea:not(.hidden){position:fixed!important;inset:0!important;width:100%!important;height:100dvh!important;gap:0!important;padding:0!important;margin:0!important;border:0!important;background:#09080d!important;overflow:hidden!important}
+html.sellone-app-mode #jsPane{width:100%;height:100%;min-width:0;min-height:0;padding:0!important;margin:0!important;border:0!important;border-radius:0!important;overflow:hidden}
+html.sellone-app-mode #playframe{display:block;width:100%!important;height:100%!important;min-height:0!important;border:0!important;border-radius:0!important}
+
 </style>
 <link rel="stylesheet" href="./sellone-ui.css">
 </head>
