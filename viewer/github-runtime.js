@@ -16,8 +16,28 @@ async function api(url){
  if(token)headers.Authorization='Bearer '+token;
  const response=await fetch(url,{headers,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
  if(!response.ok){
-  const err=Error('GitHub HTTP '+response.status+(response.status===401||response.status===403||response.status===404?': verifica accesso al repository o token Contents:read':''));
-  err.status=response.status;throw err;
+  let detail={};try{detail=await response.json()}catch{}
+  const message=String(detail.message||'');
+  const remaining=response.headers.get('x-ratelimit-remaining');
+  const retry=Number(response.headers.get('retry-after')||0);
+  const reset=Number(response.headers.get('x-ratelimit-reset')||0);
+  let reason='http',hint='GitHub HTTP '+response.status;
+  if(response.status===401){reason='invalid_token';hint='Token scaduto o revocato.'}
+  else if(response.status===429||remaining==='0'||/rate limit|abuse detection/i.test(message)){
+   reason='rate_limit';
+   const when=retry>0?Date.now()+retry*1000:reset>0?reset*1000:0;
+   hint='Limite richieste GitHub raggiunto.'+(when?' Riprova dopo le '+new Date(when).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'.':' Attendi qualche minuto.');
+  }else if(response.status===403&&/resource not accessible|permission|not permitted/i.test(message)){
+   reason='permissions';hint='Il token non autorizza questa lettura. Repository NULLGOD-MUSIC: Contents → Read-only.';
+  }else if(response.status===403&&/saml|sso|organization/i.test(message)){
+   reason='organization';hint='Il token deve essere autorizzato dall’organizzazione GitHub.';
+  }else if(response.status===403){reason='forbidden';hint='GitHub rifiuta l’accesso (403). Verifica repository selezionato e autorizzazione del token.'}
+  else if(response.status===404){reason='not_found';hint='Repository o file non accessibile con questo token.'}
+  const err=Error(hint);
+  err.status=response.status;err.reason=reason;
+  err.retryAt=retry>0?Date.now()+retry*1000:reset>0?reset*1000:0;
+  err.requestId=response.headers.get('x-github-request-id')||'';
+  throw err;
  }
  return response.json();
 }
