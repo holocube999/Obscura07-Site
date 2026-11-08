@@ -35,5 +35,7 @@ jobs:
           done
       - name: Verify Sellone NULLGOD persistent storage acknowledgement
         run: node viewer/tests/nullgod-storage-ack.test.cjs
+      - name: Verify private app GitHub API request quota
+        run: node viewer/tests/github-rate-budget.test.cjs
       - name: Verify playable assets, public deep-links, and proprietary media gate
         run: node --test tests/viewer.test.mjs tests/viewer.smoke.test.mjs tests/viewer.bundler.test.mjs tests/viewer.catalog.test.mjs tests/viewer.layout.test.mjs tests/viewer.fullscreen-drag.test.mjs

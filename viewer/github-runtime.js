@@ -6,7 +6,7 @@ const pathPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i;
 const shaPattern=/^[a-f0-9]{40}$/i;
 const STORAGE='sellone-webplayer-token-v1';
 let token='';
-const requestCache=new Map();let requestEpoch=0,blockedUntil=0;
+const requestCache=new Map(),verifiedHtmlCache=new Map();let requestEpoch=0,blockedUntil=0;
 function normalizeRepo(repo){
  const short=String(repo||'').replace(/^holocube999\//i,'');
  if(!repoPattern.test(short))throw Error('Nome repository non valido');
@@ -15,11 +15,15 @@ function normalizeRepo(repo){
 async function apiNetwork(url){
  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
  if(token)headers.Authorization='Bearer '+token;
- const response=await fetch(url,{headers,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
+ const usedToken=!!token;
+ const response=await fetch(url,{headers,credentials:'omit',cache:'no-cache',referrerPolicy:'no-referrer'});
+ const rateLimit=Number(response.headers.get('x-ratelimit-limit')||0);
+ const rateRemaining=response.headers.get('x-ratelimit-remaining');
+ const rateResource=response.headers.get('x-ratelimit-resource')||'';
  if(!response.ok){
   let detail={};try{detail=await response.json()}catch{}
   const message=String(detail.message||'');
-  const remaining=response.headers.get('x-ratelimit-remaining');
+  const remaining=rateRemaining;
   const retry=Number(response.headers.get('retry-after')||0);
   const reset=Number(response.headers.get('x-ratelimit-reset')||0);
   let reason='http',hint='GitHub HTTP '+response.status;
@@ -38,6 +42,8 @@ async function apiNetwork(url){
   err.status=response.status;err.reason=reason;
   err.retryAt=retry>0?Date.now()+retry*1000:reset>0?reset*1000:0;
   err.requestId=response.headers.get('x-github-request-id')||'';
+  err.authenticated=usedToken;err.rateLimit=rateLimit;err.rateRemaining=rateRemaining;err.rateResource=rateResource;
+  if(reason==='rate_limit'&&rateLimit===60)err.message+=' Quota da 60/ora (richiesta non autenticata o budget IP).';
   throw err;
  }
  return response.json();
@@ -55,7 +61,8 @@ async function api(url){
   if(error.reason==='rate_limit')blockedUntil=error.retryAt>Date.now()?error.retryAt:Date.now()+60000;
   throw error;
  });
- requestCache.set(url,{epoch,expires:Date.now()+30000,promise});
+ const immutable=/[?&]ref=[a-f0-9]{40}(?:&|$)|\/git\/blobs\/[a-f0-9]{40}(?:\?|$)/i.test(url);
+ requestCache.set(url,{epoch,expires:Date.now()+(immutable?900000:30000),promise});
  if(requestCache.size>120)requestCache.delete(requestCache.keys().next().value);
  return promise;
 }
@@ -147,6 +154,13 @@ async function pocketJSArchive(repo,ref,files){
 
 async function discover(input){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
+ // Dedicated NULLGOD entry is a single known bundled build. Avoid full repository
+ // discovery (metadata + commit + recursive tree) for each mobile app launch.
+ if(repo===OWNER+'/NULLGOD-MUSIC'){
+  const head=await api(base+'/commits/main');
+  if(!shaPattern.test(head.sha||''))throw Error('Revisione GitHub non valida');
+  return {repo,ref:head.sha,files:['dist/index.html'],path:'dist/index.html'};
+ }
  const meta=await api(base);
  const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
@@ -217,6 +231,9 @@ async function load(input){
  }
  if(repo===POCKETJS_REPO&&path!=='web/index.html')throw Error('Percorso PocketJS non autorizzato');
  safePath(path);
+ const cacheKey=requestEpoch+'|'+repo+'|'+ref+'|'+path;
+ const cached=verifiedHtmlCache.get(cacheKey);
+ if(cached)return cached;
  const url='https://api.github.com/repos/'+repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref;
  const entry=await api(url);
  if(entry.type!=='file'||!shaPattern.test(entry.sha||'')||!Number.isSafeInteger(entry.size)||entry.size>12*1024*1024)throw Error('HTML non disponibile o oltre 12 MiB');
@@ -231,7 +248,10 @@ async function load(input){
  await checkBlob(bytes,entry.sha);
  const html=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
  if(!/^\s*(?:<!doctype\s+html|<html\b)/i.test(html))throw Error('File non riconosciuto come documento HTML');
- return {repo,ref,path,files,html,bytes:bytes.length,blob:entry.sha};
+ const verified={repo,ref,path,files,html,bytes:bytes.length,blob:entry.sha};
+ verifiedHtmlCache.set(cacheKey,verified);
+ if(verifiedHtmlCache.size>8)verifiedHtmlCache.delete(verifiedHtmlCache.keys().next().value);
+ return verified;
 }
 
 const mediaPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|prg)$/i;
@@ -345,7 +365,7 @@ async function setToken(value,password,remember){
   const payload=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(value)));
   localStorage.setItem(STORAGE,JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),payload:b64(payload)}));
  }
- if(token!==value){requestEpoch++;requestCache.clear();blockedUntil=0}
+ if(token!==value){requestEpoch++;requestCache.clear();verifiedHtmlCache.clear();blockedUntil=0}
  token=value;
 }
 async function unlock(password){
@@ -354,7 +374,7 @@ async function unlock(password){
  const k=await keyFor(password,bytesFromBase64(obj.salt));
  token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
 }
-function forget(){token='';requestEpoch++;requestCache.clear();blockedUntil=0;localStorage.removeItem(STORAGE)}
+function forget(){token='';requestEpoch++;requestCache.clear();verifiedHtmlCache.clear();blockedUntil=0;localStorage.removeItem(STORAGE)}
 
 function selloneVersionNumber(value){
  const m=String(value||'').match(/(?:^|[^\da-z])v?(\d+(?:[._-]\d+){1,5})(?=[^\da-z]|$)/i);
