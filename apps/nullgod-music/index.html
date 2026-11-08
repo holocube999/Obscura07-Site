@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#15101e">
+<meta name="referrer" content="no-referrer">
+<meta name="description" content="[NULL]GOD / m u s i c · applicazione privata, accessibile tramite token GitHub read-only.">
+<title>[NULL]GOD / m u s i c · OBSCURA/07</title>
+<style>
+:root{color-scheme:dark;background:#110d18;color:#ebe4f4;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+#app{position:fixed;inset:0;width:100%;height:100dvh;border:0;background:#100b18}
+#loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;
+ gap:17px;background:#130f1b;z-index:2;pointer-events:none;transition:opacity .25s linear}
+#loading.hidden{opacity:0;visibility:hidden}
+.wordmark{font-weight:800;font-size:clamp(22px,4vw,34px);letter-spacing:-.07em}
+.wordmark b,.wordmark .bracket{color:#c8a2ec}
+.wordmark small{display:block;text-align:center;color:#9f91af;font-size:11px;letter-spacing:.27em}
+.spinner{width:27px;height:27px;border:2px solid #b592d438;border-top-color:#c8a2ec;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#loading p{font-size:11px;letter-spacing:.05em;color:#aca3ba}
+@media(prefers-reduced-motion:reduce){.spinner{animation:none}}
+</style>
+</head>
+<body>
+<iframe id="app" title="[NULL]GOD / m u s i c" src="../../viewer/?repo=NULLGOD-MUSIC&amp;app=1"
+ allow="autoplay; fullscreen; clipboard-write" referrerpolicy="no-referrer"></iframe>
+<div id="loading" aria-live="polite">
+ <div class="wordmark"><span class="bracket">[</span>NULL<span class="bracket">]</span><b>GOD</b><small>/ m u s i c</small></div>
+ <div class="spinner" aria-hidden="true"></div>
+ <p>Caricamento privato · GitHub</p>
+</div>
+<script>
+/* The private token is owned solely by SelloneGitHub inside the viewer, never
+ * by this dedicated facade or the sandboxed musical application. */
+const frame=document.getElementById('app'),loading=document.getElementById('loading');
+frame.addEventListener('load',()=>loading.classList.add('hidden'));
+frame.addEventListener('error',()=>{loading.querySelector('p').textContent='Impossibile caricare il WebPlayer'});
+</script>
+<noscript>Per accedere è necessario JavaScript e un token GitHub con permesso Contents:read per NULLGOD-MUSIC.</noscript>
+</body>
+</html>
