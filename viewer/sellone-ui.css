@@ -102,3 +102,18 @@ body.sellone-fs-body{overflow:hidden}
  #playframe,#localAppFrame{height:78svh;min-height:320px}
  #originalStage .retro-frame{height:78svh;min-height:320px}
 }
+
+/* Drag the exit control to a clear area of the fullscreen viewport. */
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{
+ touch-action:none;cursor:grab;min-width:37px;min-height:37px;
+ background:#252031b8;border-color:#a38bbc88;opacity:.18;
+ transition:opacity .12s ease;user-select:none;
+}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen:hover,
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen:focus-visible,
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen:active{
+ opacity:.94;cursor:grabbing;
+}
+@media(hover:none){
+ :is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{opacity:.34}
+}
