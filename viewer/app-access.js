@@ -28,13 +28,22 @@ try{saved=localStorage.getItem(KEY)||''}catch{}
 if(saved)GH.setToken(saved,'',false).catch(()=>{});
 const gate=document.createElement('section');
 gate.id='appAccess';
-gate.innerHTML='<form><div class="accessBrand">[NULL]GOD <small>/ Spotifree m u s i c</small></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p></form>';
+gate.innerHTML='<form><div class="accessBrand"><span class="accessStudio">[NULL]GOD</span><span class="accessProduct"><span class="accessSlash">/</span> Spotifree</span><small class="accessMusic">m u s i c</small></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p></form>';
 document.body.append(gate);
 gate.hidden=!!saved;
 if(q.has('accessReset')&&!saved){
  const notice=document.getElementById('appAccessError');
  notice.textContent='Token cancellato.';
  notice.style.color='#9fd7b0';
+}
+
+
+function accessMessage(error){
+ if(error?.reason)return error.message;
+ if(error?.status===401)return 'Token scaduto o revocato.';
+ if(error?.status===404)return 'Questo token non ha accesso a NULLGOD-MUSIC.';
+ if(error?.status===403)return 'GitHub rifiuta l’accesso: verifica Contents → Read-only per NULLGOD-MUSIC.';
+ return 'Connessione non disponibile. Riprova.';
 }
 
 let submitting=false;
@@ -51,7 +60,7 @@ window.addEventListener('sellone:access-error',e=>{
  if(status===401||status===404){
   try{localStorage.removeItem(KEY)}catch{}
   GH.forget();show('Accesso non disponibile. Inserisci un token valido.');
- }else if(status===403){show('Accesso temporaneamente non disponibile. Riprova.')}
+ }else if(status===403||status===429){show(accessMessage(e.detail))}
 });
 gate.querySelector('form').addEventListener('submit',async event=>{
  event.preventDefault();if(submitting)return;
@@ -67,8 +76,7 @@ gate.querySelector('form').addEventListener('submit',async event=>{
   input.value='';gate.hidden=true;location.reload();
  }catch(e){
   const status=e.status;
-  document.getElementById('appAccessError').textContent=status===401||status===404?
-   'Token non valido o senza accesso.':status===403?'Accesso temporaneamente non disponibile.':'Connessione non disponibile. Riprova.';
+  document.getElementById('appAccessError').textContent=accessMessage(e);
  }finally{submitting=false;gate.querySelector('button').disabled=false}
 });
 })();
