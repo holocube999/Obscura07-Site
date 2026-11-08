@@ -6,12 +6,13 @@ const pathPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i;
 const shaPattern=/^[a-f0-9]{40}$/i;
 const STORAGE='sellone-webplayer-token-v1';
 let token='';
+const requestCache=new Map();let requestEpoch=0,blockedUntil=0;
 function normalizeRepo(repo){
  const short=String(repo||'').replace(/^holocube999\//i,'');
  if(!repoPattern.test(short))throw Error('Nome repository non valido');
  return OWNER+'/'+short;
 }
-async function api(url){
+async function apiNetwork(url){
  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
  if(token)headers.Authorization='Bearer '+token;
  const response=await fetch(url,{headers,credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'});
@@ -40,6 +41,23 @@ async function api(url){
   throw err;
  }
  return response.json();
+}
+async function api(url){
+ if(blockedUntil>Date.now()){
+  const err=Error('Limite richieste GitHub raggiunto. Riprova dopo le '+new Date(blockedUntil).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'})+'.');
+  err.status=429;err.reason='rate_limit';err.retryAt=blockedUntil;throw err;
+ }
+ const old=requestCache.get(url);
+ if(old&&old.epoch===requestEpoch&&old.expires>Date.now())return old.promise;
+ const epoch=requestEpoch;
+ const promise=apiNetwork(url).catch(error=>{
+  requestCache.delete(url);
+  if(error.reason==='rate_limit')blockedUntil=error.retryAt>Date.now()?error.retryAt:Date.now()+60000;
+  throw error;
+ });
+ requestCache.set(url,{epoch,expires:Date.now()+30000,promise});
+ if(requestCache.size>120)requestCache.delete(requestCache.keys().next().value);
+ return promise;
 }
 function safePath(path){
  if(!pathPattern.test(path||'')||String(path).split('/').some(x=>x==='..'||x==='.'))throw Error('Percorso HTML non valido');
@@ -327,6 +345,7 @@ async function setToken(value,password,remember){
   const payload=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(value)));
   localStorage.setItem(STORAGE,JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),payload:b64(payload)}));
  }
+ if(token!==value){requestEpoch++;requestCache.clear();blockedUntil=0}
  token=value;
 }
 async function unlock(password){
@@ -335,7 +354,7 @@ async function unlock(password){
  const k=await keyFor(password,bytesFromBase64(obj.salt));
  token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
 }
-function forget(){token='';localStorage.removeItem(STORAGE)}
+function forget(){token='';requestEpoch++;requestCache.clear();blockedUntil=0;localStorage.removeItem(STORAGE)}
 
 function selloneVersionNumber(value){
  const m=String(value||'').match(/(?:^|[^\da-z])v?(\d+(?:[._-]\d+){1,5})(?=[^\da-z]|$)/i);
