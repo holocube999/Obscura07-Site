@@ -163,6 +163,7 @@ function parentKey(event){
 function handleError(error){
  const msg=String(error.message||error);
  showStatus(msg,true);
+ if(dedicatedApp)window.dispatchEvent(new CustomEvent('sellone:access-error',{detail:{status:error.status}}));
  if([401,403,404].includes(error.status))$('authBox').classList.remove('hidden');
 }
 function currentRepo(){if(!selected)throw Error('Nessun progetto selezionato');return GH.normalizeRepo(selected.repo)}
