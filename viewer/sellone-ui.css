@@ -117,3 +117,30 @@ body.sellone-fs-body{overflow:hidden}
 @media(hover:none){
  :is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{opacity:.34}
 }
+
+
+/* 2026: fullscreen handle must not obscure apps. Icon-only, movable after expand.
+ * Controls remain keyboard accessible and maintain a >=40px touch target. */
+#sellone-fullscreen{min-width:40px;min-height:40px;width:40px;height:40px;
+ padding:8px;border-color:#796c955e;background:#282238b8;
+ border-radius:12px;opacity:.48;box-shadow:0 3px 12px #0005;
+ transition:opacity .18s ease,background .18s ease,border-color .18s ease;
+ -webkit-tap-highlight-color:transparent;touch-action:none}
+#sellone-fullscreen .fs-label{display:none}
+#sellone-fullscreen .sellone-icon{margin:0}
+#sellone-fullscreen:hover,#sellone-fullscreen:focus-visible{opacity:1;background:#49385fdd;border-color:#bcabde}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{
+ opacity:.20;border-color:#84749455;background:#0d0a14b8;
+ min-width:40px;min-height:40px;width:40px;height:40px}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen .fs-label{
+ display:none}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback):hover #sellone-fullscreen{
+ opacity:.28}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen:hover,
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen:focus-visible,
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen.fs-armed{opacity:1}
+:is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen.fs-armed .fs-label{
+ display:none}
+@media(hover:none){#sellone-fullscreen{opacity:.62}
+ :is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{opacity:.33}}
+@media(prefers-reduced-motion:reduce){#sellone-fullscreen{transition:none}}
