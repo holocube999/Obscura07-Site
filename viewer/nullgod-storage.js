@@ -36,22 +36,46 @@ function mutate(db,key,value,remove){
 function guestRuntime(seed,channel){
  const cache=new Map(Object.entries(seed));
  const allowed=new Set(['ng-insights-v1','ng-pref','ng-autoSkip','ng-embedLyrics','ng-source']);
+ const waiting=new Map();
  let serial=0;
+ function issue(key,op,value){
+  const id=++serial;
+  let resolve;
+  const promise=new Promise(done=>{resolve=done});
+  const timeout=setTimeout(()=>{waiting.delete(id);resolve(false)},5000);
+  waiting.set(id,{promise,resolve,timeout});
+  const message={type:'SELLONE_NG_STORAGE_V1',channel,id,key,op};
+  if(op==='set')message.value=value;
+  parent.postMessage(message,'*');
+ }
+ window.addEventListener('message',event=>{
+  const data=event.data;
+  if(event.source!==parent||!data||data.type!=='SELLONE_NG_STORAGE_ACK_V1'||
+   data.channel!==channel||!Number.isSafeInteger(data.id))return;
+  const entry=waiting.get(data.id);if(!entry)return;
+  waiting.delete(data.id);clearTimeout(entry.timeout);
+  entry.resolve(data.ok===true);
+ });
  const storage={
   getItem(key){return cache.get(String(key))??null},
   setItem(key,value){
    key=String(key);value=String(value);
    if(!allowed.has(key)||value.length>1100000)throw Error('Chiave NULLGOD non autorizzata');
    cache.set(key,value);
-   parent.postMessage({type:'SELLONE_NG_STORAGE_V1',channel,id:++serial,key,op:'set',value},'*');
+   issue(key,'set',value);
   },
   removeItem(key){
    key=String(key);if(!allowed.has(key))return;
-   cache.delete(key);
-   parent.postMessage({type:'SELLONE_NG_STORAGE_V1',channel,id:++serial,key,op:'delete'},'*');
+   cache.delete(key);issue(key,'delete');
+  },
+  async flush(){
+   const pending=[...waiting.values()].map(x=>x.promise);
+   if(!pending.length)return true;
+   const done=await Promise.all(pending);
+   return done.every(Boolean);
   }
  };
- window.NullGodHost=Object.freeze({version:1,kind:'sellone-viewer',storage:Object.freeze(storage)});
+ window.NullGodHost=Object.freeze({version:2,kind:'sellone-viewer',storage:Object.freeze(storage)});
 }
 window.addEventListener('message',event=>{
  const ctx=active,data=event.data;
