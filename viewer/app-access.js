@@ -2,6 +2,17 @@
  parent and are never sent to srcdoc, URLs, application logs or exports. */
 (()=>{'use strict';
 const q=new URLSearchParams(location.search);
+if((q.get('repo')||'').toLowerCase()==='nullgod-music'){
+ window.addEventListener('message',event=>{
+  const guest=document.getElementById('playframe');
+  if(event.source!==guest?.contentWindow||event.data?.type!=='NULLGOD_FORGET_ACCESS_V1')return;
+  localStorage.removeItem('obscura-nullgod-access-v1');
+  window.SelloneGitHub.forget();
+  guest.srcdoc='';guest.src='about:blank';
+  const next=new URL(location.href);next.searchParams.set('app','1');
+  location.replace(next.href);
+ });
+}
 if(q.get('app')!=='1'||(q.get('repo')||'').toLowerCase()!=='nullgod-music')return;
 const KEY='obscura-nullgod-access-v1',GH=window.SelloneGitHub;
 let saved='';
