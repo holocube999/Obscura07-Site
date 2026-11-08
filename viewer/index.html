@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="it">
 <head>
+<script>if(new URLSearchParams(location.search).get('app')==='1'&&new URLSearchParams(location.search).get('repo')==='NULLGOD-MUSIC')document.documentElement.classList.add('sellone-app-mode');</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0a0b12">
@@ -91,6 +92,27 @@ h2{font-size:1.5rem;letter-spacing:-.025em;margin:0}h3{font-size:1.1rem;margin:4
 #message{font-size:12px;color:var(--muted);margin-bottom:12px}
 footer{border-top:1px solid var(--edge);padding:22px clamp(18px,3vw,45px);font-size:12px;color:var(--muted)}
 @media(max-width:600px){.topnav{gap:12px}.project{min-height:165px}#playarea{padding:4px}#playframe{min-height:440px;height:70svh}}
+
+/* Dedicated NULLGOD entry: the original private repository and token gate
+ * remain managed by Sellone WebPlayer. The guest never receives credentials. */
+html.sellone-app-mode .top,html.sellone-app-mode footer,
+html.sellone-app-mode #back,html.sellone-app-mode #detailKind,
+html.sellone-app-mode .detail-layout,
+html.sellone-app-mode #viewModes,html.sellone-app-mode #playerOptionsToggle,
+html.sellone-app-mode .player-heading,
+html.sellone-app-mode #gameHeader,html.sellone-app-mode .pane-name,
+html.sellone-app-mode #sellone-fullscreen{display:none!important}
+html.sellone-app-mode main{width:100%;max-width:none;margin:0;padding:0}
+html.sellone-app-mode #detail{margin:0}
+html.sellone-app-mode #playerControls{padding:0 10px;border:0;background:#0b0a12}
+html.sellone-app-mode #playerOptions{display:none!important}
+html.sellone-app-mode #playarea{padding:0!important;margin:0!important;border:0!important;border-radius:0!important}
+html.sellone-app-mode #playframe{height:100dvh!important;min-height:100dvh!important;border-radius:0!important}
+html.sellone-app-mode #authBox{padding:22px;max-width:620px;margin:8vh auto;border:1px solid #685383;
+ background:#191422;border-radius:14px;box-shadow:0 20px 70px #000b}
+html.sellone-app-mode #authBox input{max-width:100%;min-width:160px}
+html.sellone-app-mode #playerStatus{font-size:12px;text-align:center;padding:4px}
+html.sellone-app-mode #sourcePane{display:none!important}
 </style>
 <link rel="stylesheet" href="./sellone-ui.css">
 </head>
