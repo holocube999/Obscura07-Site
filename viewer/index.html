@@ -113,6 +113,16 @@ html.sellone-app-mode #authBox{padding:22px;max-width:620px;margin:8vh auto;bord
 html.sellone-app-mode #authBox input{max-width:100%;min-width:160px}
 html.sellone-app-mode #playerStatus{font-size:12px;text-align:center;padding:4px}
 html.sellone-app-mode #sourcePane{display:none!important}
+
+#appAccess{position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;background:#09080d;padding:20px}
+#appAccess[hidden]{display:none}
+#appAccess form{width:min(340px,100%);display:grid;gap:14px;padding:28px;background:#121019;border:1px solid #49316e;border-radius:12px}
+.accessBrand{font-weight:800;font-size:23px;color:#e5e1eb;margin-bottom:16px}.accessBrand small{font:11px monospace;color:#b5a0d4}
+#appAccess label{font-size:13px;color:#b9b5c1}
+#appAccess input{width:100%;background:#09080d;border:1px solid #49316e;border-radius:6px;padding:12px;color:#e5e1eb}
+#appAccess button{padding:11px;border:0;border-radius:6px;background:#8258b8;color:white;font-weight:700;cursor:pointer}
+#appAccessError{min-height:18px;margin:0;color:#dc455a;font-size:12px}
+html.sellone-app-mode #authBox,html.sellone-app-mode #playerStatus,html.sellone-app-mode #detailStatus{display:none!important}
 </style>
 <link rel="stylesheet" href="./sellone-ui.css">
 </head>
@@ -219,6 +229,7 @@ html.sellone-app-mode #sourcePane{display:none!important}
 <script src="./pocketjs-storage.js" defer></script>
 <script src="./nullgod-storage.js" defer></script>
 <script src="./nullgod-youtube-host.js" defer></script>
+<script src="./app-access.js" defer></script>
 <script src="./catalog.js" defer></script>
 <script src="./sellone-ui.js" defer></script>
 <script src="../assets/embed-bridge.js" defer></script>
