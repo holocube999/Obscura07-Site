@@ -3,7 +3,7 @@
  */
 (()=>{'use strict';
 const DB='SelloneNullGodLocal',STORE='kv',LIMIT=1100000;
-const KEYS=new Set(['ng-insights-v1','ng-pref','ng-autoSkip','ng-embedLyrics','ng-source']);
+const KEYS=new Set(['ng-insights-v1','ng-pref','ng-autoSkip','ng-embedLyrics','ng-source','ng-search-recent','ng-ui-session-v1']);
 let active=null,dbPromise=null;
 function openDB(){
  if(dbPromise)return dbPromise;
@@ -35,7 +35,7 @@ function mutate(db,key,value,remove){
 }
 function guestRuntime(seed,channel){
  const cache=new Map(Object.entries(seed));
- const allowed=new Set(['ng-insights-v1','ng-pref','ng-autoSkip','ng-embedLyrics','ng-source']);
+ const allowed=new Set(['ng-insights-v1','ng-pref','ng-autoSkip','ng-embedLyrics','ng-source','ng-search-recent','ng-ui-session-v1']);
  const waiting=new Map();
  let serial=0;
  function issue(key,op,value){
