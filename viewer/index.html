@@ -153,6 +153,14 @@ html.sellone-app-mode #playframe{display:block;width:100%!important;height:100%!
 #appAccess button:hover{background:#62418e}
 #appAccessError{line-height:1.5;font-size:12px;color:#dc455a}
 
+/* Spotifree runs inside the existing WebPlayer. The full host panel is
+   recoverable without navigating away or reloading the private application. */
+#webplayerPanelToggle{display:none;position:fixed;right:8px;bottom:8px;z-index:2147482000;padding:3px 6px;border:1px solid #68607788;border-radius:5px;background:#101018c9;color:#b4acbd;font:10px/1.2 system-ui,sans-serif;cursor:pointer;opacity:.62;max-width:calc(100vw - 16px)}
+#webplayerPanelToggle:hover,#webplayerPanelToggle:focus-visible{opacity:1;outline-offset:2px}
+html.sellone-app-mode #webplayerPanelToggle,html.sellone-app-expanded #webplayerPanelToggle{display:block}
+html.sellone-app-expanded body{overflow:auto}
+html.sellone-app-expanded #webplayerPanelToggle{background:#302640;color:#f4eaff;opacity:.95}
+
 </style>
 <link rel="stylesheet" href="./sellone-ui.css">
 </head>
@@ -250,6 +258,24 @@ html.sellone-app-mode #playframe{display:block;width:100%!important;height:100%!
 </section>
 </main>
 <footer>SELLONE VIEWER · OBSCURA/07</footer>
+<button id="webplayerPanelToggle" type="button" aria-label="Mostra pannello WebPlayer" aria-expanded="false" aria-controls="playerControls" title="Mostra pannello WebPlayer">WebPlayer · +</button>
+<script>
+(()=>{'use strict';
+ const params=new URLSearchParams(location.search);
+ if(params.get('app')!=='1'||params.get('repo')!=='NULLGOD-MUSIC')return;
+ const root=document.documentElement,button=document.getElementById('webplayerPanelToggle');
+ const setExpanded=expanded=>{
+  root.classList.toggle('sellone-app-mode',!expanded);
+  root.classList.toggle('sellone-app-expanded',expanded);
+  button.setAttribute('aria-expanded',String(expanded));
+  button.setAttribute('aria-label',expanded?'Nascondi pannello WebPlayer':'Mostra pannello WebPlayer');
+  button.textContent=expanded?'WebPlayer · −':'WebPlayer · +';
+  button.title=expanded?'Nascondi pannello WebPlayer':'Mostra pannello WebPlayer';
+ };
+ button.addEventListener('click',()=>setExpanded(!root.classList.contains('sellone-app-expanded')));
+})();
+</script>
+
 <script src="./github-runtime.js?v=3" defer></script>
 <script src="./web-bundler.js" defer></script>
 <script src="./retro-runtime.js" defer></script>
