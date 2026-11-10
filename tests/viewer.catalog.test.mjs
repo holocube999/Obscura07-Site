@@ -62,8 +62,12 @@ test('dates are not fabricated for private projects and actual release timestamp
 test('HTML and controller retain one Sellone viewer with compact category and sort controls',()=>{
  const html=read('viewer/index.html'),controller=read('viewer/catalog.js'),ui=read('viewer/catalog-ui.js');
  for(const id of ['search','grid','categoryFilter','sortOrder'])assert.ok(html.includes('id="'+id+'"'));
- assert.ok(html.indexOf('catalog-organizer.js')<html.indexOf('catalog-ui.js'));
- assert.ok(html.indexOf('catalog-ui.js')<html.indexOf('catalog.js'));
+ const runtime=read('assets/obscura-webplayer-runtime.js');
+ assert.match(html,/src="\.\.\/assets\/obscura-webplayer-runtime\.js\?v=/);
+ const modules=['catalog-organizer.js','catalog-ui.js','catalog.js'];
+ const offsets=modules.map(name=>runtime.indexOf('/* '+name+' */'));
+ assert.ok(offsets.every(offset=>offset>=0),'All catalog modules must be bundled');
+ assert.ok(offsets[0]<offsets[1]&&offsets[1]<offsets[2],'Bundled catalog modules must remain in dependency order');
  assert.match(ui,/is-blink/);assert.match(ui,/is-dark/);
  assert.match(ui,/prefers-reduced-motion|refreshBadges/);
  assert.match(controller,/SelloneCatalogUI\.init/);
