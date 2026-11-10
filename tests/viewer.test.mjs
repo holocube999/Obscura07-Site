@@ -95,6 +95,7 @@ test('generic PUAE and VICE engines load ADF/D64/T64/PRG only from session cache
  assert.ok(emu.includes('EJS_gameUrl'));
  assert.ok(emu.includes('EJS_biosUrl'));
  assert.ok(emu.includes('EJS_pathtodata'));
+ assert.ok(emu.includes('window.EJS_startOnLoaded=true;'),'pressing Avvia supporto must actually boot the emulator');
  assert.ok(sw.includes('caches.open(CACHE)'));
  assert.ok(sw.includes("scope.pathname+'virtual/'"));
  assert.ok(bridge.includes('cache.delete(url)'));
