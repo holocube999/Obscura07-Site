@@ -421,7 +421,7 @@ async function selloneRevisionDetails(name,sha,preferred=''){
  }
  const totalBytes=blobs.reduce((sum,x)=>sum+x.size,0);
  const html=blobs.filter(x=>pathPattern.test(x.path)&&x.size<=12*1024*1024&&
-  !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path));
+  !/^(docs|tests|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path));
  const ranked=html.map(x=>rank(x.path,repo)).sort(compare);
  const path=html.some(x=>x.path===preferred)?preferred:ranked[0]?.path||'';
  const bytes=html.find(x=>x.path===path)?.size??null;

@@ -170,3 +170,56 @@ test('historical links survive token unlock and open their exact revision',()=>{
  assert.ok(c.includes('initialRef&&initialPath?{ref:initialRef,path:initialPath,mode:\'js\'}'));
  assert.ok(read('assets/obscura-webplayer-runtime.js').includes('resumeAfterAuthorization'));
 });
+
+test('private historical ZIP is reconstructed from verified blobs and does not leak the token',async()=>{
+ const {default:vm}=await import('node:vm'),{createHash,webcrypto}=await import('node:crypto');
+ const revision='a'.repeat(40),prefix='https://api.github.com/repos/holocube999/PrivateDemo';
+ const source=Buffer.from('console.log("private revision");\n'),name='src/app.js';
+ const empty=Buffer.alloc(0);
+ const hash=bytes=>createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0')).update(bytes).digest('hex');
+ const sha=hash(source),emptySha=hash(empty),requests=[];
+ const commit={sha:revision},meta={private:true,default_branch:'main'};
+ const tree={truncated:false,tree:[
+  {type:'blob',path:name,sha,size:source.length},
+  {type:'blob',path:'README.md',sha:emptySha,size:0}
+ ]};
+ const results=new Map([
+  [prefix,meta],[prefix+'/commits/main',commit],
+  [prefix+'/git/trees/'+revision+'?recursive=1',tree],
+  [prefix+'/git/blobs/'+sha,{encoding:'base64',content:source.toString('base64')}],
+  [prefix+'/commits?per_page=20&page=1',[{sha:revision,commit:{message:'Initial code',committer:{date:'2026-11-01T00:00:00Z'}}}]]
+ ]);
+ const fakeFetch=async(uri,opt)=>{
+  requests.push({uri,headers:opt?.headers||{}});
+  if(!results.has(uri))throw Error('Unexpected GitHub request '+uri);
+  return {ok:true,headers:{get(){return null}},json:async()=>results.get(uri)};
+ };
+ const env={window:{},crypto:webcrypto,localStorage:{getItem(){return null},removeItem(){},setItem(){}},
+  fetch:fakeFetch,TextEncoder,TextDecoder,Blob,atob,btoa,Date,Map,Set,Uint8Array,Uint32Array,DataView,Promise,URL};
+ vm.runInNewContext(read('viewer/github-runtime.js'),env,{timeout:3000});
+ const gh=env.window.SelloneGitHub;
+ await gh.setToken('fake-private-token-1234567890','',false);
+ const progress=[],archive=await gh.selloneDownloadArchive('PrivateDemo',revision,p=>progress.push(p.done));
+ assert.equal(archive.ref,revision);assert.equal(archive.files,2);
+ assert.deepEqual(progress,[1,2]);
+ const bytes=Buffer.from(await archive.blob.arrayBuffer()),dv=new DataView(bytes.buffer,bytes.byteOffset,bytes.byteLength);
+ assert.equal(dv.getUint32(0,true),0x04034b50,'ZIP local file header');
+ const count=dv.getUint16(26,true),size=dv.getUint32(18,true);
+ assert.equal(bytes.subarray(30,30+count).toString(),name);
+ assert.deepEqual(bytes.subarray(30+count,30+count+size),source);
+ assert.ok(bytes.includes(Buffer.from('PK\x05\x06')),'ZIP end of central directory');
+ assert.equal(requests.filter(r=>r.uri.includes('/git/blobs/')).length,1,'Empty file requires no blob API call');
+ assert.ok(requests.every(r=>!r.uri.includes('token=')),'Token never added to URL');
+ assert.ok(requests.some(r=>r.headers.Authorization==='Bearer fake-private-token-1234567890'));
+ const revisions=await gh.selloneVersions('PrivateDemo');
+ assert.equal(revisions.revisions[0].sha,revision,'Commit history must work without any HTML build');
+});
+test('public archive uses GitHub ZIP without per-file API calls',async()=>{
+ const {default:vm}=await import('node:vm');let requests=0;
+ const ctx={window:{},localStorage:{getItem(){return null}},TextEncoder,TextDecoder,Blob,Date,Uint8Array,Uint32Array,DataView,
+  fetch:async()=>{requests++;return {ok:true,headers:{get(){return null}},json:async()=>({private:false,default_branch:'main'})}}};
+ vm.runInNewContext(read('viewer/github-runtime.js'),ctx,{timeout:3000});
+ const zip=await ctx.window.SelloneGitHub.selloneDownloadArchive('PublicDemo');
+ assert.equal(zip.url,'https://github.com/holocube999/PublicDemo/archive/main.zip');
+ assert.equal(requests,1);
+});
