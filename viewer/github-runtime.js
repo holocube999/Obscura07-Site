@@ -256,12 +256,11 @@ async function load(input){
 
 const mediaPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|prg)$/i;
 const biosPattern=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:rom|bin|kick|a500|a1200)$/i;
-async function discoverMedia(input){
+async function discoverMedia(input,requestedRef=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- const commit=requestedRef?{sha:requestedRef}:(async()=>{
-  const meta=await api(base);return api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
- })();
- const resolved=await commit;
+ if(requestedRef&&!shaPattern.test(requestedRef))throw Error('Revisione non valida');
+ const meta=await api(base);
+ const resolved=requestedRef?{sha:requestedRef}:await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
  if(!shaPattern.test(resolved.sha||''))throw Error('Revisione GitHub non valida');
  const tree=await api(base+'/git/trees/'+resolved.sha+'?recursive=1');
  if(tree.truncated)throw Error('Albero GitHub troppo grande');
@@ -270,7 +269,7 @@ async function discoverMedia(input){
   .map(x=>x.path).sort();
  if(!files.length)throw Error('Nessun ADF/D64/T64/PRG disponibile nel repository autorizzato');
  const biosFiles=meta.private===true&&!!token?(tree.tree||[]).filter(x=>x.type==='blob'&&biosPattern.test(x.path)&&x.size>=8192&&x.size<=2*1024*1024).map(x=>x.path).sort():[];
- return {repo,ref:commit.sha,files,path:files[0],biosFiles};
+ return {repo,ref:resolved.sha,files,path:files[0],biosFiles};
 }
 async function loadMedia(input){
  const repo=normalizeRepo(input.repo);
@@ -387,50 +386,118 @@ function selloneVersionCompare(a,b){
  }
  return 0;
 }
+
 async function selloneVersions(name,page=1){
- if(!Number.isSafeInteger(page)||page<1||page>10000)throw Error('Pagina revisioni non valida');
- const repo=normalizeRepo(name),base='https://api.github.com/repos/'+repo;
- const perPage=20;
- const [head,commits]=await Promise.all([
-  page===1?discover(name):Promise.resolve(null),
-  api(base+'/commits?per_page='+perPage+'&page='+page)
- ]);
- const files=head?head.files.map(path=>{
-  const version=selloneVersionNumber(path.split('/').pop());
-  return version?{kind:'file',name:'v'+version,version,ref:head.ref,path,sha:head.ref,
-   description:'Build HTML presente nel repository',date:''}:null
- }).filter(Boolean).sort((a,b)=>selloneVersionCompare(a.version,b.version)).slice(0,60):[];
- const revisions=(Array.isArray(commits)?commits:[]).filter(c=>shaPattern.test(c.sha||'')).map(c=>{
-  const message=String(c.commit?.message||'').split('\n')[0].slice(0,100),version=selloneVersionNumber(message);
-  return {kind:'commit',name:version?'v'+version:'Revisione '+c.sha.slice(0,8),
-   version,ref:c.sha,sha:c.sha,path:null,defaultPath:head?.path||'',
-   date:c.commit?.committer?.date||c.commit?.author?.date||'',description:message};
+ if(!Number.isSafeInteger(page)||page<1||page>10000)throw Error('Pagina cronologia non valida');
+ const repo=normalizeRepo(name),base='https://api.github.com/repos/'+repo,perPage=20;
+ const commits=await api(base+'/commits?per_page='+perPage+'&page='+page);
+ const revisions=(Array.isArray(commits)?commits:[]).filter(x=>shaPattern.test(x.sha||'')).map(x=>{
+  const description=String(x.commit?.message||'').split('\n')[0].slice(0,100),version=selloneVersionNumber(description);
+  return {kind:'commit',name:version?'v'+version:'Revisione '+x.sha.slice(0,8),version,
+   ref:x.sha,sha:x.sha,path:null,defaultPath:'',description,
+   date:x.commit?.committer?.date||x.commit?.author?.date||''};
  });
- return {files,revisions,head:head?.ref||'',page,hasMore:revisions.length===perPage};
+ let files=[];
+ if(page===1)try{
+  const head=await discover(name);
+  files=head.files.map(path=>{const version=selloneVersionNumber(path.split('/').pop());
+   return version?{kind:'file',name:'v'+version,version,ref:head.ref,sha:head.ref,path,
+    description:'Build HTML versionata presente nel repository',date:''}:null;
+  }).filter(Boolean).sort((x,y)=>selloneVersionCompare(x.version,y.version)).slice(0,60);
+ }catch(error){if(error.reason==='rate_limit')throw error}
+ return {files,revisions,head:revisions[0]?.ref||'',page,hasMore:revisions.length===perPage};
 }
 const selloneRevisionCache=new Map();
 async function selloneRevisionDetails(name,sha,preferred=''){
  if(!shaPattern.test(sha||''))throw Error('SHA revisione non valido');
  const repo=normalizeRepo(name),key=repo+':'+sha;
- if(selloneRevisionCache.has(key))return selloneRevisionCache.get(key);
- const tree=await api('https://api.github.com/repos/'+repo+'/git/trees/'+sha+'?recursive=1');
- if(tree.truncated)throw Error('Albero GitHub incompleto: dimensione non calcolabile');
- const blobs=(tree.tree||[]).filter(x=>x.type==='blob'&&Number.isSafeInteger(x.size)&&x.size>=0);
+ let blobs=selloneRevisionCache.get(key);
+ if(!blobs){
+  const tree=await api('https://api.github.com/repos/'+repo+'/git/trees/'+sha+'?recursive=1');
+  if(tree.truncated)throw Error('Albero GitHub incompleto');
+  blobs=(tree.tree||[]).filter(x=>x.type==='blob'&&Number.isSafeInteger(x.size)&&x.size>=0);
+  selloneRevisionCache.set(key,blobs);
+  if(selloneRevisionCache.size>60)selloneRevisionCache.delete(selloneRevisionCache.keys().next().value);
+ }
  const totalBytes=blobs.reduce((sum,x)=>sum+x.size,0);
  const html=blobs.filter(x=>pathPattern.test(x.path)&&x.size<=12*1024*1024&&
   !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path));
- const choices=html.map(x=>rank(x.path,repo)).sort(compare);
- const path=html.some(x=>x.path===preferred)?preferred:choices[0]?.path||'';
+ const ranked=html.map(x=>rank(x.path,repo)).sort(compare);
+ const path=html.some(x=>x.path===preferred)?preferred:ranked[0]?.path||'';
  const bytes=html.find(x=>x.path===path)?.size??null;
- const result={repo,sha,path,bytes,totalBytes};
- selloneRevisionCache.set(key,result);
- if(selloneRevisionCache.size>120)selloneRevisionCache.delete(selloneRevisionCache.keys().next().value);
- return result;
+ const media=blobs.filter(x=>/\.(adf|d64|t64|prg)$/i.test(x.path)&&x.size>0&&x.size<=3*1024*1024);
+ const mediaPath=media.some(x=>x.path===preferred)?preferred:media[0]?.path||'';
+ return {repo,sha,path,bytes,totalBytes,mediaPath};
 }
 async function selloneHistoricalPath(name,sha,preferred){
  const info=await selloneRevisionDetails(name,sha,preferred);
- if(!info.path)throw Error('Revisione senza build HTML: apri i sorgenti');
+ if(!info.path)throw Error('Questa revisione non contiene HTML; consulta i sorgenti');
  return info.path;
 }
-window.SelloneGitHub=Object.freeze({selloneVersions,selloneRevisionDetails,selloneHistoricalPath,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+const ZIP_MAX_BYTES=256*1024*1024,ZIP_MAX_FILES=12000;
+const zipTable=(()=>{const t=new Uint32Array(256);for(let i=0;i<256;i++){let x=i;
+ for(let j=0;j<8;j++)x=x&1?0xedb88320^(x>>>1):x>>>1;t[i]=x>>>0}return t})();
+function zipCRC(bytes){let c=0xffffffff;for(const n of bytes)c=zipTable[(c^n)&255]^(c>>>8);return (c^0xffffffff)>>>0}
+function zipFile(entries){
+ const en=new TextEncoder(),chunks=[],central=[];let offset=0;
+ for(const {path,bytes} of entries){
+  if(!path||path.startsWith('/')||path.split('/').some(p=>!p||p==='.'||p==='..')||/[\x00-\x1f\\]/.test(path))throw Error('Percorso archivio non sicuro');
+  const name=en.encode(path),len=bytes.length;
+  if(name.length>=65536||len>=0xffffffff)throw Error('Archivio ZIP non rappresentabile');
+  const crc=zipCRC(bytes),h=new Uint8Array(30+name.length),hd=new DataView(h.buffer);
+  hd.setUint32(0,0x04034b50,true);hd.setUint16(4,20,true);hd.setUint16(6,0x0800,true);
+  hd.setUint32(14,crc,true);hd.setUint32(18,len,true);hd.setUint32(22,len,true);
+  hd.setUint16(26,name.length,true);h.set(name,30);chunks.push(h,bytes);
+  const c=new Uint8Array(46+name.length),cd=new DataView(c.buffer);
+  cd.setUint32(0,0x02014b50,true);cd.setUint16(4,20,true);cd.setUint16(6,20,true);
+  cd.setUint16(8,0x0800,true);cd.setUint32(16,crc,true);
+  cd.setUint32(20,len,true);cd.setUint32(24,len,true);cd.setUint16(28,name.length,true);
+  cd.setUint32(42,offset,true);c.set(name,46);central.push(c);offset+=h.length+len;
+ }
+ const size=central.reduce((sum,x)=>sum+x.length,0);
+ if(offset+size>=0xffffffff||entries.length>=65535)throw Error('ZIP oltre limite standard');
+ const end=new Uint8Array(22),view=new DataView(end.buffer);
+ view.setUint32(0,0x06054b50,true);view.setUint16(8,entries.length,true);
+ view.setUint16(10,entries.length,true);view.setUint32(12,size,true);view.setUint32(16,offset,true);
+ return new Blob([...chunks,...central,end],{type:'application/zip'});
+}
+async function selloneDownloadArchive(name,requestedRef='',progress=()=>{}){
+ const repo=normalizeRepo(name);
+ if(requestedRef&&!shaPattern.test(requestedRef))throw Error('SHA ZIP non valido');
+ const base='https://api.github.com/repos/'+repo,meta=await api(base);
+ if(meta.private===false){
+  const ref=requestedRef||meta.default_branch||'main';
+  return {url:'https://github.com/'+repo+'/archive/'+encodeURIComponent(ref)+'.zip',
+   filename:repo.split('/')[1]+'-'+ref.slice(0,12)+'.zip',ref};
+ }
+ if(!token)throw Error('Repository privato: inserisci il token di sola lettura nelle opzioni del WebPlayer');
+ const commit=requestedRef?{sha:requestedRef}:await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ if(!shaPattern.test(commit.sha||''))throw Error('Commit GitHub non valido');
+ const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
+ if(tree.truncated)throw Error('Albero GitHub troncato: ZIP completo non garantibile');
+ const blobs=(tree.tree||[]).filter(e=>e.type==='blob');
+ const bytesTotal=blobs.reduce((n,x)=>n+(x.size||0),0);
+ if(blobs.some(x=>!shaPattern.test(x.sha||'')||!Number.isSafeInteger(x.size)||x.size<0))
+  throw Error('Snapshot GitHub non valido');
+ if(blobs.length>ZIP_MAX_FILES||bytesTotal>ZIP_MAX_BYTES)
+  throw Error('Archivio privato troppo grande per il browser: '+blobs.length+' file, '+Math.round(bytesTotal/1048576)+' MiB; nessun file escluso silenziosamente');
+ const results=new Array(blobs.length);let cursor=0,done=0,loaded=0;
+ const worker=async()=>{while(cursor<blobs.length){
+  const n=cursor++,file=blobs[n];let bytes;
+  if(!file.path||file.path.startsWith('/')||file.path.split('/').some(p=>!p||p==='.'||p==='..')||/[\x00-\x1f\\]/.test(file.path))
+   throw Error('Percorso GitHub non sicuro');
+  if(file.size===0)bytes=new Uint8Array(0);
+  else{const raw=await api(base+'/git/blobs/'+file.sha);
+   if(raw.encoding!=='base64'||!raw.content)throw Error('Blob GitHub non leggibile: '+file.path);
+   bytes=bytesFromBase64(raw.content)}
+  if(bytes.length!==file.size)throw Error('Dimensione file errata: '+file.path);
+  await checkBlob(bytes,file.sha);
+  results[n]={path:file.path,bytes};done++;loaded+=bytes.length;
+  progress({done,total:blobs.length,bytes:loaded,bytesTotal});
+ }};
+ await Promise.all(Array.from({length:Math.min(4,blobs.length)},()=>worker()));
+ return {blob:zipFile(results),filename:repo.split('/')[1]+'-'+commit.sha.slice(0,12)+'.zip',
+  ref:commit.sha,files:blobs.length,bytes:bytesTotal};
+}
+window.SelloneGitHub=Object.freeze({selloneVersions,selloneRevisionDetails,selloneHistoricalPath,selloneDownloadArchive,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();

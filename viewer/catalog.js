@@ -217,7 +217,7 @@ async function githubMedia(){
  if(!selected)return;
  enableUI(true);showStatus('Ricerca supporti nel repository GitHub…');
  try{
-  mediaRevision=await GH.discoverMedia(currentRepo());
+  mediaRevision=await GH.discoverMedia(currentRepo(),selectedRevision);
   fillPaths($('mediaCandidates'),mediaRevision.files,mediaRevision.path);
   $('mediaCandidates').classList.remove('hidden');
   await selectedMedia(mediaRevision.path);
@@ -332,6 +332,10 @@ function showDetail(repo,explicit=null){
  document.title=item.title+' · Sellone WebPlayer';
  const acts=$('detailActions');acts.replaceChildren();
  const repoPage=link(acts,'↗ Repository','https://github.com/holocube999/'+encodeURIComponent(item.repo),true);
+ const versions=text(acts,'button','Versioni');versions.type='button';versions.className='action secondary';
+ versions.onclick=()=>window.dispatchEvent(new CustomEvent('sellone:open-history',{detail:{repo:item.repo,title:item.title}}));
+ const zip=text(acts,'button','↓ ZIP progetto');zip.type='button';zip.className='action secondary';
+ zip.onclick=()=>window.dispatchEvent(new CustomEvent('sellone:download-zip',{detail:{repo:item.repo,ref:selectedRevision||'',button:zip}}));
  repoPage.target='_blank';repoPage.rel='noopener noreferrer';
  const published=item.published?approvedBuild(item.url):'';
  if(published){
@@ -342,7 +346,7 @@ function showDetail(repo,explicit=null){
   const available=item.viewer_type==='web_js'||item.viewer_type==='amiga_media'||item.repo==='PocketJS-NativeServer'||b.dataset.view==='source';
   b.disabled=!available;
  }
- presentMode(explicit?.mode==='source'?'source':item.viewer_type==='amiga_media'?'original':
+ presentMode(explicit?.mode==='source'?'source':explicit?.mode==='js'?'js':explicit?.mode==='original'?'original':item.viewer_type==='amiga_media'?'original':
   (item.viewer_type==='archive'||(item.viewer_type==='native'&&item.repo!=='PocketJS-NativeServer'))?'source':'js');
  emptyFrame();showFrame();updateSync();
  if(dedicatedApp&&!GH.hasToken()){
@@ -358,7 +362,8 @@ function showDetail(repo,explicit=null){
   else if(initialRef&&initialPath&&(item.id||item.repo).toLowerCase()===initial.toLowerCase())
    githubHTML({explicit:{ref:initialRef,path:initialPath}});
   else if(!localBuild(item))githubHTML();
- }else showStatus('Originale: seleziona un supporto locale o GitHub e avvia il core.');
+ }else if(view==='original'&&explicit?.ref)githubMedia();
+ else showStatus('Originale: seleziona un supporto locale o GitHub e avvia il core.');
 }
 async function loadCatalog(){
  try{
@@ -379,7 +384,7 @@ async function loadCatalog(){
     released_at:typeof item.released_at==='string'?item.released_at:''});
   }
   if(window.SelloneCatalogUI)window.SelloneCatalogUI.init(all,card,{visible:!(initial&&validRepo.test(initial))});
-  if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&initialView==='source'?{ref:initialRef,mode:'source'}:null);
+  if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&['source','original'].includes(initialView)?{ref:initialRef,path:initialPath,mode:initialView}:null);
   else {listing();if(initial)$('message').textContent='Identificativo repository non valido'}
  }catch(error){$('message').textContent='Errore catalogo: '+String(error.message||error)}
 }
@@ -421,10 +426,12 @@ $('forgetGitToken').onclick=()=>{GH.forget();$('authBox').classList.add('hidden'
 window.addEventListener('sellone:history-open',event=>{
  const d=event.detail||{};
  if(!validRepo.test(d.repo||'')||!/^[a-f0-9]{40}$/i.test(d.ref||'')||
-  (d.mode!=='source'&&!/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(d.path||'')))return;
+  (!['js','source','original'].includes(d.mode)||
+  (d.mode==='js'&&!/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(d.path||''))||
+  (d.mode==='original'&&!/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.(?:adf|d64|t64|prg)$/i.test(d.path||''))))return;
  const url=new URL(location.href);url.searchParams.set('repo',d.repo);
  url.searchParams.set('ref',d.ref);if(d.path)url.searchParams.set('path',d.path);else url.searchParams.delete('path');
- if(d.mode==='source')url.searchParams.set('view','source');else url.searchParams.delete('view');
+ if(d.mode==='source'||d.mode==='original')url.searchParams.set('view',d.mode);else url.searchParams.delete('view');
  history.pushState(null,'',url.pathname+url.search);
  showDetail(d.repo,{ref:d.ref,path:d.path,mode:d.mode});
 });

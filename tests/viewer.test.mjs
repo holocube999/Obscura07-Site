@@ -149,3 +149,16 @@ test('no proprietary Amiga / C64 media or secrets tracked by public site',()=>{
  assert.ok(!read('catalog.json').includes('github_pat_'));
  assert.ok(!read('catalog.json').includes('AMIROMTYPE1'));
 });
+
+test('historical revisions, permanent links and complete repository ZIP integration',()=>{
+ const gh=read('viewer/github-runtime.js'),ui=read('viewer/sellone-ui.js'),catalog=read('viewer/catalog.js');
+ assert.match(gh,/selloneDownloadArchive/);
+ assert.match(gh,/checkBlob\(bytes,file.sha\)/);
+ assert.match(gh,/async function discoverMedia\(input,requestedRef=''\)/);
+ assert.match(ui,/sellone-download-link/);
+ assert.match(ui,/history-zip/);
+ assert.match(ui,/url.searchParams.set\('ref',item.ref\)/);
+ assert.doesNotMatch(ui,/const checks=data.revisions.map\(render\)/);
+ assert.match(catalog,/selectedRevision\)/);
+ assert.match(read('assets/obscura-webplayer-runtime.js'),/selloneDownloadArchive/);
+});

@@ -144,3 +144,8 @@ body.sellone-fs-body{overflow:hidden}
 @media(hover:none){#sellone-fullscreen{opacity:.62}
  :is(#playarea:fullscreen,#playarea.sellone-fs-fallback) #sellone-fullscreen{opacity:.33}}
 @media(prefers-reduced-motion:reduce){#sellone-fullscreen{transition:none}}
+
+.sellone-card-extras{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px}
+.sellone-card-extras .sellone-history-link,.sellone-card-extras .sellone-download-link{display:inline-flex;align-items:center;min-height:36px;padding:7px 10px;border:1px solid #615472;border-radius:8px;background:#29243b;color:#ded1fb;font:600 12px system-ui;text-decoration:none;cursor:pointer}
+.sellone-card-extras button:disabled{opacity:.55;cursor:progress}
+.history-actions .history-zip,.history-actions .history-link{border-color:#8776a8}
