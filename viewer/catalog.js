@@ -302,11 +302,16 @@ async function selectView(next){
  if(!['original','both'].includes(next)){
   await Retro.stop();$('originalStage').replaceChildren();syncReady.original=false;
  }
- if(!['js','both'].includes(next))emptyFrame();
+ // Keep the guest iframe alive while hidden: it owns local media and live state.
+ // Only switching projects or explicit reload replaces it.
+ if(!['js','both'].includes(next))hideTunnel();
  presentMode(next);showFrame();updateSync();
  if(next==='source'){await githubSource();return}
  if(['js','both'].includes(next)&&(previous==='original'||previous==='source')){
-  if(!localBuild(selected)){if(loaded)showJS(loaded);else await githubHTML()}
+  if(isTunnel(selected)){
+   // Explicitly restore privileged tunnel capabilities when returning.
+   if(!localBuild(selected)){if(loaded)showJS(loaded);else await githubHTML()}
+  }else if(!loaded&&!localBuild(selected))await githubHTML();
  }
  if(next==='both'&&!loaded)await githubHTML();
  if(next==='original'||next==='both'){
