@@ -162,3 +162,11 @@ test('historical revisions, permanent links and complete repository ZIP integrat
  assert.match(catalog,/selectedRevision\)/);
  assert.match(read('assets/obscura-webplayer-runtime.js'),/selloneDownloadArchive/);
 });
+
+test('historical links survive token unlock and open their exact revision',()=>{
+ const c=read('viewer/catalog.js');
+ assert.ok(c.includes('resumeAfterAuthorization'));
+ assert.ok(c.includes('return githubHTML({explicit:{ref:selectedRevision,path}})'));
+ assert.ok(c.includes('initialRef&&initialPath?{ref:initialRef,path:initialPath,mode:\'js\'}'));
+ assert.ok(read('assets/obscura-webplayer-runtime.js').includes('resumeAfterAuthorization'));
+});

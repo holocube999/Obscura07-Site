@@ -365,6 +365,17 @@ function showDetail(repo,explicit=null){
  }else if(view==='original'&&explicit?.ref)githubMedia();
  else showStatus('Originale: seleziona un supporto locale o GitHub e avvia il core.');
 }
+async function resumeAfterAuthorization(){
+ if(view==='source')return githubSource();
+ if(view==='original')return githubMedia();
+ if(selectedRevision){
+  const chosen=new URLSearchParams(location.search).get('path')||'';
+  const path=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(chosen)?
+   chosen:await GH.selloneHistoricalPath(currentRepo(),selectedRevision,chosen);
+  return githubHTML({explicit:{ref:selectedRevision,path}});
+ }
+ return githubHTML();
+}
 async function loadCatalog(){
  try{
   const response=await fetch('../catalog.json',{cache:'no-store',credentials:'omit'});
@@ -384,7 +395,9 @@ async function loadCatalog(){
     released_at:typeof item.released_at==='string'?item.released_at:''});
   }
   if(window.SelloneCatalogUI)window.SelloneCatalogUI.init(all,card,{visible:!(initial&&validRepo.test(initial))});
-  if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&['source','original'].includes(initialView)?{ref:initialRef,path:initialPath,mode:initialView}:null);
+  if(initial&&validRepo.test(initial))showDetail(initial,initialRef&&['source','original'].includes(initialView)?
+   {ref:initialRef,path:initialPath,mode:initialView}:
+   initialRef&&initialPath?{ref:initialRef,path:initialPath,mode:'js'}:null);
   else {listing();if(initial)$('message').textContent='Identificativo repository non valido'}
  }catch(error){$('message').textContent='Errore catalogo: '+String(error.message||error)}
 }
@@ -401,11 +414,11 @@ $('useGitToken').onclick=async()=>{
  try{
   await GH.setToken($('gitToken').value,$('gitPassword').value,$('saveToken').checked);
   $('gitToken').value='';$('gitPassword').value='';$('authBox').classList.add('hidden');
-  if(view==='source')await githubSource();else if(view==='original')await githubMedia();else await githubHTML();
+  await resumeAfterAuthorization();
  }catch(e){handleError(e)}
 };
 $('unlockGitToken').onclick=async()=>{
- try{await GH.unlock($('gitPassword').value);$('gitPassword').value='';$('authBox').classList.add('hidden');if(view==='source')await githubSource();else if(view==='original')await githubMedia();else await githubHTML()}
+ try{await GH.unlock($('gitPassword').value);$('gitPassword').value='';$('authBox').classList.add('hidden');await resumeAfterAuthorization()}
  catch(e){handleError(e)}
 };
 for(const b of $('viewModes').querySelectorAll('[data-view]'))b.onclick=()=>selectView(b.dataset.view);
