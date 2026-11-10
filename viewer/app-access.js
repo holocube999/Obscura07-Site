@@ -28,7 +28,7 @@ try{saved=localStorage.getItem(KEY)||''}catch{}
 if(saved)GH.setToken(saved,'',false).catch(()=>{});
 const gate=document.createElement('section');
 gate.id='appAccess';
-gate.innerHTML='<form><div class="accessBrand"><span class="accessStudio">[NULL]GOD</span><span class="accessProduct"><span class="accessSlash">/</span> Spotifree</span><small class="accessMusic">m u s i c</small></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p></form>';
+gate.innerHTML='<form><div class="accessBrand" role="img" aria-label="[NULL]GOD / Spotifree m u s i c"><div class="accessBrandStudio"><span class="accessBrandCore"><span class="accessBrandBracket">[</span><span class="accessBrandNull">NULL</span><span class="accessBrandBracket">]</span><span class="accessBrandGod">GOD</span></span><span class="accessBrandDivider">/</span><small class="accessBrandMusic">music</small></div><strong class="accessBrandProduct"><span class="accessBrandSpoti">Spoti</span><span class="accessBrandFree">free</span></strong></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p><small class="accessVersion">v0.5.2</small></form>';
 document.body.append(gate);
 gate.hidden=!!saved;
 if(q.has('accessReset')&&!saved){
@@ -83,6 +83,6 @@ gate.querySelector('form').addEventListener('submit',async event=>{
  }catch(e){
   const status=e.status;
   document.getElementById('appAccessError').textContent=accessMessage(e);setCooldown(e);
- }finally{submitting=false;gate.querySelector('button').disabled=false}
+ }finally{submitting=false;gate.querySelector('button').disabled=cooldownUntil>Date.now()}
 });
 })();
