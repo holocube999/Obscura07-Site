@@ -1383,6 +1383,8 @@ if((q.get('repo')||'').toLowerCase()==='nullgod-music'){
   notice.textContent='✓ Token cancellato';
   notice.style.cssText='position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:#09080df5;color:#b5d5bd;font:500 16px system-ui';
   document.body.append(notice);
+  // Replacing the current URL with itself may be a no-op: require a fresh
+  // document, clearing in-memory authorization and pending GitHub loaders.
   const next=new URL(location.href);next.searchParams.set('app','1');
   next.searchParams.set('accessReset',String(Date.now()));
   setTimeout(()=>{guest.removeAttribute('srcdoc');guest.src='about:blank';location.replace(next.href)},900);
@@ -1395,7 +1397,7 @@ try{saved=localStorage.getItem(KEY)||''}catch{}
 if(saved)GH.setToken(saved,'',false).catch(()=>{});
 const gate=document.createElement('section');
 gate.id='appAccess';
-gate.innerHTML='<form><div class="accessBrand"><span class="accessStudio">[NULL]GOD</span><span class="accessProduct"><span class="accessSlash">/</span> Spotifree</span><small class="accessMusic">m u s i c</small></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p></form>';
+gate.innerHTML='<form><div class="accessBrand" role="img" aria-label="[NULL]GOD / Spotifree m u s i c"><div class="accessBrandStudio"><span class="accessBrandCore"><span class="accessBrandBracket">[</span><span class="accessBrandNull">NULL</span><span class="accessBrandBracket">]</span><span class="accessBrandGod">GOD</span></span><span class="accessBrandDivider">/</span><small class="accessBrandMusic">music</small></div><strong class="accessBrandProduct"><span class="accessBrandSpoti">Spoti</span><span class="accessBrandFree">free</span></strong></div><label for="appAccessToken">Token d’accesso</label><input id="appAccessToken" type="password" autocomplete="off" spellcheck="false" required><button type="submit">Entra</button><p role="status" id="appAccessError"></p><small class="accessVersion">v0.5.2</small></form>';
 document.body.append(gate);
 gate.hidden=!!saved;
 if(q.has('accessReset')&&!saved){
@@ -1403,6 +1405,8 @@ if(q.has('accessReset')&&!saved){
  notice.textContent='Token cancellato.';
  notice.style.color='#9fd7b0';
 }
+
+
 function accessMessage(error){
  if(error?.reason)return error.message;
  if(error?.status===401)return 'Token scaduto o revocato.';
@@ -1410,6 +1414,7 @@ function accessMessage(error){
  if(error?.status===403)return 'GitHub rifiuta l’accesso: verifica Contents → Read-only per NULLGOD-MUSIC.';
  return 'Connessione non disponibile. Riprova.';
 }
+
 let submitting=false,cooldownUntil=0,cooldownTimer=0;
 function setCooldown(error){
  if(error?.reason!=='rate_limit')return;
@@ -1426,6 +1431,7 @@ function show(message=''){
 }
 window.addEventListener('sellone:access-error',e=>{
  const status=e.detail?.status;
+ // 403 may be rate limiting, never discard a remembered token for this.
  if(status===401||status===404){
   try{localStorage.removeItem(KEY)}catch{}
   GH.forget();show('Accesso non disponibile. Inserisci un token valido.');
@@ -1439,12 +1445,14 @@ gate.querySelector('form').addEventListener('submit',async event=>{
  try{
   await GH.setToken(value,'',false);
   await GH.discover('NULLGOD-MUSIC');
+  // Persistence is requested explicitly by the user. This is local storage,
+  // not unextractable encryption; never embed shared credentials into an APK.
   localStorage.setItem(KEY,value);
   input.value='';gate.hidden=true;document.getElementById('loadLatest').click();
  }catch(e){
   const status=e.status;
   document.getElementById('appAccessError').textContent=accessMessage(e);setCooldown(e);
- }finally{submitting=false;gate.querySelector('button').disabled=false}
+ }finally{submitting=false;gate.querySelector('button').disabled=cooldownUntil>Date.now()}
 });
 })();
 ;
