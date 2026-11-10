@@ -163,6 +163,26 @@ html.sellone-app-mode #webplayerPanelToggle,html.sellone-app-expanded #webplayer
 html.sellone-app-expanded body{overflow:auto}
 html.sellone-app-expanded #webplayerPanelToggle{background:#302640;color:#f4eaff;opacity:.95}
 
+
+/* Spotifree wordmark shared visually by the private login and the player header. */
+#appAccess form{position:relative;width:min(420px,100%);min-height:300px;padding:clamp(22px,5vw,34px);
+ background:#121117;border:1px solid #584476;border-radius:14px;box-shadow:0 24px 90px #0009}
+#appAccess .accessBrand{display:flex;flex-direction:column;align-items:flex-start;gap:7px;
+ margin:0 0 23px;white-space:nowrap;text-shadow:none;filter:none;line-height:1}
+#appAccess .accessBrandStudio{display:flex;align-items:baseline;gap:6px}
+#appAccess .accessBrandCore{display:inline-flex;align-items:baseline;font:800 clamp(16px,4vw,21px)/1.05 system-ui,Roboto,sans-serif;letter-spacing:-.9px}
+#appAccess .accessBrandBracket{color:#b8a6f7;font-weight:500}
+#appAccess .accessBrandNull{color:#f2f0f5;font-weight:800}
+#appAccess .accessBrandGod{color:#b8a6f7;font-weight:900;letter-spacing:-.7px}
+#appAccess .accessBrandDivider{font:400 16px/1 ui-monospace,monospace;color:#7a7084}
+#appAccess .accessBrandMusic{font:600 11px/1 ui-monospace,monospace;color:#c8b9d8;letter-spacing:0}
+#appAccess .accessBrandProduct{font:850 clamp(31px,6vw,42px)/1 system-ui,Roboto,sans-serif;letter-spacing:-1.7px}
+#appAccess .accessBrandSpoti{color:#ac84ee}
+#appAccess .accessBrandFree{color:#fbf9fe}
+#appAccess .accessVersion{display:block;text-align:right;opacity:.45;font:9px/1 ui-monospace,monospace;
+ color:#a79bab;margin:-3px -8px -10px 0;pointer-events:none}
+@media(max-width:420px){#appAccess form{padding:24px}#appAccess .accessBrand{margin-bottom:18px}}
+
 </style>
 <link rel="stylesheet" href="./sellone-ui.css">
 </head>
@@ -278,6 +298,6 @@ html.sellone-app-expanded #webplayerPanelToggle{background:#302640;color:#f4eaff
 })();
 </script>
 
-<script src="../assets/obscura-webplayer-runtime.js?v=3" defer></script>
+<script src="../assets/obscura-webplayer-runtime.js?v=4" defer></script>
 <script src="../assets/embed-bridge.js" defer></script>
 </body></html>
