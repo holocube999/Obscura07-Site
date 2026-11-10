@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'viewer/**'
+      - 'assets/obscura-webplayer*.js'
       - 'webplayer/**'
       - 'catalog.json'
       - 'index.html'
@@ -17,6 +18,7 @@ on:
   pull_request:
     paths:
       - 'viewer/**'
+      - 'assets/obscura-webplayer*.js'
       - 'tests/viewer*.test.mjs'
       - '.github/workflows/verify-viewer.yml'
   workflow_dispatch:
@@ -30,7 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify no-npm JavaScript syntax
         run: |
-          for file in viewer/catalog.js viewer/sellone-ui.js viewer/catalog-organizer.js viewer/catalog-ui.js viewer/github-runtime.js viewer/web-bundler.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js; do
+          for file in viewer/catalog.js viewer/sellone-ui.js viewer/catalog-organizer.js viewer/catalog-ui.js viewer/github-runtime.js viewer/web-bundler.js viewer/retro-runtime.js viewer/retro/emu.js viewer/retro/sw.js assets/obscura-webplayer-runtime.js assets/obscura-webplayer.min.js; do
             node --check "$file"
           done
       - name: Verify Sellone NULLGOD persistent storage acknowledgement
