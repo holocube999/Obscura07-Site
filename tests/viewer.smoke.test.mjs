@@ -122,3 +122,20 @@ test('source view is read-only and is accessible without a playable binary',asyn
  assert.equal(e.retroControls.classList.contains('hidden'),true);
  assert.match(e.sourcePane.children[0].textContent,/Mad Doctor/);
 });
+
+test('switching between JavaScript, Originale and Sorgenti preserves live guest document and selected file state',async()=>{
+ const {elements:e,modes}=setup();
+ await flush();
+ const guest=e.playframe;
+ const liveDocument=guest.srcdoc+'<!-- live-in-memory-guest-state -->';
+ guest.srcdoc=liveDocument;
+ const localSource={name:'BEERBELL.T64',size:49990};
+ e.mediaInput.files=[localSource];
+ for(const next of ['original','source','js','both','js']){
+  await modes.find(button=>button.dataset.view===next).onclick();
+  await flush();
+  assert.equal(e.playframe,guest,'the guest iframe must be retained');
+  assert.equal(guest.srcdoc,liveDocument,'a view change must not reload the guest');
+  assert.equal(e.mediaInput.files[0],localSource,'media input must remain selected');
+ }
+});
