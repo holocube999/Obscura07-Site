@@ -34,7 +34,8 @@ window.addEventListener('message',event=>{
  if(biosUrl)window.EJS_biosUrl=biosUrl;
  window.EJS_gameName=String(title||'Sellone').slice(0,80);
  window.EJS_pathtodata='https://cdn.emulatorjs.org/stable/data/';
- window.EJS_startOnLoaded=false;
+ // The user already pressed “Avvia supporto”; directly boot the selected game.
+ window.EJS_startOnLoaded=true;
  const script=document.createElement('script');
  script.src='https://cdn.emulatorjs.org/stable/data/loader.js';
  script.onerror=()=>parent.postMessage({type:'SELLONE_RETRO_ERROR_V1',message:'Caricamento del core EmulatorJS fallito (CDN o CSP)'},location.origin);
