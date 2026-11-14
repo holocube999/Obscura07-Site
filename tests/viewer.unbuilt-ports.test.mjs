@@ -29,12 +29,12 @@ test('no HTML game is never advertised as an executable JS port',()=>{
       'Known HTML game must retain JS launch');
 });
 
-test('catalog fallback selects original media, preserves explicit JS/source choices',()=>{
-  assert.match(game,/item\.runtime_status==='no_browser_build'&&\['amiga','c64'\]\.includes\(item\.origin_system\)\?'original'/);
+test('catalog never requires original media to open a missing JS port; source remains a truthful fallback',()=>{
+  assert.match(game,/item\.runtime_status==='no_browser_build'\?'source'/);
   assert.match(game,/explicit\?\.mode==='js'\?'js'/);
   assert.match(game,/explicit\?\.mode==='source'\?'source'/);
   assert.match(game,/Porting JS non ancora eseguibile/);
-  assert.match(game,/Apri supporto originale/);
+  assert.match(game,/Stato porting JS/);
   assert.match(game,/runtime_status:item\.runtime_status==='no_browser_build'/);
 });
 
