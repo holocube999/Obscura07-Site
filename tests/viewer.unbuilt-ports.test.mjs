@@ -30,12 +30,12 @@ test('no HTML game is never advertised as an executable JS port',()=>{
 });
 
 test('catalog never requires original media to open a missing JS port; source remains a truthful fallback',()=>{
-  assert.match(game,/item\.runtime_status==='no_browser_build'\?'source'/);
+  assert.match(game,/lacksStandalone\(item\)\?'source'/);
   assert.match(game,/explicit\?\.mode==='js'\?'js'/);
   assert.match(game,/explicit\?\.mode==='source'\?'source'/);
   assert.match(game,/Porting JS non ancora eseguibile/);
   assert.match(game,/Stato porting JS/);
-  assert.match(game,/runtime_status:item\.runtime_status==='no_browser_build'/);
+  assert.match(game,/runtime_status:\['no_browser_build','media_required'\]\.includes/);
 });
 
 test('deployed combined runtime exactly embeds the corrected launch controller',()=>{
@@ -51,4 +51,14 @@ test('original media path remains a generic executable emulator, not fake game c
   assert.match(boot,/EJS_gameUrl=mediaUrl/);
   assert.match(boot,/EJS_startOnLoaded=true/);
   assert.match(boot,/EJS_core=core/);
+});
+
+test('HTML that requires original disks is not treated as a playable standalone port',()=>{
+ for(const [repo,system] of [['RoboCop3-JS','amiga'],['JSBrewBiz','c64']]){
+  const item=catalog.projects.find(x=>x.repo===repo);
+  assert.equal(item.runtime_status,'media_required');
+  assert.equal(item.origin_system,system);
+ }
+ assert.match(game,/function lacksStandalone\(item\)/);
+ assert.match(game,/lacksStandalone\(selected\)/);
 });
