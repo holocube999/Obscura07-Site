@@ -196,7 +196,8 @@
       "advanced_url": null,
       "viewer_type": "web_js",
       "origin_system": "amiga",
-      "category": "games"
+      "category": "games",
+      "runtime_status": "media_required"
     },
     {
       "id": "ARMigaOs",
@@ -368,7 +369,8 @@
       "advanced_url": null,
       "viewer_type": "web_js",
       "origin_system": "c64",
-      "category": "games"
+      "category": "games",
+      "runtime_status": "media_required"
     },
     {
       "id": "JSLeader",
