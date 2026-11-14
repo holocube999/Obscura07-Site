@@ -1502,7 +1502,7 @@ function card(item){
  text(el,'h3',item.title);
  text(el,'p',item.description);
  const acts=text(el,'div','');acts.className='actions';
- link(acts,item.published?'▶ Apri applicazione':item.runtime_status==='no_browser_build'?'Apri supporto originale':'Apri nel WebPlayer',viewLink(item),false);
+ link(acts,item.published?'▶ Apri applicazione':item.runtime_status==='no_browser_build'?'Stato porting JS':'Apri nel WebPlayer',viewLink(item),false);
  return el;
 }
 function listing(value=''){
@@ -1750,7 +1750,7 @@ async function githubSource(refresh=true){
   const pre=document.createElement('pre');pre.id='sourcePreview';pre.textContent=result.content;
   $('sourcePane').replaceChildren(pre);
   $('detailStatus').textContent='GitHub · '+result.path+' · '+result.ref.slice(0,12);
-  showStatus('Sorgente verificato · '+(result.bytes/1024).toFixed(1)+' KiB · sola lettura');
+  showStatus((selected?.runtime_status==='no_browser_build'?'PORTING JS NON ANCORA AVVIABILE · nessuna copia originale richiesta al giocatore. Originale: confronto facoltativo. · ':'Sorgente verificato · ')+(result.bytes/1024).toFixed(1)+' KiB · sola lettura');
  }catch(e){handleError(e)}
  finally{enableUI(false)}
 }
@@ -1805,7 +1805,7 @@ function showDetail(repo,explicit=null){
   const available=item.viewer_type==='web_js'||item.viewer_type==='amiga_media'||item.repo==='PocketJS-NativeServer'||b.dataset.view==='source';
   b.disabled=!available;
  }
- presentMode(explicit?.mode==='source'?'source':explicit?.mode==='js'?'js':explicit?.mode==='original'?'original':item.runtime_status==='no_browser_build'&&['amiga','c64'].includes(item.origin_system)?'original':item.viewer_type==='amiga_media'?'original':
+ presentMode(explicit?.mode==='source'?'source':explicit?.mode==='js'?'js':explicit?.mode==='original'?'original':item.runtime_status==='no_browser_build'?'source':item.viewer_type==='amiga_media'?'original':
   (item.viewer_type==='archive'||(item.viewer_type==='native'&&item.repo!=='PocketJS-NativeServer'))?'source':'js');
  emptyFrame();showFrame();updateSync();
  if(dedicatedApp&&!GH.hasToken()){
