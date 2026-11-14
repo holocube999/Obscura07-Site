@@ -232,7 +232,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "c64",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSWho2",
@@ -244,7 +246,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "c64",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSWorld",
@@ -256,7 +260,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSFears",
@@ -268,7 +274,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSGloom",
@@ -306,7 +314,8 @@
       "advanced_url": null,
       "viewer_type": "web_js",
       "origin_system": "amiga",
-      "category": "games"
+      "category": "games",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSDesert",
@@ -318,7 +327,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSWarmUp",
@@ -342,7 +353,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "c64",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSBrewBiz",
@@ -367,7 +380,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSWonder",
@@ -379,7 +394,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSTerror2",
@@ -391,7 +408,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "JSTopCat",
@@ -403,7 +422,9 @@
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
-      "category": "games"
+      "category": "games",
+      "origin_system": "amiga",
+      "runtime_status": "no_browser_build"
     },
     {
       "id": "ARMigaFW",
