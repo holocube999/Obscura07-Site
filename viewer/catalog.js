@@ -40,7 +40,7 @@ function card(item){
  const el=document.createElement('article');el.className='panel project';
  const head=text(el,'div','');head.className='head';
  text(head,'span',lacksStandalone(item)?'PORTING NON DISPONIBILE':types[item.viewer_type]||'PROGETTO').className='eyebrow';
- text(head,'span',item.published?'Pubblicato':lacksStandalone(item)?'Senza build':'GitHub').className='tag'+(item.published?' playable':'');
+ text(head,'span',item.published?'Pubblicato':item.visibility==='private'?'Privato':lacksStandalone(item)?'Senza build':'GitHub').className='tag'+(item.published?' playable':'');
  text(el,'h3',item.title);
  text(el,'p',item.description);
  const acts=text(el,'div','');acts.className='actions';
@@ -183,8 +183,9 @@ async function githubHTML(opts={}){
  try{
   // In split mode the emulator must remain running while the JS build reloads.
   const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
-  const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined);
-  const verified=await GH.load({repo:currentRepo(),ref,path});
+  const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined)||selected?.entry_path;
+  if(selected?.project_path&&(!path||!path.startsWith(selected.project_path+'/')))throw Error('Build fuori dal progetto selezionato');
+  const verified=await GH.load({repo:currentRepo(),ref,path,projectPath:selected?.project_path});
   if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
   showStatus('Verifica CSS e moduli JavaScript del repository…');
   const result=await Bundle.prepare(verified,GH);
@@ -285,7 +286,7 @@ async function githubSource(refresh=true){
  if(!selected)return;
  enableUI(true);showStatus('Lettura sorgenti GitHub e verifica SHA…');
  try{
-  if(refresh||!sourceRevision)sourceRevision=await GH.discoverFiles(currentRepo(),selectedRevision);
+  if(refresh||!sourceRevision)sourceRevision=await GH.discoverFiles(currentRepo(),selectedRevision,selected?.project_path);
   const file=$('sourceFiles').value&&sourceRevision.files.includes($('sourceFiles').value)?$('sourceFiles').value:sourceRevision.path;
   fillPaths($('sourceFiles'),sourceRevision.files,file);
   const result=await GH.loadText({repo:currentRepo(),ref:sourceRevision.ref,path:file});
@@ -350,11 +351,11 @@ function showDetail(repo,explicit=null){
  presentMode(explicit?.mode==='source'?'source':explicit?.mode==='js'?'js':explicit?.mode==='original'?'original':lacksStandalone(item)?'source':item.viewer_type==='amiga_media'?'original':
   (item.viewer_type==='archive'||(item.viewer_type==='native'&&item.repo!=='PocketJS-NativeServer'))?'source':'js');
  emptyFrame();showFrame();updateSync();
- if(dedicatedApp&&!GH.hasToken()){
+ if((dedicatedApp||item.visibility==='private')&&!GH.hasToken()){
   $('authBox').classList.remove('hidden');
   $('playerStatus').textContent=GH.hasSavedToken()?
-   'Accesso riservato. Inserisci la password locale e premi Sblocca per aprire NULLGOD MUSIC.':
-   'Accesso riservato. Serve un token GitHub di sola lettura per il repository NULLGOD-MUSIC.';
+   'Accesso riservato. Inserisci la password locale e premi Sblocca.':
+   'Accesso riservato. Inserisci un token GitHub di sola lettura autorizzato per '+item.repo+'.';
   return;
  }
  if(view==='source')githubSource();
@@ -370,7 +371,7 @@ async function resumeAfterAuthorization(){
  if(view==='source')return githubSource();
  if(view==='original')return githubMedia();
  if(selectedRevision){
-  const chosen=new URLSearchParams(location.search).get('path')||'';
+  const chosen=new URLSearchParams(location.search).get('path')||selected?.entry_path||'';
   const path=/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(chosen)?
    chosen:await GH.selloneHistoricalPath(currentRepo(),selectedRevision,chosen);
   return githubHTML({explicit:{ref:selectedRevision,path}});
@@ -391,7 +392,10 @@ async function loadCatalog(){
    all.push({id,repo:item.repo,title:String(item.title||item.repo).slice(0,90),
     description:String(item.description||'').slice(0,250),kind:String(item.kind||''),
     category:String(item.category||''),viewer_type:types[item.viewer_type]?item.viewer_type:'archive',
-    origin_system:String(item.origin_system||''),runtime_status:['no_browser_build','media_required'].includes(item.runtime_status)?item.runtime_status:'',published:item.published===true&&!!approvedBuild(item.url),url:item.url,
+    origin_system:String(item.origin_system||''),runtime_status:['no_browser_build','media_required'].includes(item.runtime_status)?item.runtime_status:'',published:item.published===true&&!!approvedBuild(item.url)&&item.visibility!=='private',url:item.url,
+    visibility:item.visibility==='private'?'private':'public',
+    project_path:typeof item.project_path==='string'&&/^(?:[A-Za-z0-9_.-]+\/){1,5}[A-Za-z0-9_.-]+$/.test(item.project_path)&&!item.project_path.split('/').includes('..')?item.project_path:'',
+    entry_path:typeof item.entry_path==='string'&&/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(item.entry_path)&&!item.entry_path.split('/').includes('..')?item.entry_path:'',
     release_path:typeof item.release_path==='string'&&/^(?:radio\/|viewer\/[A-Za-z0-9_-]+\/)$/i.test(item.release_path)?item.release_path:'',
     released_at:typeof item.released_at==='string'?item.released_at:''});
   }
