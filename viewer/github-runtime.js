@@ -27,7 +27,7 @@ async function apiNetwork(url){
   const retry=Number(response.headers.get('retry-after')||0);
   const reset=Number(response.headers.get('x-ratelimit-reset')||0);
   let reason='http',hint='GitHub HTTP '+response.status;
-  if(response.status===401){reason='invalid_token';hint='Token scaduto o revocato.'}
+  if(response.status===401){reason='invalid_token';hint='GitHub non accetta il token (HTTP 401). Controlla di aver inserito il token nuovo: non significa necessariamente che sia scaduto.'}
   else if(response.status===429||remaining==='0'||/rate limit|abuse detection/i.test(message)){
    reason='rate_limit';
    const when=retry>0?Date.now()+retry*1000:reset>0?reset*1000:0;
@@ -364,7 +364,11 @@ async function keyFor(password,salt){
  const imported=await crypto.subtle.importKey('raw',new TextEncoder().encode(password),'PBKDF2',false,['deriveKey']);
  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:260000,hash:'SHA-256'},imported,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 }
-async function setToken(value,password,remember){
+function activateToken(value){
+ if(token!==value){requestEpoch++;requestCache.clear();verifiedHtmlCache.clear();blockedUntil=0}
+ token=value;
+}
+async function setToken(value,password,remember,replaceSaved=false){
  value=String(value||'').trim();if(value.length<16)throw Error('Token GitHub mancante');
  if(remember){
   if(String(password).length<12)throw Error('Password locale: almeno 12 caratteri');
@@ -373,14 +377,15 @@ async function setToken(value,password,remember){
   const payload=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(value)));
   localStorage.setItem(STORAGE,JSON.stringify({v:1,salt:b64(salt),iv:b64(iv),payload:b64(payload)}));
  }
- if(token!==value){requestEpoch++;requestCache.clear();verifiedHtmlCache.clear();blockedUntil=0}
- token=value;
+ if(replaceSaved&&!remember)localStorage.removeItem(STORAGE);
+ activateToken(value);
 }
 async function unlock(password){
  const raw=localStorage.getItem(STORAGE);if(!raw)throw Error('Nessun token cifrato presente');
  const obj=JSON.parse(raw);if(obj.v!==1)throw Error('Archivio token incompatibile');
  const k=await keyFor(password,bytesFromBase64(obj.salt));
- token=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
+ const recovered=new TextDecoder('utf-8',{fatal:true}).decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytesFromBase64(obj.iv)},k,bytesFromBase64(obj.payload)));
+ activateToken(recovered);
 }
 function forget(){token='';requestEpoch++;requestCache.clear();verifiedHtmlCache.clear();blockedUntil=0;localStorage.removeItem(STORAGE)}
 
