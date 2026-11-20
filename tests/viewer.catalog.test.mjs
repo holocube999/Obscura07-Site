@@ -132,3 +132,49 @@ test('browser catalog UI groups cards, preserves details, and switches category/
  assert.equal(elems.grid.children.length,1);
  assert.equal(elems.grid.children[0].dataset.category,'audio');
 });
+
+test('PhonoPuzzle appears as a private, scoped, token-gated browser application',async()=>{
+ const project=catalog.find(x=>x.id==='PhonoPuzzle');
+ assert.ok(project,'PhonoPuzzle is registered in the public metadata catalog');
+ assert.equal(project.repo,'NG-REForge');
+ assert.equal(project.published,false);
+ assert.equal(project.visibility,'private');
+ assert.equal(project.url,null);
+ assert.equal(project.advanced_url,null);
+ assert.equal(project.project_path,'projects/browser/phonopuzzle-voice-lab');
+ assert.equal(project.entry_path,project.project_path+'/index.html');
+ assert.equal(project.viewer_type,'web_js');
+ const controller=read('viewer/catalog.js');
+ assert.match(controller,/projectPath:selected\?\.project_path/);
+ assert.match(controller,/item\.visibility==='private'/);
+ assert.match(controller,/GH\.hasToken\(\)/);
+ const bundle=read('assets/obscura-webplayer-runtime.js');
+ assert.match(bundle,/safeProjectPath\(input\)/);
+ assert.match(bundle,/projectPath:selected\?\.project_path/);
+ assert.match(bundle,/item\.visibility==='private'/);
+ const sha='0123456789abcdef0123456789abcdef01234567',calls=[];
+ const data={
+  ['https://api.github.com/repos/holocube999/NG-REForge']:{default_branch:'main'},
+  ['https://api.github.com/repos/holocube999/NG-REForge/commits/main']:{sha},
+  ['https://api.github.com/repos/holocube999/NG-REForge/git/trees/'+sha+'?recursive=1']:{
+    truncated:false,tree:[
+     {type:'blob',path:'projects/native-amiga/deathmask-gloom/index.html',size:2000},
+     {type:'blob',path:project.entry_path,size:2000},
+     {type:'blob',path:project.project_path+'/test.html',size:1000}
+    ]
+   }
+ };
+ const win={},storage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};
+ const ctx={window:win,localStorage:storage,fetch:async url=>{
+   calls.push(url);const record=data[url];
+   if(!record)throw Error('Unexpected GitHub URL '+url);
+   return {ok:true,status:200,headers:{get:()=>null},json:async()=>record};
+ },Date,Map,Set,Promise,Error,RegExp,encodeURIComponent,URL,TextEncoder,TextDecoder};
+ vm.runInNewContext(read('viewer/github-runtime.js'),ctx,{timeout:2000});
+ const scoped=await win.SelloneGitHub.discover(project.repo,project.project_path);
+ assert.equal(scoped.path,project.entry_path);
+ assert.equal(scoped.files.length,2);
+ assert.ok(scoped.files.every(path=>path.startsWith(project.project_path+'/')));
+ assert.equal(calls.length,3);
+ await assert.rejects(win.SelloneGitHub.discover(project.repo,'../elsewhere'),/Percorso progetto non valido/);
+});
