@@ -544,6 +544,21 @@
       "viewer_type": "web_js",
       "visibility": "private",
       "category": "audio"
+    },
+    {
+      "id": "PhonoPuzzle",
+      "repo": "NG-REForge",
+      "title": "PhonoPuzzle · Voice Lab",
+      "kind": "Applicazione",
+      "description": "Laboratorio vocale JavaScript sperimentale: sintesi fonetica, profili e apprendimento incrementale. Accesso riservato con token GitHub.",
+      "published": false,
+      "url": null,
+      "advanced_url": null,
+      "viewer_type": "web_js",
+      "visibility": "private",
+      "project_path": "projects/browser/phonopuzzle-voice-lab",
+      "entry_path": "projects/browser/phonopuzzle-voice-lab/index.html",
+      "category": "audio"
     }
   ]
 }
