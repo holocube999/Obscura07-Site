@@ -40,7 +40,7 @@ if(q.has('accessReset')&&!saved){
 
 function accessMessage(error){
  if(error?.reason)return error.message;
- if(error?.status===401)return 'Token scaduto o revocato.';
+ if(error?.status===401)return 'GitHub non accetta la credenziale (HTTP 401); verifica di aver inserito il token nuovo.';
  if(error?.status===404)return 'Questo token non ha accesso a NULLGOD-MUSIC.';
  if(error?.status===403)return 'GitHub rifiuta l’accesso: verifica Contents → Read-only per NULLGOD-MUSIC.';
  return 'Connessione non disponibile. Riprova.';
