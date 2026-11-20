@@ -417,7 +417,7 @@ $('bootRetro').onclick=()=>boot();
 $('stopRetro').onclick=async()=>{await Retro.stop();$('originalStage').replaceChildren();syncReady.original=false;updateSync();showStatus('Emulatore fermato; supporti temporanei eliminati.')};
 $('useGitToken').onclick=async()=>{
  try{
-  await GH.setToken($('gitToken').value,$('gitPassword').value,$('saveToken').checked);
+  await GH.setToken($('gitToken').value,$('gitPassword').value,$('saveToken').checked,true);
   $('gitToken').value='';$('gitPassword').value='';$('authBox').classList.add('hidden');
   await resumeAfterAuthorization();
  }catch(e){handleError(e)}
