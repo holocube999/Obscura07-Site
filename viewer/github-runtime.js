@@ -152,8 +152,15 @@ async function pocketJSArchive(repo,ref,files){
   html:await unzipPocketJS(bytes),bytes:bytes.length,blob:entry.sha};
 }
 
-async function discover(input){
+function safeProjectPath(input){
+ if(!input)return '';
+ const value=String(input);
+ if(!/^(?:[A-Za-z0-9_.-]+\/){1,5}[A-Za-z0-9_.-]+$/.test(value)||value.split('/').some(x=>x==='.'||x==='..'))throw Error('Percorso progetto non valido');
+ return value;
+}
+async function discover(input,projectPath=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
+ projectPath=safeProjectPath(projectPath);
  // Dedicated NULLGOD entry is a single known bundled build. Avoid full repository
  // discovery (metadata + commit + recursive tree) for each mobile app launch.
  if(repo===OWNER+'/NULLGOD-MUSIC'){
@@ -172,6 +179,7 @@ async function discover(input){
   return {repo,ref:commit.sha,files:['web/index.html'],path:'web/index.html'};
  }
  const files=(result.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
+  (!projectPath||x.path.startsWith(projectPath+'/'))&&
   !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
   .map(x=>rank(x.path,repo)).sort(compare).map(x=>x.path);
  if(!files.length)throw Error('Nessuna build HTML candidata nel repository');
@@ -223,7 +231,7 @@ async function load(input){
  const repo=normalizeRepo(input.repo);
  let ref=input.ref,path=input.path;
  let files;
- if(!ref){const newest=await discover(repo);ref=newest.ref;files=newest.files;path=path||newest.path}
+ if(!ref){const newest=await discover(repo,input.projectPath);ref=newest.ref;files=newest.files;path=path||newest.path}
  if(!shaPattern.test(ref||''))throw Error('SHA GitHub completo richiesto');
  if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP){
   // Legacy viewer links pointed to a ZIP without HTML: use the actual frontend.
@@ -314,8 +322,9 @@ async function loadBios(input){
 
 
 const textPattern=/^(?:[A-Za-z0-9_.-]+\/){0,6}[A-Za-z0-9_.-]+\.(?:md|txt|json|js|mjs|cjs|ts|css|html?|py|c|cpp|h|hpp|asm|s|yml|yaml|toml|ini|sh|ps1|bat|cmd|xml|csv|java|kt|rs|go|lua|scad)$/i;
-async function discoverFiles(input,requestedRef=''){
+async function discoverFiles(input,requestedRef='',projectPath=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
+ projectPath=safeProjectPath(projectPath);
  const commit=requestedRef?{sha:requestedRef}:await (async()=>{
   const meta=await api(base);
   return api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
@@ -323,7 +332,7 @@ async function discoverFiles(input,requestedRef=''){
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const tree=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(tree.truncated)throw Error('Repository troppo grande per il visualizzatore sorgenti');
- const files=(tree.tree||[]).filter(x=>x.type==='blob'&&textPattern.test(x.path)&&x.size>=0&&x.size<=1024*1024&&!/(?:^|\/)(?:node_modules|vendor|\.git|\.private|private-media)\//i.test(x.path))
+ const files=(tree.tree||[]).filter(x=>x.type==='blob'&&textPattern.test(x.path)&&(!projectPath||x.path.startsWith(projectPath+'/'))&&x.size>=0&&x.size<=1024*1024&&!/(?:^|\/)(?:node_modules|vendor|\.git|\.private|private-media)\//i.test(x.path))
   .map(x=>x.path).sort((a,b)=>{
    const rank=p=>/^readme\.md$/i.test(p)?0:/^(?:docs\/)?(?:status|overview|readme)\.md$/i.test(p)?1:/^src\//i.test(p)?2:3;
    return rank(a)-rank(b)||a.localeCompare(b);
