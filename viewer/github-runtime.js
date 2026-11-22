@@ -158,18 +158,20 @@ function safeProjectPath(input){
  if(!/^(?:[A-Za-z0-9_.-]+\/){1,5}[A-Za-z0-9_.-]+$/.test(value)||value.split('/').some(x=>x==='.'||x==='..'))throw Error('Percorso progetto non valido');
  return value;
 }
-async function discover(input,projectPath=''){
+async function discover(input,projectPath='',previewBranch=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
  projectPath=safeProjectPath(projectPath);
+ if(previewBranch&&(!token||typeof previewBranch!=='string'||!/^development-[A-Za-z0-9_-]{1,64}$/.test(previewBranch)))throw Error('Anteprima privata: token e ramo di sviluppo valido richiesti');
  // Dedicated NULLGOD entry is a single known bundled build. Avoid full repository
  // discovery (metadata + commit + recursive tree) for each mobile app launch.
- if(repo===OWNER+'/NULLGOD-MUSIC'){
+ if(!previewBranch&&repo===OWNER+'/NULLGOD-MUSIC'){
   const head=await api(base+'/commits/main');
   if(!shaPattern.test(head.sha||''))throw Error('Revisione GitHub non valida');
   return {repo,ref:head.sha,files:['dist/index.html'],path:'dist/index.html'};
  }
  const meta=await api(base);
- const commit=await api(base+'/commits/'+encodeURIComponent(meta.default_branch||'main'));
+ if(previewBranch&&meta.private!==true)throw Error('Anteprima di sviluppo consentita solo per repository privati');
+ const commit=await api(base+'/commits/'+encodeURIComponent(previewBranch||meta.default_branch||'main'));
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
  const result=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(result.truncated)throw Error('Albero GitHub troppo grande: selezione automatica sospesa');
@@ -231,7 +233,7 @@ async function load(input){
  const repo=normalizeRepo(input.repo);
  let ref=input.ref,path=input.path;
  let files;
- if(!ref){const newest=await discover(repo,input.projectPath);ref=newest.ref;files=newest.files;path=path||newest.path}
+ if(!ref){const newest=await discover(repo,input.projectPath,input.previewBranch);ref=newest.ref;files=newest.files;path=path||newest.path}
  if(!shaPattern.test(ref||''))throw Error('SHA GitHub completo richiesto');
  if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP){
   // Legacy viewer links pointed to a ZIP without HTML: use the actual frontend.
