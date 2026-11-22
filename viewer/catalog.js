@@ -185,7 +185,7 @@ async function githubHTML(opts={}){
   const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
   const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined)||selected?.entry_path;
   if(selected?.project_path&&(!path||!path.startsWith(selected.project_path+'/')))throw Error('Build fuori dal progetto selezionato');
-  const verified=await GH.load({repo:currentRepo(),ref,path,projectPath:selected?.project_path});
+  const verified=await GH.load({repo:currentRepo(),ref,path,projectPath:selected?.project_path,previewBranch:selected?.visibility==='private'?selected.preview_branch:undefined});
   if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
   showStatus('Verifica CSS e moduli JavaScript del repository…');
   const result=await Bundle.prepare(verified,GH);
@@ -394,6 +394,7 @@ async function loadCatalog(){
     category:String(item.category||''),viewer_type:types[item.viewer_type]?item.viewer_type:'archive',
     origin_system:String(item.origin_system||''),runtime_status:['no_browser_build','media_required'].includes(item.runtime_status)?item.runtime_status:'',published:item.published===true&&!!approvedBuild(item.url)&&item.visibility!=='private',url:item.url,
     visibility:item.visibility==='private'?'private':'public',
+    preview_branch:item.visibility==='private'&&typeof item.preview_branch==='string'&&/^development-[A-Za-z0-9_-]{1,64}$/.test(item.preview_branch)?item.preview_branch:'',
     project_path:typeof item.project_path==='string'&&/^(?:[A-Za-z0-9_.-]+\/){1,5}[A-Za-z0-9_.-]+$/.test(item.project_path)&&!item.project_path.split('/').includes('..')?item.project_path:'',
     entry_path:typeof item.entry_path==='string'&&/^(?:[A-Za-z0-9_.-]+\/){0,5}[A-Za-z0-9_.-]+\.html?$/i.test(item.entry_path)&&!item.entry_path.split('/').includes('..')?item.entry_path:'',
     release_path:typeof item.release_path==='string'&&/^(?:radio\/|viewer\/[A-Za-z0-9_-]+\/)$/i.test(item.release_path)?item.release_path:'',
