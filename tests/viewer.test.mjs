@@ -39,8 +39,8 @@ test('one Sellone WebPlayer preserves catalog UI and safe iframe',()=>{
  assert.ok(html.includes('id="playframe"'));
  assert.ok(html.includes('sandbox="allow-scripts'));
  assert.ok(html.includes('id="localAppFrame"'));
- assert.ok(html.includes('id="playframe" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
- assert.ok(html.includes('id="localAppFrame" class="hidden" title="Applicazione pubblica verificata"'));
+ assert.ok(html.includes('id="playframe" allow="gamepad" title="Conversione JavaScript" loading="eager" allowfullscreen sandbox="allow-scripts allow-pointer-lock allow-forms allow-downloads"'));
+ assert.ok(html.includes('id="localAppFrame" allow="gamepad" class="hidden" title="Applicazione pubblica verificata"'));
  assert.ok(html.includes('src="../assets/obscura-webplayer-runtime.js?'), 'missing integrated production WebPlayer runtime');
  const runtime=read('assets/obscura-webplayer-runtime.js');
  for(const api of ['SelloneGitHub','SelloneRetro','SelloneBundle','SelloneNullGodStorage'])
