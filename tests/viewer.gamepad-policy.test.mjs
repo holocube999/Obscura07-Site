@@ -9,8 +9,8 @@ test('isolated private web and public app frames delegate only gamepad',()=>{
  for(const id of ['playframe','localAppFrame']){
   const tag=html.match(new RegExp('<iframe\\s+id="'+id+'"[^>]*>'))?.[0];
   assert.ok(tag,id+' iframe exists');
-  assert.match(tag,/\\ballow="gamepad"/);
-  assert.match(tag,/\\bsandbox="[^"]+"/);
+  assert.match(tag,/\ballow="gamepad"/);
+  assert.match(tag,/\bsandbox="[^"]+"/);
   assert.doesNotMatch(tag,/allow-top-navigation|allow-popups/);
  }
  const sandbox=html.match(/<iframe\s+id="playframe"[^>]*sandbox="([^"]+)"/)?.[1];
