@@ -339,7 +339,7 @@
       "kind": "Progetto",
       "description": "Porting JavaScript · Warm Up · PLAYABLE M9 · HUD 1P/2P, guida in sviluppo",
       "visibility": "private",
-      "preview_branch": "development-playable-hud",
+      "preview_branch": "development-playable",
       "entry_path": "index.html",
       "published": false,
       "url": null,
