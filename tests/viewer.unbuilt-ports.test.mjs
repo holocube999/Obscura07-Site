@@ -10,7 +10,7 @@ const catalog=JSON.parse(read('catalog.json'));
 const game=read('viewer/catalog.js');
 const bundle=read('assets/obscura-webplayer-runtime.js');
 const expected={
-  JSSkool:'c64',JSWho2:'c64',JSWorld:'amiga',JSFears:'amiga',
+  JSWho2:'c64',JSWorld:'amiga',
   JSHunter:'amiga',JSDesert:'amiga',JSNexus:'c64',
   JSLeader:'amiga',JSWonder:'amiga',JSTerror2:'amiga',JSTopCat:'amiga'
 };
@@ -54,11 +54,24 @@ test('original media path remains a generic executable emulator, not fake game c
 });
 
 test('HTML that requires original disks is not treated as a playable standalone port',()=>{
- for(const [repo,system] of [['RoboCop3-JS','amiga'],['JSBrewBiz','c64']]){
+ for(const [repo,system] of [['RoboCop3-JS','amiga']]){
   const item=catalog.projects.find(x=>x.repo===repo);
   assert.equal(item.runtime_status,'media_required');
   assert.equal(item.origin_system,system);
  }
  assert.match(game,/function lacksStandalone\(item\)/);
  assert.match(game,/lacksStandalone\(selected\)/);
+});
+
+
+test('existing diskless game previews launch as JS without ADF while retaining honest preview descriptions',()=>{
+ for(const repo of ['JSSkool','JSFears','JSBrewBiz']){
+  const item=catalog.projects.find(p=>p.repo===repo);
+  assert.ok(item,repo+' absent');
+  assert.equal(item.viewer_type,'web_js');
+  assert.equal(item.entry_path,'index.html');
+  assert.equal(item.published,false,'a private preview must not be exposed as a public site build');
+  assert.ok(!item.runtime_status,'never misroute an available HTML entry to source/ADF');
+  assert.match(item.description,/non (?:è|ancora)|non ancora/i,'must not imply 1:1 completeness');
+ }
 });
