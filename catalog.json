@@ -228,14 +228,14 @@
       "repo": "JSSkool",
       "title": "JSSkool",
       "kind": "Progetto",
-      "description": "In sviluppo.",
+      "description": "Anteprima interattiva della lavagna (White Room) con movimento e scrittura. Non è il gioco C64 completo.",
       "published": false,
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
       "category": "games",
       "origin_system": "c64",
-      "runtime_status": "no_browser_build"
+      "entry_path": "index.html"
     },
     {
       "id": "JSWho2",
@@ -270,14 +270,14 @@
       "repo": "JSFears",
       "title": "JSFears",
       "kind": "Progetto",
-      "description": "In sviluppo.",
+      "description": "Anteprima giocabile autonoma: camminata 3D, porta, uscita e mappa. Non è ancora il primo livello Amiga fedele.",
       "published": false,
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
       "category": "games",
       "origin_system": "amiga",
-      "runtime_status": "no_browser_build"
+      "entry_path": "index.html"
     },
     {
       "id": "JSGloom",
@@ -366,14 +366,14 @@
       "repo": "JSBrewBiz",
       "title": "JSBrewBiz",
       "kind": "Progetto",
-      "description": "In sviluppo.",
+      "description": "Anteprima giocabile diskless: due stanze, raccolta gettoni e uscita. Contenuti sperimentali, non ancora C64 1:1.",
       "published": false,
       "url": null,
       "advanced_url": null,
       "viewer_type": "web_js",
       "origin_system": "c64",
-      "category": "games",
-      "runtime_status": "media_required"
+      "entry_path": "index.html",
+      "category": "games"
     },
     {
       "id": "JSLeader",
