@@ -15,6 +15,38 @@ const types={web_js:'WEB',amiga_media:'AMIGA',native:'NATIVO',site:'SITO',archiv
 function lacksStandalone(item){return item?.runtime_status==='no_browser_build'||item?.runtime_status==='media_required'}
 let selected=null,loaded=null,remoteMedia=null,remoteKick=null,mediaRevision=null,sourceRevision=null,selectedRevision='',view='js',busy=false;
 let syncChannel='',syncReady={js:false,original:false};
+let lastHeadCheck=0,headCheckBusy=false;
+function previewBranch(){return selected?.visibility==='private'?selected.preview_branch:undefined}
+function buildStatus(message,update=false){
+ const box=$('buildSync'),label=$('buildSyncLabel'),button=$('buildSyncUpdate');
+ if(!box||!label||!button)return;
+ box.classList.toggle('hidden',!message);label.textContent=message;
+ button.classList.toggle('hidden',!update);
+}
+function revisionLabel(result){
+ const date=new Date(result.date);
+ return 'Build '+result.ref.slice(0,12)+(result.branch?' · '+result.branch:'')+
+  (result.date&&Number.isFinite(date.getTime())?' · '+date.toLocaleString('it-IT'):'');
+}
+async function checkLatest(){
+ if(!selected||!loaded||selectedRevision||busy||headCheckBusy||document.hidden||
+  !['js','both'].includes(view)||Date.now()-lastHeadCheck<120000)return;
+ const current=selected,revision=loaded;
+ lastHeadCheck=Date.now();headCheckBusy=true;
+ try{
+  const latest=await GH.head(currentRepo(),previewBranch());
+  if(selected!==current||loaded!==revision||selectedRevision||busy)return;
+  if(latest.ref!==revision.ref)buildStatus(revisionLabel(revision)+' · Nuova build '+latest.ref.slice(0,12)+' disponibile',true);
+  else buildStatus(revisionLabel(latest)+' · Aggiornato');
+ }catch(error){
+  if(selected===current&&loaded===revision&&!selectedRevision&&!busy)
+   buildStatus(revisionLabel(revision)+' · Aggiornamento non verificabile: '+String(error.message||error));
+ }finally{headCheckBusy=false}
+}
+window.addEventListener('focus',checkLatest);
+window.addEventListener('online',checkLatest);
+document.addEventListener('visibilitychange',checkLatest);
+setInterval(checkLatest,120000);
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
 function link(node,label,url,secondary){
  const a=text(node,'a',label);a.className='action'+(secondary?' secondary':'');a.href=url;return a;
@@ -185,7 +217,7 @@ async function githubHTML(opts={}){
   const ref=opts.explicit?.ref||(opts.pin?loaded?.ref:undefined);
   const path=opts.explicit?.path||(opts.pin?$('htmlCandidates').value||loaded?.path:undefined)||selected?.entry_path;
   if(selected?.project_path&&(!path||!path.startsWith(selected.project_path+'/')))throw Error('Build fuori dal progetto selezionato');
-  const verified=await GH.load({repo:currentRepo(),ref,path,projectPath:selected?.project_path,previewBranch:selected?.visibility==='private'?selected.preview_branch:undefined});
+  const verified=await GH.load({repo:currentRepo(),ref,path,projectPath:selected?.project_path,previewBranch:previewBranch()});
   if(!Bundle?.prepare)throw Error('Motore dei moduli WebPlayer non disponibile');
   showStatus('Verifica CSS e moduli JavaScript del repository…');
   const result=await Bundle.prepare(verified,GH);
@@ -212,7 +244,13 @@ async function githubHTML(opts={}){
   const url=new URL(location.href);url.searchParams.set('repo',selected.id||selected.repo);
   if(opts.explicit||opts.pin){selectedRevision=result.ref;url.searchParams.set('ref',result.ref);url.searchParams.set('path',result.path)}else{selectedRevision='';url.searchParams.delete('ref');url.searchParams.delete('path')}
   history.replaceState(null,'',url.pathname+url.search);
- }catch(error){emptyFrame();handleError(error)}
+  lastHeadCheck=Date.now();
+  buildStatus(revisionLabel(result)+(selectedRevision?' · Revisione fissata':' · Aggiornato'));
+ }catch(error){
+  if(!loaded)emptyFrame();
+  else buildStatus(revisionLabel(loaded)+' · Aggiornamento non verificabile',true);
+  handleError(error);
+ }
  finally{enableUI(false)}
 }
 async function githubMedia(){
@@ -327,7 +365,7 @@ function showDetail(repo,explicit=null){
  const item=selected;
  $('detail').dataset.originalSystem=item.origin_system||'';
  loaded=null;remoteMedia=null;remoteKick=null;mediaRevision=null;sourceRevision=null;selectedRevision=explicit?.ref||'';
- syncChannel=newChannel();syncReady={js:false,original:false};
+ syncChannel=newChannel();syncReady={js:false,original:false};lastHeadCheck=0;buildStatus('');
  $('detailName').textContent=item.title;
  $('detailKind').textContent=types[item.viewer_type]||'PROGETTO';
  $('detailDescription').textContent=item.description||'';
@@ -409,6 +447,7 @@ async function loadCatalog(){
 }
 $('search').oninput=()=>listing($('search').value);
 $('loadLatest').onclick=()=>githubHTML();
+if($('buildSyncUpdate'))$('buildSyncUpdate').onclick=()=>{if(!busy)githubHTML()};
 $('reloadSelected').onclick=()=>githubHTML({pin:true});
 $('htmlCandidates').onchange=()=>{if(loaded)githubHTML({pin:true})};
 $('loadGitMedia').onclick=()=>githubMedia();
