@@ -1523,8 +1523,8 @@ async function checkLatest(){
 }
 window.addEventListener('focus',checkLatest);
 window.addEventListener('online',checkLatest);
-document.addEventListener('visibilitychange',checkLatest);
-setInterval(checkLatest,120000);
+document.addEventListener?.('visibilitychange',checkLatest);
+window.setInterval?.(checkLatest,120000);
 function text(node,tag,value){const e=document.createElement(tag);e.textContent=value;node.append(e);return e}
 function link(node,label,url,secondary){
  const a=text(node,'a',label);a.className='action'+(secondary?' secondary':'');a.href=url;return a;
