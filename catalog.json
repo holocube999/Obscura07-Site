@@ -337,7 +337,7 @@
       "repo": "JSWarmUp",
       "title": "JSWarmUp",
       "kind": "Progetto",
-      "description": "Porting JavaScript · Warm Up · PLAYABLE M9 · HUD 1P/2P, guida in sviluppo",
+      "description": "Porting JavaScript · Warm Up · HUD 1P/2P",
       "visibility": "private",
       "preview_branch": "development-playable",
       "entry_path": "index.html",

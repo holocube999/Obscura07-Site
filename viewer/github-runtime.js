@@ -16,7 +16,7 @@ async function apiNetwork(url){
  const headers={'Accept':'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'};
  if(token)headers.Authorization='Bearer '+token;
  const usedToken=!!token;
- const response=await fetch(url,{headers,credentials:'omit',cache:'no-cache',referrerPolicy:'no-referrer'});
+ const response=await fetch(url,{headers,credentials:'omit',cache:/\/commits\//.test(url)?'no-store':'no-cache',referrerPolicy:'no-referrer'});
  const rateLimit=Number(response.headers.get('x-ratelimit-limit')||0);
  const rateRemaining=response.headers.get('x-ratelimit-remaining');
  const rateResource=response.headers.get('x-ratelimit-resource')||'';
@@ -158,34 +158,37 @@ function safeProjectPath(input){
  if(!/^(?:[A-Za-z0-9_.-]+\/){1,5}[A-Za-z0-9_.-]+$/.test(value)||value.split('/').some(x=>x==='.'||x==='..'))throw Error('Percorso progetto non valido');
  return value;
 }
-async function discover(input,projectPath='',previewBranch=''){
+async function head(input,previewBranch=''){
  const repo=normalizeRepo(input),base='https://api.github.com/repos/'+repo;
- projectPath=safeProjectPath(projectPath);
  if(previewBranch&&(!token||typeof previewBranch!=='string'||!/^development-[A-Za-z0-9_-]{1,64}$/.test(previewBranch)))throw Error('Anteprima privata: token e ramo di sviluppo valido richiesti');
- // Dedicated NULLGOD entry is a single known bundled build. Avoid full repository
- // discovery (metadata + commit + recursive tree) for each mobile app launch.
- if(!previewBranch&&repo===OWNER+'/NULLGOD-MUSIC'){
-  const head=await api(base+'/commits/main');
-  if(!shaPattern.test(head.sha||''))throw Error('Revisione GitHub non valida');
-  return {repo,ref:head.sha,files:['dist/index.html'],path:'dist/index.html'};
+ let branch='main';
+ if(previewBranch||repo!==OWNER+'/NULLGOD-MUSIC'){
+  const meta=await api(base);
+  if(previewBranch&&meta.private!==true)throw Error('Anteprima di sviluppo consentita solo per repository privati');
+  branch=previewBranch||meta.default_branch||'main';
  }
- const meta=await api(base);
- if(previewBranch&&meta.private!==true)throw Error('Anteprima di sviluppo consentita solo per repository privati');
- const commit=await api(base+'/commits/'+encodeURIComponent(previewBranch||meta.default_branch||'main'));
+ const commit=await api(base+'/commits/'+encodeURIComponent(branch));
  if(!shaPattern.test(commit.sha||''))throw Error('Revisione GitHub non valida');
+ return {repo,ref:commit.sha,branch,date:commit.commit?.committer?.date||commit.commit?.author?.date||''};
+}
+async function discover(input,projectPath='',previewBranch=''){
+ const revision=await head(input,previewBranch),repo=revision.repo,base='https://api.github.com/repos/'+repo;
+ projectPath=safeProjectPath(projectPath);
+ if(!previewBranch&&repo===OWNER+'/NULLGOD-MUSIC')return {...revision,files:['dist/index.html'],path:'dist/index.html'};
+ const commit={sha:revision.ref};
  const result=await api(base+'/git/trees/'+commit.sha+'?recursive=1');
  if(result.truncated)throw Error('Albero GitHub troppo grande: selezione automatica sospesa');
  if(repo===POCKETJS_REPO){
   const front=(result.tree||[]).find(x=>x.type==='blob'&&x.path==='web/index.html'&&x.size>1024*1024&&x.size<=12*1024*1024);
   if(!front)throw Error('PocketJS: frontend web/index.html completo non disponibile');
-  return {repo,ref:commit.sha,files:['web/index.html'],path:'web/index.html'};
+  return {...revision,files:['web/index.html'],path:'web/index.html'};
  }
  const files=(result.tree||[]).filter(x=>x.type==='blob'&&pathPattern.test(x.path)&&
   (!projectPath||x.path.startsWith(projectPath+'/'))&&
   !/^(docs|tests|history|node_modules|vendor|tools|reports|fixtures|examples)\//i.test(x.path)&&x.size<=12*1024*1024)
   .map(x=>rank(x.path,repo)).sort(compare).map(x=>x.path);
  if(!files.length)throw Error('Nessuna build HTML candidata nel repository');
- return {repo,ref:commit.sha,files,path:files[0]};
+ return {...revision,files,path:files[0]};
 }
 function bytesFromBase64(data){
  const clean=String(data||'').replace(/\s+/g,'');
@@ -232,8 +235,8 @@ async function checkBlob(bytes,expectedSha){
 async function load(input){
  const repo=normalizeRepo(input.repo);
  let ref=input.ref,path=input.path;
- let files;
- if(!ref){const newest=await discover(repo,input.projectPath,input.previewBranch);ref=newest.ref;files=newest.files;path=path||newest.path}
+ let files,revision={};
+ if(!ref){const newest=await discover(repo,input.projectPath,input.previewBranch);ref=newest.ref;files=newest.files;path=path||newest.path;revision={branch:newest.branch,date:newest.date}}
  if(!shaPattern.test(ref||''))throw Error('SHA GitHub completo richiesto');
  if(repo===POCKETJS_REPO&&path===POCKETJS_BOOTSTRAP){
   // Legacy viewer links pointed to a ZIP without HTML: use the actual frontend.
@@ -243,7 +246,7 @@ async function load(input){
  safePath(path);
  const cacheKey=requestEpoch+'|'+repo+'|'+ref+'|'+path;
  const cached=verifiedHtmlCache.get(cacheKey);
- if(cached)return cached;
+ if(cached)return {...cached,...revision,files:files||cached.files};
  const url='https://api.github.com/repos/'+repo+'/contents/'+path.split('/').map(encodeURIComponent).join('/')+'?ref='+ref;
  const entry=await api(url);
  if(entry.type!=='file'||!shaPattern.test(entry.sha||'')||!Number.isSafeInteger(entry.size)||entry.size>12*1024*1024)throw Error('HTML non disponibile o oltre 12 MiB');
@@ -258,7 +261,7 @@ async function load(input){
  await checkBlob(bytes,entry.sha);
  const html=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
  if(!/^\s*(?:<!doctype\s+html|<html\b)/i.test(html))throw Error('File non riconosciuto come documento HTML');
- const verified={repo,ref,path,files,html,bytes:bytes.length,blob:entry.sha};
+ const verified={repo,ref,path,files,html,bytes:bytes.length,blob:entry.sha,...revision};
  verifiedHtmlCache.set(cacheKey,verified);
  if(verifiedHtmlCache.size>8)verifiedHtmlCache.delete(verifiedHtmlCache.keys().next().value);
  return verified;
@@ -515,5 +518,5 @@ async function selloneDownloadArchive(name,requestedRef='',progress=()=>{}){
  return {blob:zipFile(results),filename:repo.split('/')[1]+'-'+commit.sha.slice(0,12)+'.zip',
   ref:commit.sha,files:blobs.length,bytes:bytesTotal};
 }
-window.SelloneGitHub=Object.freeze({selloneVersions,selloneRevisionDetails,selloneHistoricalPath,selloneDownloadArchive,normalizeRepo,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
+window.SelloneGitHub=Object.freeze({selloneVersions,selloneRevisionDetails,selloneHistoricalPath,selloneDownloadArchive,normalizeRepo,head,discover,load,discoverMedia,loadMedia,loadBios,discoverFiles,loadText,setToken,unlock,forget,hasToken:()=>!!token,hasSavedToken:()=>!!localStorage.getItem(STORAGE)});
 })();
